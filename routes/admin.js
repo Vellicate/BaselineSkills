@@ -526,4 +526,8 @@ router.post("/resources/:id/delete", (req, res) => {
   res.redirect("/admin/resources?success=Resource+deleted");
 });
 
+<<<<<<< HEAD
 module.exports = router;
+=======
+module.exports = router;
+>>>>>>> dcdaf6e31f180310fe125ebc397204ccc6bfd9b3
