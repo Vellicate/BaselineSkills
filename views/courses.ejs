@@ -1,37 +1,69 @@
 <%- include('partials/header') %>
 
-<section class="section-tight" style="background:#fff;border-bottom:1px solid var(--line)">
+<section class="section-tight" style="background:linear-gradient(180deg, #fff 0%, #f8fafc 100%);border-bottom:1px solid var(--line);padding:56px 0 36px">
   <div class="container">
-    <span class="eyebrow">All Courses</span>
-    <h1 style="font-size:2.1rem">Find your next certification or skills course.</h1>
+    <div class="section-hdr">
+      <span class="eyebrow">Engineering Curriculum</span>
+      <h1 style="font-size:2.4rem;letter-spacing:-0.02em">Accredited Certifications &amp; Practical Skills Programs</h1>
+      <p class="lead">Explore globally recognized certifications and role-based training programs led by senior industry practitioners.</p>
+    </div>
   </div>
 </section>
 
-<section class="section">
+<section class="section" style="padding-top:40px">
   <div class="container">
-    <div class="path-tabs">
-      <% categories.forEach(cat => { %>
-        <a href="/courses?category=<%= encodeURIComponent(cat) %>" class="path-tab <%= cat===activeCategory?'active':'' %>" style="text-decoration:none;display:inline-block"><%= cat %></a>
-      <% }) %>
+    <div class="path-tabs-container" style="margin-bottom:36px">
+      <div class="path-tabs">
+        <% categories.forEach(cat => { %>
+          <a href="/courses?category=<%= encodeURIComponent(cat) %>" class="path-tab <%= cat===activeCategory?'active':'' %>" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px">
+            <span><%= cat %></span>
+          </a>
+        <% }) %>
+      </div>
     </div>
 
     <% if (courses.length === 0) { %>
-      <p class="lead">No courses in this category yet.</p>
+      <div class="card" style="text-align:center;padding:48px 24px">
+        <h3>No courses found in this category</h3>
+        <p class="lead" style="margin-bottom:20px">Please select another domain or view all our available training programs.</p>
+        <div><a href="/courses" class="btn btn-navy">View All Courses</a></div>
+      </div>
     <% } %>
 
     <div class="grid-3">
       <% courses.forEach(c => { %>
-        <div class="card">
-          <span class="tag"><%= c.category %></span>
-          <h3 style="margin-top:12px"><%= c.title %></h3>
-          <p style="color:var(--muted);font-size:.9rem;flex:1"><%= c.summary %></p>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin:10px 0">
-            <div class="price-now" style="font-size:1.3rem">$<%= ((c.priceCents*(1-(c.discountPercent||0)/100))/100).toFixed(0) %></div>
-            <% if(c.discountPercent){ %><span class="discount-badge"><%= c.discountPercent %>% OFF</span><% } %>
+        <div class="course-mini-card">
+          <div class="mini-card-top">
+            <span class="tag <%= c.certification ? 'tag-cert' : 'tag-skill' %>">
+              <%= c.certification ? '🏅 Official Certification' : '⚡ Skills Mastery' %>
+            </span>
+            <span class="mini-duration"><%= c.durationDays %> Day<%= c.durationDays > 1 ? 's' : '' %></span>
           </div>
+          
+          <span class="domain-sub-kicker"><%= c.category %></span>
+          <h3 class="mini-course-title" style="font-size:1.18rem;margin-top:4px"><%= c.title %></h3>
+          <p class="mini-course-summary"><%= c.summary %></p>
+          
+          <div class="mini-price-row">
+            <div class="price-val-wrap">
+              <span class="price-current">$<%= ((c.priceCents*(1-(c.discountPercent||0)/100))/100).toFixed(0) %></span>
+              <% if(c.discountPercent){ %><span class="price-discount-pill"><%= c.discountPercent %>% OFF</span><% } %>
+            </div>
+            <div class="seats-status-pill">
+              <span class="status-pulse-dot"></span>
+              <span>Available</span>
+            </div>
+          </div>
+
           <div class="course-mini-ctas">
-            <a href="/courses/<%= c.slug %>" class="btn btn-outline btn-sm">Learn More</a>
-            <a href="/courses/<%= c.slug %>/register" class="btn btn-navy btn-sm">Register</a>
+            <a href="/courses/<%= c.slug %>" class="btn btn-outline btn-learn-more">
+              <span>Learn More</span>
+              <svg class="cta-arrow-slide" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </a>
+            <a href="/courses/<%= c.slug %>#sessions" class="btn btn-navy btn-batches-cta">
+              <span>Upcoming Batches</span>
+              <span class="batch-count-dot">📅</span>
+            </a>
           </div>
         </div>
       <% }) %>
@@ -40,3 +72,4 @@
 </section>
 
 <%- include('partials/footer') %>
+

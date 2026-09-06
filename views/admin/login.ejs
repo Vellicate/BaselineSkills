@@ -1,18 +1,73 @@
 <!DOCTYPE html>
 <html lang="en">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title><%= title %></title><link rel="icon" type="image/png" href="/img/favicon.png"><link rel="stylesheet" href="/css/style.css"></head>
-<body>
-<div class="login-shell">
-  <div class="login-card">
-    <div class="brand" style="justify-content:center;margin-bottom:20px">Baseline Skills</div>
-    <h3 style="text-align:center">Admin sign in</h3>
-    <% if (typeof error !== 'undefined' && error) { %><div class="alert alert-error"><%= error %></div><% } %>
-    <form method="POST" action="/admin/login">
-      <div class="form-field"><label>Password</label><input type="password" name="password" required autofocus></div>
-      <button type="submit" class="btn btn-navy btn-block">Sign in</button>
-    </form>
-    <p class="form-hint" style="text-align:center;margin-top:14px">Default password is <code>changeme123</code> unless <code>ADMIN_PASSWORD</code> is set.</p>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>
+    <%= title %>
+  </title>
+  <link rel="icon" type="image/png" href="/img/favicon.png">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body class="login-body">
+  <div class="login-backdrop-glow"></div>
+
+  <div class="login-shell">
+    <div class="login-window window-started-effect">
+      <div class="window-titlebar">
+        <div class="window-controls">
+          <span class="window-dot dot-red" aria-hidden="true"></span>
+          <span class="window-dot dot-yellow" aria-hidden="true"></span>
+          <span class="window-dot dot-green" aria-hidden="true"></span>
+        </div>
+        <div class="window-title">Baseline Admin • Session Authentication</div>
+        <div class="window-status-pill">
+          <span class="status-live-dot"></span>
+          <span>Online</span>
+        </div>
+      </div>
+
+      <div class="login-card-content">
+        <div class="brand-badge-wrapper">
+          <span class="brand-icon-box">B</span>
+          <span class="brand-title">Baseline Skills</span>
+        </div>
+
+        <h3 class="login-heading">Admin Portal Sign In</h3>
+        <p class="login-subheading">Enter your administrative master credentials to unlock workspace.</p>
+
+        <% if (typeof error !=='undefined' && error) { %>
+          <div class="alert alert-error login-error-shake">
+            <%= error %>
+          </div>
+          <% } %>
+
+            <form method="POST" action="/admin/login" class="login-form">
+              <div class="form-field">
+                <label for="adminPassword">Master Password</label>
+                <div class="input-with-icon">
+                  <span class="input-icon" aria-hidden="true">🔒</span>
+                  <input type="password" id="adminPassword" name="password" placeholder="Enter password..." required
+                    autofocus class="login-input">
+                </div>
+              </div>
+
+              <button type="submit" class="btn btn-navy btn-block btn-login-shine">
+                <span>Authenticate & Launch Workspace</span>
+                <span class="btn-arrow">→</span>
+              </button>
+            </form>
+
+            <div class="login-footer-hint">
+              <p class="form-hint">Default password is <code>changeme123</code> unless <code>ADMIN_PASSWORD</code> is
+                set.</p>
+              <a href="/" class="back-to-site-link">← Return to public website</a>
+            </div>
+      </div>
+    </div>
   </div>
-</div>
 </body>
+
 </html>

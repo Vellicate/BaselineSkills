@@ -1,0 +1,56 @@
+[
+  {
+    "id": "res_seed_1",
+    "slug": "verifiable-requirements",
+    "title": "How to Write Verifiable Requirements",
+    "category": "Templates & Checklists",
+    "excerpt": "Most \"unverifiable\" requirements share the same three root causes. Here's how to catch them before review.",
+    "url": "/contact",
+    "createdAt": "2026-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "res_seed_2",
+    "slug": "requirements-review-checklist",
+    "title": "Requirements Review Checklist",
+    "category": "Templates & Checklists",
+    "excerpt": "A practical, print-ready checklist covering the six IREB CPRE quality criteria.",
+    "url": "/contact",
+    "createdAt": "2026-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "res_seed_3",
+    "slug": "aspice-traceability-essentials",
+    "title": "ASPICE Traceability Essentials",
+    "category": "ASPICE & Automotive",
+    "excerpt": "What SWE.1 traceability evidence actually needs to show — and the gaps assessors flag most often.",
+    "url": "/contact",
+    "createdAt": "2026-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "res_seed_4",
+    "slug": "mbse-starter-guide",
+    "title": "MBSE Starter Guide",
+    "category": "MBSE",
+    "excerpt": "Moving from document-based to model-based systems engineering, one diagram at a time.",
+    "url": "/contact",
+    "createdAt": "2026-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "res_seed_5",
+    "slug": "ai-prompt-templates-re",
+    "title": "AI Prompt Templates for Requirements Engineers",
+    "category": "AI for Engineering",
+    "excerpt": "Five prompt patterns that hold up to IREB CPRE quality criteria, not just \"sound good.\"",
+    "url": "/contact",
+    "createdAt": "2026-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "res_seed_6",
+    "slug": "cpre-vs-systems-engineering",
+    "title": "CPRE vs Systems Engineering: What Should You Learn First?",
+    "category": "Requirements Engineering",
+    "excerpt": "They're complementary, not competing — but the order you learn them in matters.",
+    "url": "/contact",
+    "createdAt": "2026-01-01T00:00:00.000Z"
+  }
+]

@@ -1,26 +1,138 @@
 <%- include('partials/head') %>
 
-<h1 style="font-size:1.6rem">Registrations</h1>
+<div class="page-heading">
+  <div>
+    <h1>Registrations</h1>
+    <p>All enrolled learners, session schedules, and confirmation records.</p>
+  </div>
 
-<table class="admin-table">
-  <thead><tr><th>Name</th><th>Email</th><th>Course</th><th>Session</th><th>Company</th><th>Amount</th><th>Status</th><th>Registered</th></tr></thead>
-  <tbody>
-    <% registrations.forEach(r => { %>
-    <tr>
-      <td><%= r.name %></td>
-      <td><%= r.email %></td>
-      <td><%= r.courseTitle %></td>
-      <td><%= r.sessionStartDate %> (<%= r.deliveryMode %>)</td>
-      <td><%= r.company || '—' %></td>
-      <td><%= r.currency %> <%= (r.priceCentsCharged/100).toFixed(2) %></td>
-      <td><span class="badge <%= r.status==='confirmed'?'badge-confirmed':'badge-pending' %>"><%= r.status %></span></td>
-      <td><%= new Date(r.createdAt).toLocaleString() %></td>
-    </tr>
-    <% }) %>
-    <% if (registrations.length===0) { %><tr><td colspan="8" style="color:var(--muted)">No registrations yet.</td></tr><% } %>
-  </tbody>
-</table>
+  <div class="page-actions">
+    <a href="/admin/export/registrations" class="btn btn-outline btn-sm">
+      <span>↓ Export CSV</span>
+    </a>
+  </div>
+</div>
 
-<p class="form-hint" style="margin-top:16px">This data is stored in <code>data/registrations.json</code> on the server.</p>
+<div class="course-toolbar">
+  <div class="course-count">
+    <strong><%= registrations.length %></strong>
+    learner registration<%= registrations.length === 1 ? '' : 's' %>
+  </div>
+
+  <input
+    type="search"
+    id="registrationSearch"
+    class="course-search"
+    placeholder="Search registrations..."
+    aria-label="Search registrations"
+  >
+</div>
+
+<div class="table-card course-table-card">
+  <div class="table-scroll">
+    <table class="admin-table registrations-table showcase-table" id="registrationsTable">
+      <thead>
+        <tr>
+          <th>Learner</th>
+          <th>Course</th>
+          <th>Session</th>
+          <th>Company</th>
+          <th>Amount</th>
+          <th>Status</th>
+          <th>Registered</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <% registrations.forEach((r, index) => { %>
+          <tr class="activity-row" style="--row-index: <%= index %>">
+            <td data-label="Learner">
+              <div class="person-cell" data-popup="<%= r.name %> · <%= r.email %>" tabindex="0">
+                <span class="person-avatar" aria-hidden="true">
+                  <%= (r.name || '')
+                    .split(' ')
+                    .filter(Boolean)
+                    .map(part => part.charAt(0))
+                    .slice(0, 2)
+                    .join('')
+                    .toUpperCase() %>
+                </span>
+
+                <span class="person-details">
+                  <strong><%= r.name %></strong>
+                  <small><%= r.email %></small>
+                </span>
+              </div>
+            </td>
+
+            <td data-label="Course">
+              <span class="course-name">
+                <%= r.courseTitle %>
+              </span>
+            </td>
+
+            <td data-label="Session">
+              <div class="session-info-cell">
+                <span class="session-date"><%= r.sessionStartDate %></span>
+                <% if (r.deliveryMode) { %>
+                  <span class="session-mode-tag"><%= r.deliveryMode %></span>
+                <% } %>
+              </div>
+            </td>
+
+            <td data-label="Company">
+              <span class="company-text"><%= r.company || '—' %></span>
+            </td>
+
+            <td data-label="Amount">
+              <strong class="amount-value">
+                <%= r.currency %>
+                <%= (r.priceCentsCharged / 100).toFixed(2) %>
+              </strong>
+            </td>
+
+            <td data-label="Status">
+              <span class="status-badge <%= r.status === 'confirmed' ? 'status-published' : 'status-draft' %>">
+                <span class="status-dot"></span>
+                <%= (r.status || '').replace('_', ' ') %>
+              </span>
+            </td>
+
+            <td data-label="Registered">
+              <span class="registration-time">
+                <%= new Date(r.createdAt).toLocaleString() %>
+              </span>
+            </td>
+          </tr>
+        <% }) %>
+
+        <% if (registrations.length === 0) { %>
+          <tr>
+            <td colspan="7" class="empty-state">
+              No registrations recorded yet.
+            </td>
+          </tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  const searchInput = document.querySelector("#registrationSearch");
+  const tableRows = document.querySelectorAll("#registrationsTable tbody tr");
+
+  searchInput?.addEventListener("input", () => {
+    const searchTerm = searchInput.value.toLowerCase().trim();
+
+    tableRows.forEach((row) => {
+      const rowText = row.textContent.toLowerCase();
+
+      row.style.display = rowText.includes(searchTerm)
+        ? ""
+        : "none";
+    });
+  });
+</script>
 
 <%- include('partials/foot') %>

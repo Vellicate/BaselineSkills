@@ -1,41 +1,224 @@
 <%- include('partials/head') %>
 
-<h1 style="font-size:1.6rem">Dashboard</h1>
+  <div class="page-heading">
+    <div>
+      <h1 style="font-size:1.6rem">Dashboard</h1>
+      <p>Overview of course catalogue performance, recent enrolments, and incoming inquiries.</p>
+    </div>
+  </div>
 
-<div class="stat-cards">
-  <div class="stat-card"><div class="num"><%= courseCount %></div><div class="label">Total courses (<%= publishedCount %> published)</div></div>
-  <div class="stat-card"><div class="num"><%= registrationCount %></div><div class="label">Registrations</div></div>
-  <div class="stat-card"><div class="num">$<%= revenueDisplay %></div><div class="label">Recorded revenue</div></div>
-  <div class="stat-card"><div class="num"><%= recentInquiries.length %></div><div class="label">Recent inquiries</div></div>
-</div>
+  <div class="stat-cards">
+    <div class="stat-card" tabindex="0">
+      <div class="stat-card-backdrop"></div>
+      <div class="num"><%= courseCount %></div>
+      <div class="label">Total courses (<%= publishedCount %> published)</div>
+    </div>
+    <div class="stat-card" tabindex="0">
+      <div class="stat-card-backdrop"></div>
+      <div class="num"><%= registrationCount %></div>
+      <div class="label">Total registrations</div>
+    </div>
+    <div class="stat-card" tabindex="0">
+      <div class="stat-card-backdrop"></div>
+      <div class="num">$<%= revenueDisplay %></div>
+      <div class="label">Recorded revenue</div>
+    </div>
+    <div class="stat-card" tabindex="0">
+      <div class="stat-card-backdrop"></div>
+      <div class="num"><%= recentInquiries.length %></div>
+      <div class="label">Recent inquiries</div>
+    </div>
+  </div>
 
-<h3>Recent registrations</h3>
-<table class="admin-table">
-  <thead><tr><th>Name</th><th>Course</th><th>Session</th><th>Amount</th><th>Status</th><th>When</th></tr></thead>
-  <tbody>
-    <% recentRegistrations.forEach(r => { %>
-    <tr>
-      <td><%= r.name %><br><span style="color:var(--muted);font-size:.8rem"><%= r.email %></span></td>
-      <td><%= r.courseTitle %></td>
-      <td><%= r.sessionStartDate %></td>
-      <td><%= r.currency %> <%= (r.priceCentsCharged/100).toFixed(2) %></td>
-      <td><span class="badge <%= r.status==='confirmed'?'badge-confirmed':'badge-pending' %>"><%= r.status %></span></td>
-      <td><%= new Date(r.createdAt).toLocaleString() %></td>
-    </tr>
-    <% }) %>
-    <% if (recentRegistrations.length===0) { %><tr><td colspan="6" style="color:var(--muted)">No registrations yet.</td></tr><% } %>
-  </tbody>
-</table>
+  <section class="dashboard-table-section">
+    <div class="dashboard-section-header animated-headline">
+      <div class="headline-glow-bg" aria-hidden="true"></div>
+      <div class="headline-content">
+        <span class="section-label animated-badge">
+          <span class="badge-pulse-dot"></span>
+          Activity
+        </span>
+        <h2>Recent registrations</h2>
+        <p>Latest learners enrolled in your courses.</p>
+      </div>
+    </div>
 
-<h3 style="margin-top:32px">Recent inquiries</h3>
-<table class="admin-table">
-  <thead><tr><th>Name</th><th>Type</th><th>Email</th><th>When</th></tr></thead>
-  <tbody>
-    <% recentInquiries.forEach(i => { %>
-    <tr><td><%= i.name %></td><td><%= i.type %></td><td><%= i.email %></td><td><%= new Date(i.createdAt).toLocaleString() %></td></tr>
-    <% }) %>
-    <% if (recentInquiries.length===0) { %><tr><td colspan="4" style="color:var(--muted)">No inquiries yet.</td></tr><% } %>
-  </tbody>
-</table>
+    <div class="dashboard-table-card table-card">
+      <div class="table-scroll">
+        <table class="admin-table registrations-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Course</th>
+              <th>Session</th>
+              <th>Amount</th>
+              <th>Status</th>
+              <th>When</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <% recentRegistrations.forEach((r, index)=> { %>
+              <tr class="activity-row" style="--row-index: <%= index %>">
+                <td data-label="Name">
+                  <div class="person-cell" data-popup="<%= r.name %> · <%= r.email %>" tabindex="0">
+                    <span class="person-avatar" aria-hidden="true">
+                      <%= (r.name || '' ) .split(' ')
+                      .filter(Boolean)
+                      .map(part => part.charAt(0))
+                      .slice(0, 2)
+                      .join('')
+                      .toUpperCase() %>
+                    </span>
+
+                    <span class="person-details">
+                      <strong><%= r.name %></strong>
+                      <small><%= r.email %></small>
+                    </span>
+                  </div>
+                </td>
+
+                <td data-label="Course">
+                  <span class="course-name">
+                    <%= r.courseTitle %>
+                  </span>
+                </td>
+
+                <td data-label="Session">
+                  <span class="session-date">
+                    <%= r.sessionStartDate %>
+                  </span>
+                </td>
+
+                <td data-label="Amount">
+                  <strong class="amount-value">
+                    <%= r.currency %>
+                    <%= (r.priceCentsCharged / 100).toFixed(2) %>
+                  </strong>
+                </td>
+
+                <td data-label="Status">
+                  <span class="status-badge <%= r.status === 'confirmed' ? 'status-published' : 'status-draft' %>">
+                    <span class="status-dot"></span>
+                    <%= (r.status || '').replace('_', ' ') %>
+                  </span>
+                </td>
+
+                <td data-label="When">
+                  <span class="registration-time">
+                    <%= new Date(r.createdAt).toLocaleDateString() %>
+                  </span>
+                </td>
+              </tr>
+            <% }) %>
+
+            <% if (recentRegistrations.length===0) { %>
+              <tr>
+                <td colspan="6" class="empty-state">
+                  No registrations yet.
+                </td>
+              </tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="dashboard-table-footer">
+        <a href="/admin/registrations" class="btn-view-all">
+          <span>View all registrations</span>
+          <span class="arrow">→</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="dashboard-table-section">
+    <div class="dashboard-section-header animated-headline">
+      <div class="headline-glow-bg" aria-hidden="true"></div>
+      <div class="headline-content">
+        <span class="section-label animated-badge">
+          <span class="badge-pulse-dot"></span>
+          Inbox
+        </span>
+        <h2>Recent inquiries</h2>
+        <p>New contact and corporate-training requests.</p>
+      </div>
+    </div>
+
+    <div class="dashboard-table-card table-card">
+      <div class="table-scroll">
+        <table class="admin-table inquiries-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Type</th>
+              <th>Company</th>
+              <th>Message</th>
+              <th>When</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <% recentInquiries.forEach((inq, index)=> { %>
+              <tr class="activity-row" style="--row-index: <%= index %>">
+                <td data-label="Name">
+                  <div class="person-cell" data-popup="<%= inq.name %> · <%= inq.email %>" tabindex="0">
+                    <span class="person-avatar" aria-hidden="true">
+                      <%= (inq.name || '' ) .split(' ')
+                      .filter(Boolean)
+                      .map(part => part.charAt(0))
+                      .slice(0, 2)
+                      .join('')
+                      .toUpperCase() %>
+                    </span>
+
+                    <span class="person-details">
+                      <strong><%= inq.name %></strong>
+                      <small><%= inq.email %></small>
+                    </span>
+                  </div>
+                </td>
+
+                <td data-label="Type">
+                  <span class="inquiry-type-pill <%= inq.type === 'corporate-training' ? 'type-corporate' : 'type-contact' %>">
+                    <%= inq.type === 'corporate-training' ? 'Corporate training' : (inq.type==='contact' ? 'Contact request' : inq.type) %>
+                  </span>
+                </td>
+
+                <td data-label="Company">
+                  <%= inq.company || '—' %>
+                </td>
+
+                <td data-label="Message">
+                  <div class="message-preview"><%= inq.message %></div>
+                </td>
+
+                <td data-label="When">
+                  <span class="registration-time">
+                    <%= new Date(inq.createdAt).toLocaleDateString() %>
+                  </span>
+                </td>
+              </tr>
+            <% }) %>
+
+            <% if (recentInquiries.length===0) { %>
+              <tr>
+                <td colspan="5" class="empty-state">
+                  No inquiries yet.
+                </td>
+              </tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="dashboard-table-footer">
+        <a href="/admin/inquiries" class="btn-view-all">
+          <span>View all inquiries</span>
+          <span class="arrow">→</span>
+        </a>
+      </div>
+    </div>
+  </section>
 
 <%- include('partials/foot') %>

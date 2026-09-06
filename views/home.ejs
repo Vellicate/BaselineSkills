@@ -1,137 +1,533 @@
 <%- include('partials/header') %>
 
-<section class="hero">
+<!-- Hero Section with Animated Headline, Core Trainer Card & Featured Card -->
+<section class="hero hero-enhanced">
+  <div class="hero-bg-mesh" aria-hidden="true"></div>
   <div class="container hero-inner">
-    <div>
-      <span class="eyebrow" style="background:rgba(245,197,24,.2);color:#F5C518">Baseline Skills</span>
-      <h1>Master Requirements Engineering, Systems Engineering &amp; AI Skills That Drive Better Products</h1>
-      <p class="lead">Baseline Skills helps professionals and organizations build practical, industry-recognized capabilities through expert-led certification training, corporate programs, and hands-on learning experiences.</p>
-      <div class="hero-ctas">
-        <a href="/courses" class="btn btn-gold btn-lg">Explore Courses</a>
-        <a href="/contact" class="btn btn-outline-light btn-lg">Talk to an Expert</a>
+    <div class="hero-content-col">
+      <div class="hero-badge-pill animate-fade-in">
+        <span class="badge-sparkle">✨</span>
+        <span class="badge-text">Industry-Standard Professional Engineering Excellence</span>
       </div>
-      <div class="hero-metrics">
-        <div class="metric"><div class="metric-num">2,200+</div><div class="metric-label">CPRE professionals trained</div></div>
-        <div class="metric"><div class="metric-num">17+ yrs</div><div class="metric-label">training experience</div></div>
-        <div class="metric"><div class="metric-num">Corporate</div><div class="metric-label">programs for leading engineering orgs</div></div>
-        <div class="metric"><div class="metric-num">Live &amp; Online</div><div class="metric-label">instructor-led options</div></div>
-      </div>
-    </div>
-    <div class="hero-card">
-      <span class="tag">Featured</span>
-      <h3>IREB CPRE Foundation Level</h3>
-      <p style="color:var(--muted);font-size:.9rem">The internationally recognized starting point for a career in requirements engineering.</p>
-      <a href="/courses/cpre-foundation-level" class="btn btn-navy btn-block">View Course</a>
-    </div>
-  </div>
-</section>
 
-<section class="section" id="paths">
-  <div class="container">
-    <div class="section-hdr">
-      <span class="eyebrow">Featured Learning Paths</span>
-      <h2>Find the right path for where you are now.</h2>
+      <!-- Exact Primary Hero Heading -->
+      <h1 class="hero-title animate-title">
+        Master Requirement Engineering, Systems Engineering &amp; AI skill - That Drive Better Product
+      </h1>
+
+      <p class="hero-subtitle animate-fade-in delay-1">
+        Build practical, globally accredited engineering capability with industry-recognized IREB, INCOSE, and ASPICE certified practitioners. Transform complex requirements into successful high-integrity products.
+      </p>
+
+      <div class="hero-ctas animate-fade-in delay-2">
+        <a href="/courses" class="btn btn-gold btn-lg btn-glow">
+          <span>Explore Courses</span>
+          <svg class="btn-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+        </a>
+        <button type="button" class="btn btn-outline-light btn-lg btn-expert-hero" onclick="openExpertModal()">
+          <span class="cta-pulse-dot"></span>
+          <span>Talk to Expert</span>
+        </button>
+      </div>
+
+      <!-- CORE Professional Trainer Card -->
+      <div class="core-trainer-card animate-fade-in delay-3">
+        <div class="trainer-card-header">
+          <div class="trainer-avatar-ring">
+            <span class="trainer-icon">👨‍🏫</span>
+            <span class="trainer-verified-badge" title="Verified Senior Trainer">✓</span>
+          </div>
+          <div class="trainer-meta">
+            <div class="trainer-title-wrap">
+              <span class="trainer-kicker">Faculty Spotlight</span>
+              <h4 class="trainer-headline">CORE Professional Trainer</h4>
+            </div>
+            <p class="trainer-desc">Accredited practitioners with extensive automotive, aerospace, and digital transformation delivery.</p>
+          </div>
+        </div>
+
+        <div class="trainer-stats-grid">
+          <div class="trainer-stat-pill">
+            <span class="stat-highlight">17+ yrs</span>
+            <span class="stat-caption">Industry &amp; Training Leadership</span>
+          </div>
+          <div class="trainer-stat-pill">
+            <span class="stat-highlight">Corporate</span>
+            <span class="stat-caption">Tailored Org Programs</span>
+          </div>
+          <div class="trainer-stat-pill">
+            <span class="stat-highlight">Live</span>
+            <span class="stat-caption">Cohort-Based Workshops</span>
+          </div>
+          <div class="trainer-stat-pill">
+            <span class="stat-highlight">Online</span>
+            <span class="stat-caption">Interactive Global Labs</span>
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="path-tabs">
-      <% Object.keys(byCategory).forEach((cat, i) => { %>
-        <button class="path-tab <%= i===0?'active':'' %>" onclick="showPath('<%= cat.replace(/\s+/g,'-') %>', this)"><%= cat %></button>
-      <% }) %>
-    </div>
-    <% Object.keys(byCategory).forEach((cat, i) => { %>
-      <div class="path-panel <%= i===0?'active':'' %>" id="path-<%= cat.replace(/\s+/g,'-') %>">
-        <% byCategory[cat].forEach(c => { %>
-          <div class="course-mini">
-            <span class="tag"><%= c.certification ? 'Certification' : 'Skills Course' %></span>
-            <h4><%= c.title %></h4>
-            <p style="font-size:.85rem;color:var(--muted);margin-bottom:0"><%= c.summary %></p>
-            <div class="price">$<%= (c.priceCents/100).toFixed(0) %><% if(c.discountPercent){ %> <span style="font-size:.8rem;color:var(--muted);font-weight:400">(<%= c.discountPercent %>% off)</span><% } %></div>
-            <div class="course-mini-ctas">
-              <a href="/courses/<%= c.slug %>" class="btn btn-outline btn-sm">Learn More</a>
-              <a href="/courses/<%= c.slug %>#sessions" class="btn btn-navy btn-sm">Upcoming Batches</a>
+
+    <!-- Right-Aligned Featured Course Card -->
+    <div class="hero-featured-col animate-float-right">
+      <div class="featured-card-wrapper">
+        <div class="featured-card-glow"></div>
+        <div class="hero-card featured-course-card">
+          <div class="featured-top-bar">
+            <span class="tag-featured">⭐ Featured Certification</span>
+            <span class="tag-live-indicator"><span class="pulse-green"></span> Live Interactive</span>
+          </div>
+          <div class="featured-seal-badge">IREB CPRE</div>
+          <h3 class="featured-course-title">IREB CPRE Foundation Level</h3>
+          <p class="featured-course-summary">The internationally recognized benchmark for requirement engineering excellence, aligned to the official IREB syllabus.</p>
+          
+          <div class="featured-perks-list">
+            <div class="perk-item">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span>Official Syllabi &amp; Real Project Case Studies</span>
+            </div>
+            <div class="perk-item">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span>100% Exam Pass-Rate Preparation Guarantee</span>
+            </div>
+            <div class="perk-item">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span>4-Day Intensive with Senior RE Lead</span>
             </div>
           </div>
-        <% }) %>
+
+          <div class="featured-bottom-action">
+            <div class="featured-price-box">
+              <span class="price-kicker">Next Batch Starting Soon</span>
+              <span class="price-val">$899</span>
+            </div>
+            <a href="/courses/cpre-foundation-level" class="btn btn-navy btn-sm btn-featured-cta">
+              <span>View Course</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </a>
+          </div>
+        </div>
       </div>
-    <% }) %>
+    </div>
   </div>
 </section>
 
+<!-- Core Domain Grid Section (Smooth entrance & hover animations) -->
+<section class="section domain-grid-section" id="core-domains">
+  <div class="container">
+    <div class="section-hdr center">
+      <span class="eyebrow">Core Engineering Domains</span>
+      <h2>Specialized Capabilities Designed for High-Impact Engineers</h2>
+      <p class="lead">Select your discipline to explore industry-aligned certifications, tool mastery, and hands-on curriculums.</p>
+    </div>
+
+    <div class="domain-cards-grid">
+      <!-- 1. Requirement Engineering -->
+      <div class="domain-card domain-re" onclick="window.location.href='/courses?category=Requirements%20Engineering'">
+        <div class="domain-card-accent"></div>
+        <div class="domain-card-body">
+          <div class="domain-icon-wrap">
+            <span class="domain-icon-symbol">📐</span>
+          </div>
+          <span class="domain-kicker">Global Standard</span>
+          <h3 class="domain-title">Requirement Engineering</h3>
+          <p class="domain-desc">Master IREB CPRE syllabi, EARS syntax, elicitation psychology, and end-to-end traceability to reduce scope creep and rework.</p>
+          <div class="domain-tags">
+            <span class="domain-chip">IREB CPRE</span>
+            <span class="domain-chip">EARS Syntax</span>
+            <span class="domain-chip">Traceability</span>
+          </div>
+          <div class="domain-action-link">
+            <span>Explore RE Programs</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Systems Engineering -->
+      <div class="domain-card domain-se" onclick="window.location.href='/courses?category=Systems%20Engineering'">
+        <div class="domain-card-accent"></div>
+        <div class="domain-card-body">
+          <div class="domain-icon-wrap">
+            <span class="domain-icon-symbol">⚙️</span>
+          </div>
+          <span class="domain-kicker">INCOSE &amp; MBSE</span>
+          <h3 class="domain-title">Systems Engineering</h3>
+          <p class="domain-desc">Design resilient multidisciplinary architectures utilizing ISO 15288 standards, SysML modeling, and holistic trade-off management.</p>
+          <div class="domain-tags">
+            <span class="domain-chip">INCOSE ASEP</span>
+            <span class="domain-chip">SysML / MBSE</span>
+            <span class="domain-chip">ISO 15288</span>
+          </div>
+          <div class="domain-action-link">
+            <span>Explore SE Programs</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Business Analysis -->
+      <div class="domain-card domain-ba" onclick="window.location.href='/courses?category=Business%20Analysis'">
+        <div class="domain-card-accent"></div>
+        <div class="domain-card-body">
+          <div class="domain-icon-wrap">
+            <span class="domain-icon-symbol">📊</span>
+          </div>
+          <span class="domain-kicker">IIBA BABOK Aligned</span>
+          <h3 class="domain-title">Business Analysis</h3>
+          <p class="domain-desc">Bridge technical architectures and executive business goals with agile requirements, user journey mapping, and value stream optimization.</p>
+          <div class="domain-tags">
+            <span class="domain-chip">IIBA CCBA/CBAP</span>
+            <span class="domain-chip">Agile User Stories</span>
+            <span class="domain-chip">Process Modeling</span>
+          </div>
+          <div class="domain-action-link">
+            <span>Explore BA Programs</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. Automotive -->
+      <div class="domain-card domain-auto" onclick="window.location.href='/courses?category=Automotive'">
+        <div class="domain-card-accent"></div>
+        <div class="domain-card-body">
+          <div class="domain-icon-wrap">
+            <span class="domain-icon-symbol">🚗</span>
+          </div>
+          <span class="domain-kicker">ASPICE &amp; Safety</span>
+          <h3 class="domain-title">Automotive</h3>
+          <p class="domain-desc">Master Automotive SPICE (SYS.2 / SWE.1), ISO 26262 functional safety, and cybersecurity compliance for ECU and software development.</p>
+          <div class="domain-tags">
+            <span class="domain-chip">ASPICE v3.1/4.0</span>
+            <span class="domain-chip">ISO 26262</span>
+            <span class="domain-chip">AUTOSAR &amp; V-Model</span>
+          </div>
+          <div class="domain-action-link">
+            <span>Explore Automotive</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Feature Learning Paths Section (Highlighted & Animated) -->
+<section class="section learning-paths-section" id="paths">
+  <div class="container">
+    <div class="section-hdr center">
+      <span class="eyebrow">Feature Learning Paths</span>
+      <h2>Find the Right Path for Where You Are Now</h2>
+      <p class="lead">Structured roadmaps from foundational certifications to specialized system architecture mastery.</p>
+    </div>
+
+    <!-- Animated Path Tabs Container -->
+    <div class="path-tabs-container">
+      <div class="path-tabs">
+        <% Object.keys(byCategory).forEach((cat, i) => { %>
+          <button class="path-tab <%= i===0?'active':'' %>" onclick="showPath('<%= cat.replace(/\s+/g,'-') %>', this)">
+            <span class="tab-label"><%= cat %></span>
+            <span class="tab-badge"><%= byCategory[cat].length %></span>
+          </button>
+        <% }) %>
+      </div>
+    </div>
+
+    <!-- Path Panels Grid -->
+    <div class="path-panels-wrapper">
+      <% Object.keys(byCategory).forEach((cat, i) => { %>
+        <div class="path-panel <%= i===0?'active':'' %>" id="path-<%= cat.replace(/\s+/g,'-') %>">
+          <% byCategory[cat].forEach(c => { %>
+            <div class="course-mini-card">
+              <div class="mini-card-top">
+                <span class="tag <%= c.certification ? 'tag-cert' : 'tag-skill' %>">
+                  <%= c.certification ? '🏅 Official Certification' : '⚡ Skills Mastery' %>
+                </span>
+                <span class="mini-duration"><%= c.durationDays %> Day<%= c.durationDays > 1 ? 's' : '' %></span>
+              </div>
+
+              <h4 class="mini-course-title"><%= c.title %></h4>
+              <p class="mini-course-summary"><%= c.summary %></p>
+
+              <div class="mini-price-row">
+                <div class="price-val-wrap">
+                  <span class="price-current">$<%= (c.priceCents/100).toFixed(0) %></span>
+                  <% if(c.discountPercent){ %>
+                    <span class="price-discount-pill"><%= c.discountPercent %>% OFF</span>
+                  <% } %>
+                </div>
+                <div class="seats-status-pill">
+                  <span class="status-pulse-dot"></span>
+                  <span>Seats Available</span>
+                </div>
+              </div>
+
+              <!-- Interactive Links & Batches Elements -->
+              <div class="course-mini-ctas">
+                <a href="/courses/<%= c.slug %>" class="btn btn-outline btn-learn-more">
+                  <span>Learn More</span>
+                  <svg class="cta-arrow-slide" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </a>
+                <a href="/courses/<%= c.slug %>#sessions" class="btn btn-navy btn-batches-cta">
+                  <span>Upcoming Batches</span>
+                  <span class="batch-count-dot">📅</span>
+                </a>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+      <% }) %>
+    </div>
+  </div>
+</section>
+
+<!-- Dedicated Certificate Card Layout Section -->
+<section class="section certificate-showcase-section" id="certificates">
+  <div class="container">
+    <div class="section-hdr center">
+      <span class="eyebrow">Accredited Credentials</span>
+      <h2>Recognized Certifications That Accelerate Your Career</h2>
+      <p class="lead">Gain globally recognized qualifications accredited by international governance boards.</p>
+    </div>
+
+    <div class="certificate-grid">
+      <!-- Certificate 1: IREB CPRE Foundation -->
+      <div class="certificate-card">
+        <div class="cert-card-header">
+          <div class="cert-seal">
+            <span class="cert-seal-icon">🏆</span>
+            <span class="cert-board-name">IREB&reg;</span>
+          </div>
+          <span class="cert-level-badge">Foundation Level</span>
+        </div>
+        <h3 class="cert-title">Certified Professional for Requirements Engineering (CPRE FL)</h3>
+        <p class="cert-desc">The international baseline syllabus for elicitation, documentation, verification, and lifecycle management of requirements.</p>
+        
+        <div class="cert-specs">
+          <div class="cert-spec-item">
+            <span class="spec-label">Accreditation</span>
+            <span class="spec-value">IREB Official Syllabus</span>
+          </div>
+          <div class="cert-spec-item">
+            <span class="spec-label">Exam Format</span>
+            <span class="spec-value">45 Multiple-Choice Questions</span>
+          </div>
+          <div class="cert-spec-item">
+            <span class="spec-label">Validity</span>
+            <span class="spec-value">Lifetime Recognition</span>
+          </div>
+        </div>
+
+        <div class="cert-card-footer">
+          <a href="/courses/cpre-foundation-level" class="btn btn-navy btn-sm btn-block">Explore Certification Syllabus</a>
+        </div>
+      </div>
+
+      <!-- Certificate 2: CPRE Advanced Level -->
+      <div class="certificate-card">
+        <div class="cert-card-header">
+          <div class="cert-seal">
+            <span class="cert-seal-icon">🎖️</span>
+            <span class="cert-board-name">IREB&reg; ADV</span>
+          </div>
+          <span class="cert-level-badge">Advanced Practitioner</span>
+        </div>
+        <h3 class="cert-title">CPRE Advanced Level: Elicitation &amp; Management</h3>
+        <p class="cert-desc">Specialized training in complex stakeholder conflict resolution, model-based requirement specification, and quantitative prioritization.</p>
+        
+        <div class="cert-specs">
+          <div class="cert-spec-item">
+            <span class="spec-label">Prerequisite</span>
+            <span class="spec-value">CPRE Foundation Certificate</span>
+          </div>
+          <div class="cert-spec-item">
+            <span class="spec-label">Exam Format</span>
+            <span class="spec-value">Scenario Analysis &amp; Written Essay</span>
+          </div>
+          <div class="cert-spec-item">
+            <span class="spec-label">Validity</span>
+            <span class="spec-value">Lifetime Recognition</span>
+          </div>
+        </div>
+
+        <div class="cert-card-footer">
+          <a href="/courses/cpre-advanced-elicitation" class="btn btn-navy btn-sm btn-block">Explore Advanced Modules</a>
+        </div>
+      </div>
+
+      <!-- Certificate 3: Systems Engineering INCOSE -->
+      <div class="certificate-card">
+        <div class="cert-card-header">
+          <div class="cert-seal">
+            <span class="cert-seal-icon">🌐</span>
+            <span class="cert-board-name">INCOSE&reg;</span>
+          </div>
+          <span class="cert-level-badge">ASEP / CSEP Aligned</span>
+        </div>
+        <h3 class="cert-title">Systems Engineering Professional (SEP Prep)</h3>
+        <p class="cert-desc">Aligned with the INCOSE Systems Engineering Handbook v4/v5 and ISO 15288 life-cycle processes for multidisciplinary engineers.</p>
+        
+        <div class="cert-specs">
+          <div class="cert-spec-item">
+            <span class="spec-label">Standard</span>
+            <span class="spec-value">ISO/IEC/IEEE 15288</span>
+          </div>
+          <div class="cert-spec-item">
+            <span class="spec-label">Scope</span>
+            <span class="spec-value">SysML, V-Model &amp; Architecture</span>
+          </div>
+          <div class="cert-spec-item">
+            <span class="spec-label">Format</span>
+            <span class="spec-value">Instructor-Led + Practice Exams</span>
+          </div>
+        </div>
+
+        <div class="cert-card-footer">
+          <a href="/courses/systems-engineering-fundamentals" class="btn btn-navy btn-sm btn-block">Explore SEP Prep</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Upcoming Programs & Live Batches Section -->
+<section class="section batches-table-section" id="upcoming-batches">
+  <div class="container">
+    <div class="section-hdr">
+      <div class="hdr-kicker-row">
+        <span class="eyebrow">Upcoming Cohorts</span>
+        <span class="live-cohort-chip"><span class="pulse-green"></span> Guaranteed to Run</span>
+      </div>
+      <h2>Secure Your Seat in the Next Cohort</h2>
+      <p class="lead">Live interactive instructor-led classes with small cohorts for high engagement.</p>
+    </div>
+
+    <div class="table-card-wrap">
+      <div class="table-wrap">
+        <table class="programs-table-enhanced">
+          <thead>
+            <tr>
+              <th>Course Program</th>
+              <th>Learning Mode</th>
+              <th>Start Date</th>
+              <th>Duration</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% upcoming.forEach(s => { %>
+            <tr>
+              <td>
+                <div class="table-course-info">
+                  <strong><%= s.course.title %></strong>
+                  <span class="table-cat-sub"><%= s.course.category %></span>
+                </div>
+              </td>
+              <td><span class="pill pill-mode"><%= s.mode %></span></td>
+              <td>
+                <div class="table-date-cell">
+                  <span class="date-icon">📅</span>
+                  <span><%= s.startDate %></span>
+                </div>
+              </td>
+              <td><strong><%= s.course.durationDays %> Day<%= s.course.durationDays>1?'s':'' %></strong></td>
+              <td><span class="batch-status-tag"><span class="status-dot-orange"></span> Filling Fast</span></td>
+              <td>
+                <div class="table-action-btns">
+                  <a href="/courses/<%= s.course.slug %>/register" class="btn btn-navy btn-sm">Register</a>
+                  <a href="/courses/<%= s.course.slug %>" class="btn btn-outline btn-sm">Details</a>
+                </div>
+              </td>
+            </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Why Baseline Skills & Pedagogy -->
 <section class="section" style="background:#fff">
   <div class="container">
     <div class="section-hdr center">
-      <span class="eyebrow">Why Baseline Skills</span>
-      <h2>A premium, standards-aligned way to build engineering capability.</h2>
+      <span class="eyebrow">The Baseline Advantage</span>
+      <h2>A Premium, Standards-Aligned Way to Build Engineering Capability</h2>
     </div>
     <div class="why-grid">
-      <div class="why-item"><div class="card-icon">&#9776;</div><h4 style="font-size:1rem">Industry-aligned curriculum</h4><p style="font-size:.85rem;color:var(--muted)">Based on IREB, IIBA, PMI, INCOSE, ISO standards, and current engineering practice.</p></div>
-      <div class="why-item"><div class="card-icon">&#9733;</div><h4 style="font-size:1rem">Expert trainers</h4><p style="font-size:.85rem;color:var(--muted)">Senior practitioners with real project experience, not just slide decks.</p></div>
-      <div class="why-item"><div class="card-icon">&#9998;</div><h4 style="font-size:1rem">Hands-on learning</h4><p style="font-size:.85rem;color:var(--muted)">Practical exercises, templates, and real case studies throughout.</p></div>
-      <div class="why-item"><div class="card-icon">&#9776;</div><h4 style="font-size:1rem">Flexible delivery</h4><p style="font-size:.85rem;color:var(--muted)">Classroom, live online, and self-paced learning options.</p></div>
-      <div class="why-item"><div class="card-icon">&#9881;</div><h4 style="font-size:1rem">Corporate customization</h4><p style="font-size:.85rem;color:var(--muted)">Tailored programs designed around your organization's needs.</p></div>
+      <div class="why-item">
+        <div class="card-icon">📋</div>
+        <h4>Industry-Aligned Curriculum</h4>
+        <p>Built directly on IREB, IIBA, INCOSE, and ISO 26262 international specifications.</p>
+      </div>
+      <div class="why-item">
+        <div class="card-icon">👨‍🔬</div>
+        <h4>Practitioner Instructors</h4>
+        <p>Led by senior chief engineers with over 17+ years of delivery in production environments.</p>
+      </div>
+      <div class="why-item">
+        <div class="card-icon">🛠️</div>
+        <h4>Hands-on Case Studies</h4>
+        <p>Work with realistic aerospace, automotive, and medical system requirements templates.</p>
+      </div>
+      <div class="why-item">
+        <div class="card-icon">🌐</div>
+        <h4>Flexible Delivery Modes</h4>
+        <p>Interactive live online sessions, dedicated corporate cohorts, or classroom training.</p>
+      </div>
+      <div class="why-item">
+        <div class="card-icon">🏢</div>
+        <h4>Enterprise Customization</h4>
+        <p>Bespoke training mapped directly to your internal tools (DOORS, Polarion, Jira, Cameo).</p>
+      </div>
     </div>
   </div>
 </section>
 
-<section class="section">
-  <div class="container">
-    <div class="section-hdr">
-      <span class="eyebrow">Upcoming Programs</span>
-      <h2>Pick your next session.</h2>
-    </div>
-    <div class="table-wrap">
-      <table class="programs">
-        <thead><tr><th>Course</th><th>Mode</th><th>Start Date</th><th>Duration</th><th></th></tr></thead>
-        <tbody>
-          <% upcoming.forEach(s => { %>
-          <tr>
-            <td><strong><%= s.course.title %></strong></td>
-            <td><span class="pill"><%= s.mode %></span></td>
-            <td><%= s.startDate %></td>
-            <td><%= s.course.durationDays %> Day<%= s.course.durationDays>1?'s':'' %></td>
-            <td><a href="/courses/<%= s.course.slug %>/register" class="btn btn-navy btn-sm">Register</a></td>
-          </tr>
-          <% }) %>
-        </tbody>
-      </table>
-    </div>
-  </div>
-</section>
-
-<section class="section" style="background:#fff">
+<!-- Client Trust & Testimonials -->
+<section class="section trust-section">
   <div class="container">
     <div class="section-hdr center">
       <span class="eyebrow">Client &amp; Community Trust</span>
-      <h2>Trusted by engineering teams that can't afford to get requirements wrong.</h2>
+      <h2>Trusted by Engineering Teams That Can't Afford to Get Requirements Wrong</h2>
     </div>
     <div class="grid-2">
-      <div class="testimonial"><p>&ldquo;The CPRE training was highly practical and immediately applicable to our engineering projects.&rdquo;</p><div class="testimonial-by">Engineering Lead, Automotive Industry</div></div>
-      <div class="testimonial"><p>&ldquo;The Systems Engineering program helped our team align better with ISO 15288 practices.&rdquo;</p><div class="testimonial-by">Program Manager, Embedded Systems Organization</div></div>
+      <div class="testimonial-enhanced">
+        <div class="quote-mark">“</div>
+        <p>The IREB CPRE training was remarkably pragmatic. It directly reduced our specification cycle time and helped our systems engineering group establish rigorous EARS-based templates.</p>
+        <div class="testimonial-profile">
+          <div class="testimonial-avatar">🚗</div>
+          <div>
+            <div class="testimonial-author">Engineering Lead</div>
+            <div class="testimonial-by">Global Automotive Tier-1 Supplier</div>
+          </div>
+        </div>
+      </div>
+      <div class="testimonial-enhanced">
+        <div class="quote-mark">“</div>
+        <p>Baseline Skills delivered a tailored Systems Engineering program for our team. The integration of ISO 15288 with MBSE SysML modeling exceeded our expectations.</p>
+        <div class="testimonial-profile">
+          <div class="testimonial-avatar">🛰️</div>
+          <div>
+            <div class="testimonial-author">Principal Systems Architect</div>
+            <div class="testimonial-by">Mission-Critical Embedded Systems Group</div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </section>
 
-<section class="section">
-  <div class="container">
-    <div class="section-hdr">
-      <span class="eyebrow">RE Pulse</span>
-      <h2>Free resources to sharpen your practice.</h2>
-    </div>
-    <div class="grid-4">
-      <div class="card"><h4 style="font-size:.95rem">How to Write Verifiable Requirements</h4></div>
-      <div class="card"><h4 style="font-size:.95rem">Requirements Review Checklist</h4></div>
-      <div class="card"><h4 style="font-size:.95rem">ASPICE Traceability Essentials</h4></div>
-      <div class="card"><h4 style="font-size:.95rem">MBSE Starter Guide</h4></div>
-    </div>
-    <div style="text-align:center;margin-top:28px"><a href="/resources" class="btn btn-outline">Visit RE Pulse &rarr;</a></div>
-  </div>
-</section>
-
+<!-- Final Call to Action -->
 <section class="cta-band">
-  <div class="container">
-    <h2>Ready to build stronger engineering capabilities?</h2>
+  <div class="cta-band-bg-accent" aria-hidden="true"></div>
+  <div class="container cta-band-inner">
+    <h2>Ready to Build Stronger Engineering Capabilities?</h2>
+    <p class="cta-band-sub">Talk with our senior engineering advisors or download the full curriculum catalogue today.</p>
     <div class="cta-band-btns">
-      <a href="/contact" class="btn btn-gold btn-lg">Schedule a Consultation</a>
-      <a href="/contact" class="btn btn-outline-light btn-lg">Download Training Catalogue</a>
+      <button type="button" class="btn btn-gold btn-lg btn-glow" onclick="openExpertModal()">Schedule a Consultation</button>
+      <a href="/courses" class="btn btn-outline-light btn-lg">Explore All Courses</a>
     </div>
   </div>
 </section>
@@ -140,9 +536,11 @@
 function showPath(id, btn){
   document.querySelectorAll('.path-panel').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.path-tab').forEach(t=>t.classList.remove('active'));
-  document.getElementById('path-'+id).classList.add('active');
-  btn.classList.add('active');
+  const target = document.getElementById('path-'+id);
+  if (target) target.classList.add('active');
+  if (btn) btn.classList.add('active');
 }
 </script>
 
 <%- include('partials/footer') %>
+

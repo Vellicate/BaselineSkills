@@ -11,10 +11,6 @@ const { BROCHURE_DIR } = require("../lib/brochures");
 const brochureUpload = multer({
   storage: multer.diskStorage({
     destination: (req, file, cb) => cb(null, BROCHURE_DIR),
-    // Random, unguessable filename — the "gate" on this PDF is that it's
-    // only ever handed out via the emailed link (see routes/public.js),
-    // not real access control. Fine for a lead-magnet brochure; don't
-    // reuse this pattern for anything actually sensitive.
     filename: (req, file, cb) => cb(null, `${newId("brochure")}.pdf`),
   }),
   fileFilter: (req, file, cb) => {
@@ -25,7 +21,6 @@ const brochureUpload = multer({
   },
   limits: { fileSize: 15 * 1024 * 1024 }, // 15MB
 });
-
 
 const loginRateLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000,
@@ -62,6 +57,14 @@ function verifyOrigin(req, res, next) {
   next();
 }
 
+// Helper to pull flash message params from query strings
+function getAlerts(req) {
+  return {
+    success: req.query.success || null,
+    error: req.query.error || null,
+  };
+}
+
 // ---- Auth ----
 router.get("/login", (req, res) => {
   if (req.session.isAdmin) return res.redirect("/admin");
@@ -75,10 +78,13 @@ router.post("/login", loginRateLimiter, (req, res) => {
   if (safeCompare(password, adminPassword)) {
     return req.session.regenerate((err) => {
       if (err) {
-        return res.status(500).render("admin/login", { title: "Admin login — Baseline Skills", error: "Session creation error." });
+        return res.status(500).render("admin/login", { 
+          title: "Admin login — Baseline Skills", 
+          error: "Session creation error." 
+        });
       }
       req.session.isAdmin = true;
-      return res.redirect("/admin");
+      return res.redirect("/admin?success=Welcome+back!");
     });
   }
   res.render("admin/login", { title: "Admin login — Baseline Skills", error: "Incorrect password." });
@@ -92,31 +98,72 @@ router.use(requireAdmin); // everything below this line requires admin auth
 router.use(verifyOrigin); // enforce CSRF origin protection for admin POST requests
 
 
-// ---- Dashboard ----
+// ---- Enhanced Dashboard & Visual Analytics ----
 router.get("/", (req, res) => {
   const courses = store.readAll("courses");
   const registrations = store.readAll("registrations").sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   const inquiries = store.readAll("inquiries").sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-  const revenueCents = registrations
-    .filter((r) => r.status === "confirmed" || r.status === "invoice_pending")
-    .reduce((sum, r) => sum + (r.priceCentsCharged || 0), 0);
+  const confirmedRegs = registrations.filter((r) => r.status === "confirmed" || r.status === "invoice_pending");
+  const revenueCents = confirmedRegs.reduce((sum, r) => sum + (r.priceCentsCharged || 0), 0);
+
+  // Group metrics for visual charts
+  const statusCounts = registrations.reduce((acc, r) => {
+    acc[r.status] = (acc[r.status] || 0) + 1;
+    return acc;
+  }, {});
 
   res.render("admin/dashboard", {
     title: "Admin dashboard — Baseline Skills",
+    ...getAlerts(req),
     courseCount: courses.length,
     publishedCount: courses.filter((c) => c.published).length,
     registrationCount: registrations.length,
+    inquiryCount: inquiries.length,
     revenueDisplay: (revenueCents / 100).toFixed(2),
+    statusCounts,
     recentRegistrations: registrations.slice(0, 8),
     recentInquiries: inquiries.slice(0, 5),
   });
 });
 
+// ---- Dynamic Data Export (CSV) ----
+router.get("/export/:type", (req, res) => {
+  const { type } = req.params;
+  
+  if (type === "registrations") {
+    const data = store.readAll("registrations");
+    let csv = "ID,Name,Email,Course,Status,Price Charged,Created At\n";
+    data.forEach((r) => {
+      csv += `"${r.id}","${r.name || ""}","${r.email || ""}","${r.courseTitle || ""}","${r.status || ""}","${((r.priceCentsCharged || 0) / 100).toFixed(2)}","${r.createdAt}"\n`;
+    });
+    res.setHeader("Content-Type", "text/csv");
+    res.setHeader("Content-Disposition", 'attachment; filename="registrations.csv"');
+    return res.send(csv);
+  }
+
+  if (type === "inquiries") {
+    const data = store.readAll("inquiries");
+    let csv = "ID,Name,Email,Subject,Message,Created At\n";
+    data.forEach((i) => {
+      csv += `"${i.id}","${i.name || ""}","${i.email || ""}","${i.subject || ""}","${(i.message || "").replace(/"/g, '""')}","${i.createdAt}"\n`;
+    });
+    res.setHeader("Content-Type", "text/csv");
+    res.setHeader("Content-Disposition", 'attachment; filename="inquiries.csv"');
+    return res.send(csv);
+  }
+
+  res.status(400).send("Invalid export type");
+});
+
 // ---- Course list ----
 router.get("/courses", (req, res) => {
   const courses = store.readAll("courses");
-  res.render("admin/courses-list", { title: "Manage courses — Baseline Skills", courses });
+  res.render("admin/courses-list", { 
+    title: "Manage courses — Baseline Skills", 
+    courses,
+    ...getAlerts(req)
+  });
 });
 
 function courseFromForm(body, existing, uploadedFile) {
@@ -126,9 +173,6 @@ function courseFromForm(body, existing, uploadedFile) {
   const whatYoullReceive = (body.whatYoullReceive || "").split("\n").map((s) => s.trim()).filter(Boolean);
   const deliveryModes = Array.isArray(body.deliveryModes) ? body.deliveryModes : (body.deliveryModes ? [body.deliveryModes] : []);
 
-  // "Module name: topic 1, topic 2" per line -> [{module, topics: [...]}].
-  // Blank input keeps whatever curriculum already existed, rather than
-  // wiping it out — most edits to a course aren't touching the curriculum.
   const curriculumRaw = (body.curriculumRaw || "").trim();
   const curriculum = curriculumRaw
     ? curriculumRaw
@@ -144,7 +188,6 @@ function courseFromForm(body, existing, uploadedFile) {
         })
         .filter((m) => m.module)
     : (existing ? existing.curriculum || [] : []);
-
 
   const sessionStarts = Array.isArray(body.sessionStartDate) ? body.sessionStartDate : [body.sessionStartDate].filter(Boolean);
   const sessionEnds = Array.isArray(body.sessionEndDate) ? body.sessionEndDate : [body.sessionEndDate].filter(Boolean);
@@ -166,7 +209,7 @@ function courseFromForm(body, existing, uploadedFile) {
   return {
     ...existing,
     title: body.title,
-    slug: existing && existing.slug ? existing.slug : slugify(body.title, { lower: true, strict: true }),
+    slug: existing && existing.slug ? existing.slug : slugify(body.title || "course", { lower: true, strict: true }),
     category: body.category,
     summary: body.summary,
     description: body.description,
@@ -182,22 +225,16 @@ function courseFromForm(body, existing, uploadedFile) {
     sessions,
     corporateOnly: !!body.corporateOnly,
     published: !!body.published,
-    // --- New fields ---
     courseOutlineUrl: body.courseOutlineUrl || "",
     trainerId: body.trainerId || "",
     whyTakeThisCourse: body.whyTakeThisCourse || "",
     prerequisites,
     formatAndMaterial: body.formatAndMaterial || "",
     whatYoullReceive,
-    // Keep the existing brochure unless a new file was actually uploaded
-    // this submission — an admin editing other fields shouldn't have to
-    // re-upload the PDF every time.
     brochureFilename: uploadedFile ? uploadedFile.filename : (existing ? existing.brochureFilename : ""),
   };
 }
 
-// Wraps multer's upload so a bad file (wrong type, too large) re-renders
-// the course form with a clear message instead of an unhandled error.
 function handleBrochureUpload(req, res, next) {
   brochureUpload.single("brochure")(req, res, (err) => {
     if (!err) return next();
@@ -212,21 +249,34 @@ function handleBrochureUpload(req, res, next) {
     });
   });
 }
+
 router.get("/courses/new", (req, res) => {
-  res.render("admin/course-form", { title: "New course — Baseline Skills", course: null, mode: "new", trainers: store.readAll("trainers") });
+  res.render("admin/course-form", { 
+    title: "New course — Baseline Skills", 
+    course: null, 
+    mode: "new", 
+    trainers: store.readAll("trainers"),
+    ...getAlerts(req)
+  });
 });
 
 router.post("/courses/new", handleBrochureUpload, (req, res) => {
   const course = courseFromForm(req.body, { id: newId("course") }, req.file);
   store.insert("courses", course);
-  res.redirect("/admin/courses");
+  res.redirect("/admin/courses?success=Course+created+successfully");
 });
 
 // ---- Edit course ----
 router.get("/courses/:id/edit", (req, res) => {
   const course = store.findOne("courses", (c) => c.id === req.params.id);
   if (!course) return res.status(404).send("Course not found");
-  res.render("admin/course-form", { title: `Edit ${course.title} — Baseline Skills`, course, mode: "edit", trainers: store.readAll("trainers") });
+  res.render("admin/course-form", { 
+    title: `Edit ${course.title} — Baseline Skills`, 
+    course, 
+    mode: "edit", 
+    trainers: store.readAll("trainers"),
+    ...getAlerts(req)
+  });
 });
 
 router.post("/courses/:id/edit", handleBrochureUpload, (req, res) => {
@@ -234,40 +284,57 @@ router.post("/courses/:id/edit", handleBrochureUpload, (req, res) => {
   if (!existing) return res.status(404).send("Course not found");
   const updated = courseFromForm(req.body, existing, req.file);
   store.update("courses", req.params.id, updated);
-  res.redirect("/admin/courses");
+  res.redirect("/admin/courses?success=Course+updated+successfully");
 });
 
 router.post("/courses/:id/delete", (req, res) => {
   store.remove("courses", req.params.id);
-  res.redirect("/admin/courses");
+  res.redirect("/admin/courses?success=Course+deleted");
 });
 
 router.post("/courses/:id/toggle-published", (req, res) => {
   const course = store.findOne("courses", (c) => c.id === req.params.id);
   if (course) store.update("courses", req.params.id, { published: !course.published });
-  res.redirect("/admin/courses");
+  res.redirect("/admin/courses?success=Status+updated");
 });
 
 // ---- Registrations ----
 router.get("/registrations", (req, res) => {
   const registrations = store.readAll("registrations").sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-  res.render("admin/registrations", { title: "Registrations — Baseline Skills", registrations });
+  res.render("admin/registrations", { 
+    title: "Registrations — Baseline Skills", 
+    registrations,
+    ...getAlerts(req)
+  });
 });
 
 // ---- Inquiries (contact + corporate) ----
 router.get("/inquiries", (req, res) => {
   const inquiries = store.readAll("inquiries").sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-  res.render("admin/inquiries", { title: "Inquiries — Baseline Skills", inquiries });
+  res.render("admin/inquiries", { 
+    title: "Inquiries — Baseline Skills", 
+    inquiries,
+    ...getAlerts(req)
+  });
 });
 
 // ==================== Trainers ====================
 router.get("/trainers", (req, res) => {
   const trainers = store.readAll("trainers");
-  res.render("admin/trainers-list", { title: "Manage trainers — Baseline Skills", trainers });
+  res.render("admin/trainers-list", { 
+    title: "Manage trainers — Baseline Skills", 
+    trainers,
+    ...getAlerts(req)
+  });
 });
 
 router.get("/trainers/new", (req, res) => {
-  res.render("admin/trainer-form", { title: "New trainer — Baseline Skills", trainer: null, mode: "new" });
+  res.render("admin/trainer-form", { 
+    title: "New trainer — Baseline Skills", 
+    trainer: null, 
+    mode: "new",
+    ...getAlerts(req)
+  });
 });
 
 router.post("/trainers/new", (req, res) => {
@@ -282,13 +349,18 @@ router.post("/trainers/new", (req, res) => {
     id: newId("trainer"), name, title: title || "", bio: bio || "", profileUrl,
     createdAt: new Date().toISOString(),
   });
-  res.redirect("/admin/trainers");
+  res.redirect("/admin/trainers?success=Trainer+added");
 });
 
 router.get("/trainers/:id/edit", (req, res) => {
   const trainer = store.findOne("trainers", (t) => t.id === req.params.id);
   if (!trainer) return res.status(404).send("Trainer not found");
-  res.render("admin/trainer-form", { title: `Edit ${trainer.name} — Baseline Skills`, trainer, mode: "edit" });
+  res.render("admin/trainer-form", { 
+    title: `Edit ${trainer.name} — Baseline Skills`, 
+    trainer, 
+    mode: "edit",
+    ...getAlerts(req)
+  });
 });
 
 router.post("/trainers/:id/edit", (req, res) => {
@@ -302,13 +374,10 @@ router.post("/trainers/:id/edit", (req, res) => {
     });
   }
   store.update("trainers", req.params.id, { name, title: title || "", bio: bio || "", profileUrl });
-  res.redirect("/admin/trainers");
+  res.redirect("/admin/trainers?success=Trainer+updated");
 });
 
 router.post("/trainers/:id/delete", (req, res) => {
-  // A trainer referenced by a course isn't deleted out from under it — the
-  // course would just show an unresolvable trainerId. Warn instead of
-  // silently orphaning the reference.
   const referencingCourses = store.readAll("courses").filter((c) => c.trainerId === req.params.id);
   if (referencingCourses.length) {
     const trainers = store.readAll("trainers");
@@ -319,20 +388,24 @@ router.post("/trainers/:id/delete", (req, res) => {
     });
   }
   store.remove("trainers", req.params.id);
-  res.redirect("/admin/trainers");
+  res.redirect("/admin/trainers?success=Trainer+deleted");
 });
 
 // ==================== Blogs ====================
 router.get("/blogs", (req, res) => {
   const blogs = store.readAll("blogs").sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-  res.render("admin/blogs-list", { title: "Manage blog posts — Baseline Skills", blogs });
+  res.render("admin/blogs-list", { 
+    title: "Manage blog posts — Baseline Skills", 
+    blogs,
+    ...getAlerts(req)
+  });
 });
 
 function blogFromForm(body, existing) {
   return {
     ...existing,
     title: body.title,
-    slug: existing && existing.slug ? existing.slug : slugify(body.title, { lower: true, strict: true }),
+    slug: existing && existing.slug ? existing.slug : slugify(body.title || "post", { lower: true, strict: true }),
     excerpt: body.excerpt,
     body: body.body,
     author: body.author || "Baseline Skills Team",
@@ -343,7 +416,12 @@ function blogFromForm(body, existing) {
 }
 
 router.get("/blogs/new", (req, res) => {
-  res.render("admin/blog-form", { title: "New blog post — Baseline Skills", blog: null, mode: "new" });
+  res.render("admin/blog-form", { 
+    title: "New blog post — Baseline Skills", 
+    blog: null, 
+    mode: "new",
+    ...getAlerts(req)
+  });
 });
 
 router.post("/blogs/new", (req, res) => {
@@ -352,13 +430,18 @@ router.post("/blogs/new", (req, res) => {
   }
   const blog = blogFromForm(req.body, { id: newId("blog"), createdAt: new Date().toISOString() });
   store.insert("blogs", blog);
-  res.redirect("/admin/blogs");
+  res.redirect("/admin/blogs?success=Blog+post+published");
 });
 
 router.get("/blogs/:id/edit", (req, res) => {
   const blog = store.findOne("blogs", (b) => b.id === req.params.id);
   if (!blog) return res.status(404).send("Blog post not found");
-  res.render("admin/blog-form", { title: `Edit ${blog.title} — Baseline Skills`, blog, mode: "edit" });
+  res.render("admin/blog-form", { 
+    title: `Edit ${blog.title} — Baseline Skills`, 
+    blog, 
+    mode: "edit",
+    ...getAlerts(req)
+  });
 });
 
 router.post("/blogs/:id/edit", (req, res) => {
@@ -369,28 +452,37 @@ router.post("/blogs/:id/edit", (req, res) => {
   }
   const updated = blogFromForm(req.body, existing);
   store.update("blogs", req.params.id, updated);
-  res.redirect("/admin/blogs");
+  res.redirect("/admin/blogs?success=Blog+post+updated");
 });
 
 router.post("/blogs/:id/delete", (req, res) => {
   store.remove("blogs", req.params.id);
-  res.redirect("/admin/blogs");
+  res.redirect("/admin/blogs?success=Blog+post+deleted");
 });
 
 router.post("/blogs/:id/toggle-published", (req, res) => {
   const blog = store.findOne("blogs", (b) => b.id === req.params.id);
   if (blog) store.update("blogs", req.params.id, { published: !blog.published });
-  res.redirect("/admin/blogs");
+  res.redirect("/admin/blogs?success=Status+updated");
 });
 
 // ==================== Resources ====================
 router.get("/resources", (req, res) => {
   const resources = store.readAll("resources").sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-  res.render("admin/resources-list", { title: "Manage resources — Baseline Skills", resources });
+  res.render("admin/resources-list", { 
+    title: "Manage resources — Baseline Skills", 
+    resources,
+    ...getAlerts(req)
+  });
 });
 
 router.get("/resources/new", (req, res) => {
-  res.render("admin/resource-form", { title: "New resource — Baseline Skills", resource: null, mode: "new" });
+  res.render("admin/resource-form", { 
+    title: "New resource — Baseline Skills", 
+    resource: null, 
+    mode: "new",
+    ...getAlerts(req)
+  });
 });
 
 router.post("/resources/new", (req, res) => {
@@ -404,13 +496,18 @@ router.post("/resources/new", (req, res) => {
     title, category: category || "Requirements Engineering", excerpt, url,
     createdAt: new Date().toISOString(),
   });
-  res.redirect("/admin/resources");
+  res.redirect("/admin/resources?success=Resource+created");
 });
 
 router.get("/resources/:id/edit", (req, res) => {
   const resource = store.findOne("resources", (r) => r.id === req.params.id);
   if (!resource) return res.status(404).send("Resource not found");
-  res.render("admin/resource-form", { title: `Edit ${resource.title} — Baseline Skills`, resource, mode: "edit" });
+  res.render("admin/resource-form", { 
+    title: `Edit ${resource.title} — Baseline Skills`, 
+    resource, 
+    mode: "edit",
+    ...getAlerts(req)
+  });
 });
 
 router.post("/resources/:id/edit", (req, res) => {
@@ -421,12 +518,12 @@ router.post("/resources/:id/edit", (req, res) => {
     return res.status(400).render("admin/resource-form", { title: `Edit ${existing.title} — Baseline Skills`, resource: { ...existing, ...req.body }, mode: "edit", error: "Title, excerpt, and link are required." });
   }
   store.update("resources", req.params.id, { title, category: category || existing.category, excerpt, url });
-  res.redirect("/admin/resources");
+  res.redirect("/admin/resources?success=Resource+updated");
 });
 
 router.post("/resources/:id/delete", (req, res) => {
   store.remove("resources", req.params.id);
-  res.redirect("/admin/resources");
+  res.redirect("/admin/resources?success=Resource+deleted");
 });
 
 module.exports = router;

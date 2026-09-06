@@ -1014,5 +1014,39 @@
     ],
     "corporateOnly": false,
     "published": true
+  },
+  {
+    "id": "course_1788381931106_bf7084a9",
+    "title": "hi ",
+    "slug": "hi",
+    "category": "Requirements Engineering",
+    "summary": "frews",
+    "description": "sfsfes",
+    "outcomes": [
+      "sfe"
+    ],
+    "curriculum": [],
+    "audience": [],
+    "durationDays": 1,
+    "deliveryModes": [
+      "Live Online"
+    ],
+    "priceCents": 42300,
+    "discountPercent": 22,
+    "currency": "USD",
+    "certification": false,
+    "sessions": [],
+    "corporateOnly": false,
+    "published": true,
+    "courseOutlineUrl": "",
+    "trainerId": "",
+    "whyTakeThisCourse": "sef",
+    "prerequisites": [
+      "sef"
+    ],
+    "formatAndMaterial": "fsed",
+    "whatYoullReceive": [
+      "sfs"
+    ]
   }
 ]
