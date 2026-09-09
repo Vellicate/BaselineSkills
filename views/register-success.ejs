@@ -1,0 +1,29 @@
+<%- include('partials/header') %>
+
+<section class="section">
+  <div class="container" style="max-width:640px;text-align:center">
+    <div style="width:64px;height:64px;border-radius:50%;background:#dcfce7;color:#166534;display:flex;align-items:center;justify-content:center;font-size:1.8rem;margin:0 auto 20px">&#10003;</div>
+    <h1>You're registered!</h1>
+    <p class="lead">
+      <%= registration.name %>, you're booked on <strong><%= course ? course.title : registration.courseTitle %></strong>.
+      A confirmation email has been sent to <%= registration.email %>, and our team has been notified.
+    </p>
+
+    <div class="card" style="text-align:left;margin-top:24px">
+      <div style="display:flex;justify-content:space-between;padding:6px 0"><span style="color:var(--muted)">Session</span><strong><%= registration.sessionStartDate %></strong></div>
+      <div style="display:flex;justify-content:space-between;padding:6px 0"><span style="color:var(--muted)">Delivery mode</span><strong><%= registration.deliveryMode %></strong></div>
+      <div style="display:flex;justify-content:space-between;padding:6px 0"><span style="color:var(--muted)">Amount</span><strong><%= registration.currency %> <%= (registration.priceCentsCharged/100).toFixed(2) %></strong></div>
+      <div style="display:flex;justify-content:space-between;padding:6px 0"><span style="color:var(--muted)">Status</span><span class="badge <%= registration.status==='confirmed' ? 'badge-confirmed' : 'badge-pending' %>"><%= registration.status %></span></div>
+    </div>
+
+    <% if (registration.status === 'invoice_pending') { %>
+      <div class="alert" style="background:#fffbeb;color:#92400e;border:1px solid #fde68a;margin-top:20px;text-align:left">
+        Live card payment isn't fully configured on this instance yet, so this registration has been recorded as <strong>invoice pending</strong> rather than charged immediately. Everything else — your confirmation email, the admin notification, and your seat — is fully in place.
+      </div>
+    <% } %>
+
+    <a href="/courses" class="btn btn-outline" style="margin-top:24px">Browse more courses</a>
+  </div>
+</section>
+
+<%- include('partials/footer') %>

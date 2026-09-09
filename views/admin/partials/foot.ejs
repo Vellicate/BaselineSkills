@@ -1,0 +1,102 @@
+  </div>
+</main>
+</div>
+
+<script>
+(() => {
+  const shell = document.querySelector(".admin-shell");
+  const collapseButton = document.querySelector("#sidebarCollapseBtn");
+  const mobileMenuButton = document.querySelector(".sidebar-mobile-toggle");
+
+  if (shell && collapseButton) {
+    const savedState = localStorage.getItem("adminSidebarCollapsed");
+
+    if (savedState === "true" && window.innerWidth > 900) {
+      shell.classList.add("sidebar-collapsed");
+    }
+
+    collapseButton.addEventListener("click", () => {
+      const isCollapsed = shell.classList.toggle("sidebar-collapsed");
+
+      localStorage.setItem(
+        "adminSidebarCollapsed",
+        String(isCollapsed)
+      );
+
+      collapseButton.setAttribute(
+        "aria-label",
+        isCollapsed ? "Expand sidebar" : "Collapse sidebar"
+      );
+
+      collapseButton.setAttribute(
+        "title",
+        isCollapsed ? "Expand sidebar" : "Collapse sidebar"
+      );
+    });
+  }
+
+  if (shell && mobileMenuButton) {
+    mobileMenuButton.addEventListener("click", () => {
+      shell.classList.toggle("mobile-sidebar-open");
+    });
+  }
+
+  document.querySelectorAll(".admin-sidebar a").forEach((link) => {
+    link.addEventListener("click", () => {
+      if (shell && window.innerWidth <= 900) {
+        shell.classList.remove("mobile-sidebar-open");
+      }
+    });
+  });
+
+  // Logout window closing transition
+  document.querySelectorAll('a[href="/admin/logout"]').forEach((logoutLink) => {
+    logoutLink.addEventListener("click", (e) => {
+      e.preventDefault();
+      const targetUrl = logoutLink.href;
+      
+      if (shell) {
+        shell.classList.add("window-closing");
+      }
+      
+      const overlay = document.createElement("div");
+      overlay.className = "logout-closing-overlay";
+      document.body.appendChild(overlay);
+
+      setTimeout(() => {
+        window.location.href = targetUrl;
+      }, 420);
+    });
+  });
+
+  // Activity row mouse tracking and reveal
+  const activityRows = document.querySelectorAll(
+    ".registrations-table tbody tr, .inquiries-table tbody tr, .showcase-table tbody tr"
+  );
+
+  activityRows.forEach((row, index) => {
+    row.style.setProperty("--row-index", index);
+    row.classList.add("is-visible");
+
+    row.addEventListener("pointermove", (event) => {
+      const rect = row.getBoundingClientRect();
+      const x = ((event.clientX - rect.left) / rect.width - 0.5) * 6;
+      const y = ((event.clientY - rect.top) / rect.height - 0.5) * 3;
+      const bubbleX = Math.max(-12, Math.min(12, x * 1.4));
+
+      row.style.setProperty("--mouse-x", `${x}px`);
+      row.style.setProperty("--mouse-y", `${y}px`);
+      row.style.setProperty("--bubble-x", `${bubbleX}px`);
+    });
+
+    row.addEventListener("pointerleave", () => {
+      row.style.setProperty("--mouse-x", "0px");
+      row.style.setProperty("--mouse-y", "0px");
+      row.style.setProperty("--bubble-x", "0px");
+    });
+  });
+})();
+</script>
+
+</body>
+</html>

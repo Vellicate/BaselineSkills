@@ -1,0 +1,14 @@
+node_modules/
+.env
+*.log
+
+# Admin-uploaded brochure PDFs — user content, not source; keep out of git
+# (the folder is created automatically at startup if missing).
+public/uploads/
+
+# SQLite database files — generated at runtime, not source
+data/*.sqlite3
+data/*.sqlite3-wal
+data/*.sqlite3-shm
+
+data/*.json

@@ -1,0 +1,11 @@
+<%- include('partials/header') %>
+
+<section class="section" style="min-height:60vh;display:flex;align-items:center">
+  <div class="container" style="max-width:520px;text-align:center">
+    <span style="font-size:2.5rem">✅</span>
+    <h1 style="font-size:1.8rem;margin-top:8px">Application submitted</h1>
+    <p class="lead">Thanks for applying to become a <%= type === 'trainer' ? 'Baseline Skills trainer' : 'Baseline Skills affiliate' %>. We'll review your application and signed Rules of Engagement, and email you once it's been decided — you'll be able to log in at <a href="/<%= type === 'trainer' ? 'trainer' : 'affiliate' %>/login"><%= type === 'trainer' ? '/trainer/login' : '/affiliate/login' %></a> once approved.</p>
+  </div>
+</section>
+
+<%- include('partials/footer') %>

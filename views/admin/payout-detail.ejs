@@ -1,0 +1,39 @@
+<%- include('partials/head') %>
+
+<div class="container" style="padding:24px 0">
+  <p><a href="/admin/payouts">&larr; Back to payouts</a></p>
+  <h1>Payout for <%= recipient ? recipient.name : 'Unknown' %></h1>
+  <% if (typeof success !== 'undefined' && success) { %><div class="alert alert-success"><%= success %></div><% } %>
+
+  <p>Period: <%= payout.periodStart %> – <%= payout.periodEnd %> · Status: <strong><%= payout.status %></strong><% if (payout.paidAt) { %> · Paid <%= new Date(payout.paidAt).toLocaleDateString() %><% } %></p>
+  <p style="font-size:1.3rem;font-weight:600">Total: $<%= (payout.totalAmountCents/100).toFixed(2) %></p>
+
+  <% if (payout.status === 'pending') { %>
+  <div style="display:flex;gap:10px;margin-bottom:24px">
+    <form method="POST" action="/admin/payouts/<%= payout.id %>/mark-processed" onsubmit="return confirm('Confirm you have actually sent this payment by your normal means (bank transfer, PayPal, etc.) before marking it processed.')">
+      <button type="submit" class="btn btn-navy">Mark Processed</button>
+    </form>
+    <form method="POST" action="/admin/payouts/<%= payout.id %>/mark-failed">
+      <button type="submit" class="btn btn-outline">Mark Failed</button>
+    </form>
+  </div>
+  <% } %>
+
+  <h3>Line items — traceable to each individual sale</h3>
+  <table class="admin-table" style="background:#fff">
+    <thead><tr><th>Course</th><th>Learner</th><th>Gross</th><th>Rate</th><th>Net</th></tr></thead>
+    <tbody>
+      <% lineItems.forEach(li => { %>
+        <tr>
+          <td><%= li.registration ? li.registration.courseTitle : 'Deleted registration' %></td>
+          <td><%= li.registration ? li.registration.name : '—' %></td>
+          <td>$<%= (li.grossAmountCents/100).toFixed(2) %></td>
+          <td><%= li.rateApplied %>%</td>
+          <td>$<%= (li.netAmountCents/100).toFixed(2) %></td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</div>
+
+<%- include('partials/foot') %>

@@ -1,0 +1,25 @@
+<%- include('partials/head') %>
+
+<h1 style="font-size:1.6rem"><%= mode === 'new' ? 'New trainer' : 'Edit trainer' %></h1>
+
+<% if (typeof error !== 'undefined' && error) { %>
+  <div class="alert alert-error" style="margin-bottom:16px"><%= error %></div>
+<% } %>
+
+<form method="POST" action="<%= mode === 'new' ? '/admin/trainers/new' : `/admin/trainers/${trainer.id}/edit` %>" class="card" style="max-width:640px">
+  <div class="form-field"><label>Full name *</label><input type="text" name="name" required value="<%= trainer ? trainer.name : '' %>"></div>
+  <div class="form-field"><label>Title / role</label><input type="text" name="title" placeholder="e.g. Senior RE Consultant, ASPICE Assessor" value="<%= trainer ? trainer.title : '' %>"></div>
+  <div class="form-field"><label>Profile link *</label><input type="url" name="profileUrl" required placeholder="https://www.linkedin.com/in/..." value="<%= trainer ? trainer.profileUrl : '' %>"></div>
+  <div class="form-field"><label>Short bio</label><textarea name="bio" rows="4"><%= trainer ? trainer.bio : '' %></textarea></div>
+
+  <div style="margin-top:20px">
+    <button type="submit" class="btn btn-navy btn-lg">Save trainer</button>
+    <a href="/admin/trainers" class="btn btn-outline btn-lg" style="margin-left:8px">Cancel</a>
+  </div>
+</form>
+
+<p style="color:var(--muted);font-size:.85rem;margin-top:16px;max-width:640px">
+  Once saved, this trainer becomes selectable from the training program form — add them once here, reuse across as many courses as needed.
+</p>
+
+<%- include('partials/foot') %>

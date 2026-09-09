@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title><%= title %></title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/png" sizes="16x16" href="/img/favicon-16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/img/favicon-192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/img/apple-touch-icon.png">
+<link rel="shortcut icon" href="/img/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+<% if (provider === "paddle") { %>
+<script src="https://cdn.paddle.com/paddle/v2/paddle.js"></script>
+<% } else { %>
+<script src="https://www.paypal.com/sdk/js?client-id=<%= clientConfig.clientId %>&currency=<%= (course.currency || 'USD').toUpperCase() %>"></script>
+<% } %>
+</head>
+<body>
+<section class="section" style="min-height:70vh;display:flex;align-items:center;justify-content:center">
+  <div class="container" style="max-width:520px;text-align:center">
+    <h1 style="font-size:1.6rem">Completing your registration for<br><%= course.title %></h1>
+    <p class="lead">Loading secure checkout…</p>
+    <% if (provider === "paddle") { %>
+    <div id="checkout-fallback" style="display:none;margin-top:20px">
+      <p>The checkout window didn't open automatically.</p>
+      <button class="btn btn-gold" onclick="openCheckout()">Open checkout</button>
+    </div>
+    <% } else { %>
+    <div id="paypal-button-container" style="margin-top:24px"></div>
+    <% } %>
+    <p class="form-hint" style="margin-top:24px"><a href="/register/cancel?reg=<%= registration.id %>">Cancel and go back</a></p>
+  </div>
+</section>
+
+<% if (provider === "paddle") { %>
+<script>
+  Paddle.Environment.set("<%= clientConfig.environment %>");
+  Paddle.Initialize({
+    token: "<%= clientConfig.clientToken %>",
+    eventCallback: function (e) {
+      if (e.name === "checkout.completed") {
+        window.location.href = "/register/success?reg=<%= registration.id %>";
+      }
+      if (e.name === "checkout.closed" && !e.data) {
+        // closed without completing — send them to the cancel page
+        window.location.href = "/register/cancel?reg=<%= registration.id %>";
+      }
+    },
+  });
+
+  function openCheckout() {
+    Paddle.Checkout.open({
+      transactionId: "<%= orderId %>",
+      settings: {
+        displayMode: "overlay",
+        theme: "light",
+        successUrl: window.location.origin + "/register/success?reg=<%= registration.id %>",
+      },
+    });
+  }
+
+  // Open automatically; show a manual button if the overlay fails to load
+  // (e.g., an ad-blocker or content blocker interfering).
+  openCheckout();
+  setTimeout(function () {
+    document.getElementById("checkout-fallback").style.display = "block";
+  }, 3000);
+</script>
+<% } else { %>
+<script>
+  // PayPal's buttons render inline rather than an overlay — there's no
+  // client-side "completed" event to redirect on the way Paddle has, since
+  // the authoritative confirmation is the server-side webhook
+  // (CHECKOUT.ORDER.APPROVED -> capture -> PAYMENT.CAPTURE.COMPLETED), not
+  // anything this page observes directly. onApprove here is a courtesy
+  // redirect to the success page while that webhook does its own,
+  // independent confirmation — same "never trust the browser alone"
+  // principle as the Paddle side, just expressed differently because
+  // PayPal's own SDK shape is different, not because this path is treated
+  // more loosely.
+  paypal.Buttons({
+    createOrder: function () {
+      return Promise.resolve("<%= orderId %>");
+    },
+    onApprove: function () {
+      window.location.href = "/register/success?reg=<%= registration.id %>";
+    },
+    onCancel: function () {
+      window.location.href = "/register/cancel?reg=<%= registration.id %>";
+    },
+  }).render("#paypal-button-container");
+</script>
+<% } %>
+</body>
+</html>

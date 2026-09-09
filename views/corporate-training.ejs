@@ -1,0 +1,61 @@
+<%- include('partials/header') %>
+
+<section class="hero" style="padding:64px 0">
+  <div class="container">
+    <span class="eyebrow" style="background:rgba(245,197,24,.2);color:#F5C518">Corporate Training</span>
+    <h1 style="color:#fff;max-width:720px">Customized Engineering Training for High-Performance Teams</h1>
+    <p class="lead" style="color:rgba(255,255,255,.82);max-width:600px">Tailored programs designed around your organization's real projects, standards, and constraints — not a generic public course squeezed into a corporate calendar.</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container grid-2" style="align-items:start">
+    <div>
+      <h2>What's included</h2>
+      <ul style="padding-left:20px">
+        <li>Tailored learning objectives</li>
+        <li>Industry-specific case studies</li>
+        <li>Flexible scheduling</li>
+        <li>Skills assessment</li>
+        <li>Post-training support</li>
+        <li>Certification preparation</li>
+      </ul>
+
+      <h2 style="margin-top:32px">How it works</h2>
+      <ol style="padding-left:20px">
+        <li>Discovery call</li>
+        <li>Needs analysis</li>
+        <li>Technical discussion</li>
+        <li>Customized proposal</li>
+        <li>Delivery</li>
+        <li>Feedback &amp; improvement</li>
+      </ol>
+
+      <h2 style="margin-top:32px">Industries we serve</h2>
+      <div style="display:flex;flex-wrap:wrap;gap:10px">
+        <% ["Automotive","Embedded Systems","Aerospace","Industrial Automation","Medical Devices","IT & Digital Products"].forEach(i => { %>
+          <span class="pill"><%= i %></span>
+        <% }) %>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0">Request a corporate training proposal</h3>
+      <% if (typeof success !== 'undefined' && success) { %>
+        <div class="alert alert-success">Thanks — we've received your inquiry and will be in touch shortly.</div>
+      <% } %>
+      <% if (typeof error !== 'undefined' && error) { %><div class="alert alert-error"><%= error %></div><% } %>
+      <form method="POST" action="/corporate-training/inquiry">
+        <div class="form-field"><label>Full name *</label><input type="text" name="name" required></div>
+        <div class="form-field"><label>Company *</label><input type="text" name="company" required></div>
+        <div class="form-field"><label>Work email *</label><input type="email" name="email" required></div>
+        <div class="form-field"><label>Phone</label><input type="text" name="phone"></div>
+        <div class="form-field"><label>Approximate team size</label><input type="text" name="teamSize" placeholder="e.g. 15-20"></div>
+        <div class="form-field"><label>What are you looking to achieve?</label><textarea name="message" rows="3"></textarea></div>
+        <button type="submit" class="btn btn-navy btn-block">Request Proposal</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<%- include('partials/footer') %>

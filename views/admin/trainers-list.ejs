@@ -1,0 +1,33 @@
+<%- include('partials/head') %>
+
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+  <div>
+    <h1 style="font-size:1.6rem;margin:0">Trainers</h1>
+    <% if (isScoped) { %><p style="color:var(--muted);font-size:.9rem;margin:4px 0 0">Showing trainers who teach your assigned courses only.</p><% } %>
+  </div>
+  <% if (!isScoped) { %><a href="/admin/trainers/new" class="btn btn-gold">+ New trainer</a><% } %>
+</div>
+
+<% if (typeof error !== 'undefined' && error) { %>
+  <div class="alert alert-error" style="margin-bottom:16px"><%= error %></div>
+<% } %>
+
+<table class="admin-table">
+  <thead><tr><th>Name</th><th>Title</th><th>Profile link</th><th>Actions</th></tr></thead>
+  <tbody>
+    <% trainers.forEach(t => { %>
+    <tr>
+      <td><strong><%= t.name %></strong></td>
+      <td><%= t.title || '—' %></td>
+      <td><a href="<%= t.profileUrl %>" target="_blank" rel="noopener"><%= t.profileUrl %></a></td>
+      <td class="admin-actions">
+        <a href="/admin/trainers/<%= t.id %>/edit" class="btn btn-outline btn-sm">Edit</a>
+        <form method="POST" action="/admin/trainers/<%= t.id %>/delete" style="display:inline" onsubmit="return confirm('Delete this trainer permanently?')"><button class="btn btn-outline btn-sm" type="submit" style="color:#b91c1c;border-color:#fecaca">Delete</button></form>
+      </td>
+    </tr>
+    <% }) %>
+    <% if (trainers.length===0) { %><tr><td colspan="4" style="color:var(--muted)">No trainers yet — add one to reference from a training program.</td></tr><% } %>
+  </tbody>
+</table>
+
+<%- include('partials/foot') %>

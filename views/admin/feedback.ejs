@@ -1,0 +1,55 @@
+<%- include('partials/head') %>
+
+<div class="page-heading">
+  <div>
+    <h1>Feedback</h1>
+    <p>Multi-stage learner feedback — purchase and course-completion prompts, with aggregated ratings.</p>
+  </div>
+  <div class="page-actions">
+    <a href="/admin/export/feedback<%= activeCourseId || activeStage ? '?' + (activeCourseId ? 'courseId=' + activeCourseId : '') + (activeCourseId && activeStage ? '&' : '') + (activeStage ? 'stage=' + activeStage : '') : '' %>" class="btn btn-outline btn-sm">
+      <span>↓ Export CSV</span>
+    </a>
+  </div>
+</div>
+
+<form method="GET" action="/admin/feedback" style="display:flex;gap:12px;margin-bottom:16px;align-items:end">
+  <div class="form-field" style="margin-bottom:0">
+    <label>Course</label>
+    <select name="courseId" onchange="this.form.submit()">
+      <option value="">All courses</option>
+      <% filterCourses.forEach(c => { %><option value="<%= c.id %>" <%= c.id === activeCourseId ? 'selected' : '' %>><%= c.title %></option><% }) %>
+    </select>
+  </div>
+  <div class="form-field" style="margin-bottom:0">
+    <label>Stage</label>
+    <select name="stage" onchange="this.form.submit()">
+      <option value="">All stages</option>
+      <% ["purchase","module","course_completion"].forEach(s => { %><option value="<%= s %>" <%= s === activeStage ? 'selected' : '' %>><%= s.replace('_',' ') %></option><% }) %>
+    </select>
+  </div>
+</form>
+
+<p><strong><%= submittedCount %></strong> of <strong><%= feedback.length %></strong> prompts answered<% if (avgRating) { %> · average rating: <strong><%= avgRating.toFixed(1) %>/5</strong><% } %></p>
+
+<div class="table-card course-table-card">
+  <div class="table-scroll">
+    <table class="admin-table showcase-table">
+      <thead><tr><th>Course</th><th>Stage</th><th>Rating</th><th>Comment</th><th>Date</th></tr></thead>
+      <tbody>
+        <% feedback.forEach(f => { %>
+          <% const course = coursesById[f.courseId]; %>
+          <tr>
+            <td><%= course ? course.title : 'Unknown' %></td>
+            <td><%= f.stage.replace('_',' ') %></td>
+            <td><%= f.rating == null ? 'Pending' : f.rating + '/5' %></td>
+            <td><%= f.comment || '—' %></td>
+            <td><%= new Date(f.createdAt).toLocaleDateString() %></td>
+          </tr>
+        <% }) %>
+        <% if (feedback.length === 0) { %><tr><td colspan="5" class="empty-state">No feedback prompts yet.</td></tr><% } %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<%- include('partials/foot') %>

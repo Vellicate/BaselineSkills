@@ -1,0 +1,58 @@
+<%- include('partials/header') %>
+
+<section class="section-tight" style="background:#fff;border-bottom:1px solid var(--line)">
+  <div class="container">
+    <span class="eyebrow">Affiliate Dashboard</span>
+    <h1 style="font-size:2rem">Welcome, <%= affiliate.name %>.</h1>
+    <p class="lead"><a href="/affiliate/logout">Log out</a></p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <% if (referralCode) { %>
+    <div class="card" style="margin-bottom:24px">
+      <h3 style="margin-top:0">Your referral link</h3>
+      <p style="font-family:monospace;background:var(--surface-2, #f5f5f5);padding:8px 12px;border-radius:6px;display:inline-block">https://baselineskills.com/courses/[course-slug]?ref=<%= referralCode.code %></p>
+      <p style="color:var(--muted);font-size:.85rem">Works across any course in our catalog.</p>
+    </div>
+    <% } %>
+
+    <p class="lead">This quarter's referred revenue: <strong>$<%= (quarterlyRevenueCents/100).toFixed(2) %></strong> — the high-tier rate applies once this crosses the configured threshold.</p>
+    <p class="lead">Total earned to date: <strong>$<%= (totalEarnedCents/100).toFixed(2) %></strong></p>
+
+    <h2 style="margin-top:24px">Referred registrations</h2>
+    <% if (registrations.length === 0) { %>
+      <p class="lead">No referrals yet.</p>
+    <% } else { %>
+    <table class="admin-table" style="background:#fff">
+      <thead><tr><th>Course</th><th>Status</th><th>Rate</th><th>Commission</th></tr></thead>
+      <tbody>
+        <% registrations.forEach((r, i) => { %>
+          <tr><td><%= r.courseTitle %></td><td><%= r.status %></td><td><%= earnings[i] ? earnings[i].ratePercent + '%' : '—' %></td><td><%= earnings[i] ? '$' + (earnings[i].commissionCents/100).toFixed(2) : '—' %></td></tr>
+        <% }) %>
+      </tbody>
+    </table>
+    <% } %>
+  </div>
+</section>
+
+<section class="section" style="padding-top:0">
+  <div class="container">
+    <h2>Payout history</h2>
+    <% if (payouts.length === 0) { %>
+      <p class="lead">No payouts issued yet.</p>
+    <% } else { %>
+    <table class="admin-table" style="background:#fff">
+      <thead><tr><th>Period</th><th>Amount</th><th>Status</th></tr></thead>
+      <tbody>
+        <% payouts.forEach(p => { %>
+          <tr><td><%= p.periodStart %> – <%= p.periodEnd %></td><td>$<%= (p.totalAmountCents/100).toFixed(2) %></td><td><%= p.status %></td></tr>
+        <% }) %>
+      </tbody>
+    </table>
+    <% } %>
+  </div>
+</section>
+
+<%- include('partials/footer') %>

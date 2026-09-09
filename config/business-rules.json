@@ -1,0 +1,60 @@
+{
+  "_comment": "Baseline Skills business-rule configuration — Master Prompt Section 6. Every value here traces to a specific document; none are invented. Change values here, not in application code — see docs/configuration-inventory.md for the full documented parameter list.",
+
+  "discounts": {
+    "EARLY_BIRD_1_DAYS": 60,
+    "EARLY_BIRD_1_DISCOUNT_PERCENT": 15,
+    "EARLY_BIRD_2_DAYS": 30,
+    "EARLY_BIRD_2_DISCOUNT_PERCENT": 10,
+    "GROUP_TIER_1_MIN_SEATS": 3,
+    "GROUP_TIER_1_DISCOUNT_PERCENT": 10,
+    "GROUP_TIER_2_MIN_SEATS": 5,
+    "GROUP_TIER_2_DISCOUNT_PERCENT": 15,
+    "GROUP_TIER_3_MIN_SEATS": 10,
+    "GROUP_TIER_3_DISCOUNT_PERCENT": 20,
+    "MAX_COMBINED_DISCOUNT_PERCENT": 25
+  },
+
+  "commissions": {
+    "INSTRUCTOR_PLATFORM_SOURCED_PERCENT": 60,
+    "INSTRUCTOR_REFERRED_PERCENT": 80,
+    "INSTRUCTOR_CORPORATE_BULK_PERCENT": 70,
+    "AFFILIATE_STANDARD_PERCENT": 10,
+    "AFFILIATE_HIGH_TIER_PERCENT": 15,
+    "AFFILIATE_HIGH_TIER_QUARTERLY_REVENUE_THRESHOLD_CENTS": 500000,
+    "REFERRAL_ATTRIBUTION_WINDOW_DAYS": 30
+  },
+
+  "payouts": {
+    "MINIMUM_PAYOUT_THRESHOLD_EUR_CENTS": 10000,
+    "MINIMUM_PAYOUT_THRESHOLD_GBP_CENTS": 9000,
+    "PAYOUT_SCHEDULE": "monthly"
+  },
+
+  "registration": {
+    "DEFAULT_MAX_PARTICIPANTS_PER_SESSION": null
+  },
+
+  "security": {
+    "PASSWORD_MIN_LENGTH": 8,
+    "LOGIN_LOCKOUT_WINDOW_MINUTES": 15,
+    "LOGIN_MAX_ATTEMPTS": 10,
+    "REGISTRATION_RATE_LIMIT_WINDOW_MINUTES": 10,
+    "REGISTRATION_RATE_LIMIT_MAX": 10,
+    "SIGNUP_RATE_LIMIT_WINDOW_MINUTES": 15,
+    "SIGNUP_RATE_LIMIT_MAX": 20,
+    "ONBOARDING_APPLICATION_RATE_LIMIT_WINDOW_MINUTES": 15,
+    "ONBOARDING_APPLICATION_RATE_LIMIT_MAX": 10,
+    "REVIEW_RATE_LIMIT_WINDOW_MINUTES": 60,
+    "REVIEW_RATE_LIMIT_MAX": 10,
+    "BROCHURE_REQUEST_RATE_LIMIT_WINDOW_MINUTES": 10,
+    "BROCHURE_REQUEST_RATE_LIMIT_MAX": 10,
+    "GENERAL_INQUIRY_FORM_RATE_LIMIT_WINDOW_MINUTES": 10,
+    "GENERAL_INQUIRY_FORM_RATE_LIMIT_MAX": 15,
+    "BROCHURE_MAX_FILE_SIZE_MB": 15,
+    "MATERIAL_MAX_FILE_SIZE_MB": 100,
+    "ROE_MAX_FILE_SIZE_MB": 15
+  },
+
+  "_note_on_vat_and_pricing": "VAT rates live in the vat_rates database table (Section 6 requires this be admin-editable without a deploy, which a JSON file in source control would not satisfy). Course prices and per-course discountPercent live in the courses table, since they are per-course data, not global business rules. Only the *rules that calculate discounts/commissions* belong in this file — not the underlying prices themselves."
+}

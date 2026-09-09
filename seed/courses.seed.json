@@ -1,0 +1,988 @@
+[
+  {
+    "id": "cpre-fl",
+    "slug": "cpre-foundation-level",
+    "title": "IREB CPRE Foundation Level",
+    "category": "Requirements Engineering",
+    "summary": "The internationally recognized entry-level certification in requirements engineering, aligned to the IREB syllabus.",
+    "description": "The CPRE Foundation Level is the internationally recognized starting point for a career in requirements engineering. This course covers the full IREB syllabus — requirements elicitation, documentation, validation, and management — and prepares you for the official CPRE Foundation Level exam.\n\nYou'll leave with a practical, standards-based vocabulary for requirements work, and the confidence to apply it on real projects the following week.",
+    "outcomes": [
+      "Explain the purpose and scope of requirements engineering within a project",
+      "Apply elicitation techniques suited to different stakeholder situations",
+      "Write unambiguous, verifiable requirements using structured templates (including EARS)",
+      "Distinguish functional, non-functional, and constraint requirements",
+      "Understand the fundamentals of requirements management and change control"
+    ],
+    "curriculum": [
+      {
+        "module": "Fundamentals of Requirements Engineering",
+        "topics": [
+          "Why RE matters",
+          "Roles and responsibilities",
+          "The RE process"
+        ]
+      },
+      {
+        "module": "Requirements Elicitation",
+        "topics": [
+          "Elicitation techniques",
+          "Stakeholder analysis",
+          "Workshops and interviews"
+        ]
+      },
+      {
+        "module": "Requirements Documentation",
+        "topics": [
+          "Natural language requirements",
+          "EARS templates",
+          "Models vs. text"
+        ]
+      },
+      {
+        "module": "Requirements Validation",
+        "topics": [
+          "Quality criteria",
+          "Reviews and inspections",
+          "Prototyping"
+        ]
+      },
+      {
+        "module": "Requirements Management",
+        "topics": [
+          "Traceability",
+          "Change management",
+          "Prioritization"
+        ]
+      }
+    ],
+    "audience": [
+      "Requirements Engineers",
+      "Business Analysts",
+      "Product Owners",
+      "Software Engineers new to RE"
+    ],
+    "durationDays": 4,
+    "deliveryModes": [
+      "Live Online",
+      "Classroom (India)",
+      "Corporate On-site"
+    ],
+    "priceCents": 89900,
+    "discountPercent": 15,
+    "currency": "USD",
+    "certification": true,
+    "sessions": [
+      {
+        "startDate": "2026-09-11",
+        "mode": "Live Online",
+        "seatsLeft": 12
+      },
+      {
+        "startDate": "2026-10-06",
+        "mode": "Classroom (India)",
+        "seatsLeft": 8
+      }
+    ],
+    "corporateOnly": false,
+    "published": true
+  },
+  {
+    "id": "cpre-al-elicitation",
+    "slug": "cpre-advanced-elicitation",
+    "title": "IREB CPRE Advanced Level — Elicitation",
+    "category": "Requirements Engineering",
+    "summary": "Deepen your elicitation practice — advanced stakeholder analysis, negotiation, and conflict resolution.",
+    "description": "Building on Foundation Level knowledge, this Advanced Level course focuses entirely on elicitation: how to draw out real needs from stakeholders who don't always know how to articulate them, resolve conflicting requirements, and run elicitation at scale across distributed teams.",
+    "outcomes": [
+      "Select and justify elicitation techniques for complex stakeholder landscapes",
+      "Facilitate structured negotiation between conflicting stakeholder needs",
+      "Design an elicitation strategy for a multi-team, multi-site project"
+    ],
+    "curriculum": [
+      {
+        "module": "Advanced Stakeholder Analysis",
+        "topics": [
+          "Power/interest mapping",
+          "Hidden stakeholders"
+        ]
+      },
+      {
+        "module": "Structured Elicitation Techniques",
+        "topics": [
+          "Facilitated workshops",
+          "Contextual inquiry"
+        ]
+      },
+      {
+        "module": "Conflict & Negotiation",
+        "topics": [
+          "Prioritization under conflict",
+          "Trade-off facilitation"
+        ]
+      }
+    ],
+    "audience": [
+      "Certified CPRE Foundation Level holders",
+      "Senior Requirements Engineers",
+      "Business Analysts"
+    ],
+    "durationDays": 2,
+    "deliveryModes": [
+      "Live Online",
+      "Corporate On-site"
+    ],
+    "priceCents": 64900,
+    "discountPercent": 0,
+    "currency": "USD",
+    "certification": true,
+    "sessions": [
+      {
+        "startDate": "2026-09-22",
+        "mode": "Live Online",
+        "seatsLeft": 10
+      }
+    ],
+    "corporateOnly": false,
+    "published": true
+  },
+  {
+    "id": "cpre-al-modeling",
+    "slug": "cpre-advanced-requirements-modeling",
+    "title": "IREB CPRE Advanced Level — Requirements Modeling",
+    "category": "Requirements Engineering",
+    "summary": "Model requirements with precision using UML, BPMN, and goal-oriented notations.",
+    "description": "This Advanced Level course teaches you to represent requirements as models where text alone falls short — process flows, state behavior, and system context — using industry-standard notations that hold up under review and change.",
+    "outcomes": [
+      "Choose the right modeling notation for a given requirement type",
+      "Build clear, consistent UML and BPMN models from natural-language input",
+      "Review models for completeness and consistency against source requirements"
+    ],
+    "curriculum": [
+      {
+        "module": "Modeling Fundamentals",
+        "topics": [
+          "When to model vs. when to write text"
+        ]
+      },
+      {
+        "module": "UML for Requirements",
+        "topics": [
+          "Use case diagrams",
+          "Class diagrams",
+          "Sequence diagrams"
+        ]
+      },
+      {
+        "module": "BPMN for Process Requirements",
+        "topics": [
+          "Process flows",
+          "Swimlanes",
+          "Exception paths"
+        ]
+      }
+    ],
+    "audience": [
+      "Certified CPRE Foundation Level holders",
+      "Business Analysts",
+      "Systems Engineers"
+    ],
+    "durationDays": 2,
+    "deliveryModes": [
+      "Live Online",
+      "Corporate On-site"
+    ],
+    "priceCents": 64900,
+    "discountPercent": 0,
+    "currency": "USD",
+    "certification": true,
+    "sessions": [
+      {
+        "startDate": "2026-10-13",
+        "mode": "Live Online",
+        "seatsLeft": 14
+      }
+    ],
+    "corporateOnly": false,
+    "published": true
+  },
+  {
+    "id": "cpre-al-management",
+    "slug": "cpre-advanced-requirements-management",
+    "title": "IREB CPRE Advanced Level — Requirements Management",
+    "category": "Requirements Engineering",
+    "summary": "Traceability, change control, and requirements governance for long-lived, evolving projects.",
+    "description": "Requirements rarely stay still. This course covers how to manage them properly once they exist — traceability across the lifecycle, controlled change, versioning, and the governance practices that keep a large or long-running project's requirements trustworthy.",
+    "outcomes": [
+      "Design a traceability scheme appropriate to project risk and regulation",
+      "Run a controlled requirements change process",
+      "Set up requirements governance for a multi-release product"
+    ],
+    "curriculum": [
+      {
+        "module": "Traceability",
+        "topics": [
+          "Forward/backward tracing",
+          "Tool-supported traceability"
+        ]
+      },
+      {
+        "module": "Change Management",
+        "topics": [
+          "Change request handling",
+          "Impact analysis"
+        ]
+      },
+      {
+        "module": "Governance",
+        "topics": [
+          "Baselining",
+          "Versioning",
+          "Audit readiness"
+        ]
+      }
+    ],
+    "audience": [
+      "Certified CPRE Foundation Level holders",
+      "Requirements Engineers",
+      "PMO / Quality roles"
+    ],
+    "durationDays": 2,
+    "deliveryModes": [
+      "Live Online",
+      "Corporate On-site"
+    ],
+    "priceCents": 64900,
+    "discountPercent": 0,
+    "currency": "USD",
+    "certification": true,
+    "sessions": [
+      {
+        "startDate": "2026-11-03",
+        "mode": "Live Online",
+        "seatsLeft": 14
+      }
+    ],
+    "corporateOnly": false,
+    "published": true
+  },
+  {
+    "id": "re-agile",
+    "slug": "re-at-agile",
+    "title": "RE@Agile",
+    "category": "Requirements Engineering",
+    "summary": "Practical requirements engineering discipline inside Scrum and Kanban teams — without the heavyweight process.",
+    "description": "Agile doesn't remove the need for good requirements — it changes how they're captured and evolved. This course teaches you to bring real RE discipline (clarity, traceability, verifiability) into backlogs, user stories, and sprint-based delivery, without reintroducing the overhead agile teams push back against.",
+    "outcomes": [
+      "Write user stories that are both agile-friendly and genuinely verifiable",
+      "Maintain lightweight traceability across sprints without heavyweight tooling",
+      "Facilitate backlog refinement sessions that surface real requirements gaps"
+    ],
+    "curriculum": [
+      {
+        "module": "RE Principles in Agile Contexts",
+        "topics": [
+          "What changes, what doesn't"
+        ]
+      },
+      {
+        "module": "User Stories Done Well",
+        "topics": [
+          "Acceptance criteria",
+          "Definition of Ready"
+        ]
+      },
+      {
+        "module": "Lightweight Traceability",
+        "topics": [
+          "Backlog-to-outcome tracing"
+        ]
+      }
+    ],
+    "audience": [
+      "Product Owners",
+      "Scrum Masters",
+      "Business Analysts",
+      "Requirements Engineers"
+    ],
+    "durationDays": 1,
+    "deliveryModes": [
+      "Live Online",
+      "Corporate On-site"
+    ],
+    "priceCents": 39900,
+    "discountPercent": 0,
+    "currency": "USD",
+    "certification": false,
+    "sessions": [
+      {
+        "startDate": "2026-09-08",
+        "mode": "Live Online",
+        "seatsLeft": 20
+      }
+    ],
+    "corporateOnly": false,
+    "published": true
+  },
+  {
+    "id": "ai4re",
+    "slug": "ai4re-microcredential",
+    "title": "AI4RE Microcredential",
+    "category": "Requirements Engineering",
+    "summary": "Use AI responsibly to accelerate elicitation, drafting, and quality review — without losing rigor.",
+    "description": "A focused, single-day microcredential on applying AI tools to requirements engineering work — drafting, quality-checking, and translating between formats — while keeping the discipline's own standards (IREB CPRE, EARS) firmly in the driver's seat, not the AI.",
+    "outcomes": [
+      "Use AI tools to accelerate first-draft requirement writing without sacrificing quality",
+      "Apply IREB CPRE quality criteria to review AI-assisted output critically",
+      "Recognize where AI assistance helps and where it introduces real risk"
+    ],
+    "curriculum": [
+      {
+        "module": "AI in the RE Workflow",
+        "topics": [
+          "Where it helps, where it doesn't"
+        ]
+      },
+      {
+        "module": "Prompting for Requirements Work",
+        "topics": [
+          "Effective prompt patterns"
+        ]
+      },
+      {
+        "module": "Quality Review of AI Output",
+        "topics": [
+          "Applying CPRE criteria as a check"
+        ]
+      }
+    ],
+    "audience": [
+      "Requirements Engineers",
+      "Business Analysts",
+      "Systems Engineers"
+    ],
+    "durationDays": 1,
+    "deliveryModes": [
+      "Live Online"
+    ],
+    "priceCents": 29900,
+    "discountPercent": 0,
+    "currency": "USD",
+    "certification": true,
+    "sessions": [
+      {
+        "startDate": "2026-08-20",
+        "mode": "Live Online",
+        "seatsLeft": 25
+      }
+    ],
+    "corporateOnly": false,
+    "published": true
+  },
+  {
+    "id": "intro-systems-engineering",
+    "slug": "introduction-to-systems-engineering",
+    "title": "Introduction to Systems Engineering",
+    "category": "Systems Engineering",
+    "summary": "The fundamentals of systems thinking, lifecycle processes, and INCOSE/ISO 15288 practice.",
+    "description": "A practical introduction to systems engineering for anyone who needs to understand how complex systems get built — lifecycle processes, systems thinking, and how requirements, architecture, and verification connect across a program.",
+    "outcomes": [
+      "Explain the systems engineering lifecycle per ISO/IEC/IEEE 15288",
+      "Apply systems thinking to decompose a complex problem into a coherent architecture",
+      "Understand how requirements, design, and verification stay connected across a program"
+    ],
+    "curriculum": [
+      {
+        "module": "Systems Thinking Fundamentals",
+        "topics": [
+          "Systems vs. components",
+          "Emergent behavior"
+        ]
+      },
+      {
+        "module": "The SE Lifecycle",
+        "topics": [
+          "ISO/IEC/IEEE 15288 overview"
+        ]
+      },
+      {
+        "module": "Requirements-to-Verification Traceability",
+        "topics": [
+          "V-model in practice"
+        ]
+      }
+    ],
+    "audience": [
+      "Systems Engineers",
+      "Engineering Managers",
+      "Product Architects"
+    ],
+    "durationDays": 2,
+    "deliveryModes": [
+      "Live Online",
+      "Corporate On-site"
+    ],
+    "priceCents": 59900,
+    "discountPercent": 0,
+    "currency": "USD",
+    "certification": false,
+    "sessions": [
+      {
+        "startDate": "2026-09-15",
+        "mode": "Live Online",
+        "seatsLeft": 16
+      },
+      {
+        "startDate": "On Demand",
+        "mode": "Corporate",
+        "seatsLeft": null
+      }
+    ],
+    "corporateOnly": false,
+    "published": true
+  },
+  {
+    "id": "complete-system-analysis",
+    "slug": "complete-system-analysis",
+    "title": "Complete System Analysis (INCOSE + ISO 15288)",
+    "category": "Systems Engineering",
+    "summary": "A comprehensive treatment of system analysis practice aligned to INCOSE and ISO 15288.",
+    "description": "A deeper program for engineers who need to run system analysis end to end — stakeholder needs, requirements, functional analysis, and architecture trade-offs — grounded in INCOSE practice and ISO/IEC/IEEE 15288.",
+    "outcomes": [
+      "Run a complete stakeholder-needs-to-requirements analysis for a complex system",
+      "Perform functional analysis and allocate requirements to architecture",
+      "Apply trade-off analysis techniques to competing architectural options"
+    ],
+    "curriculum": [
+      {
+        "module": "Stakeholder Needs & Requirements",
+        "topics": [
+          "Needs analysis",
+          "Requirements derivation"
+        ]
+      },
+      {
+        "module": "Functional Analysis",
+        "topics": [
+          "Functional decomposition",
+          "Allocation"
+        ]
+      },
+      {
+        "module": "Architecture Trade-offs",
+        "topics": [
+          "Trade study methods"
+        ]
+      }
+    ],
+    "audience": [
+      "Systems Engineers",
+      "Architects",
+      "Senior Engineering staff"
+    ],
+    "durationDays": 3,
+    "deliveryModes": [
+      "Live Online",
+      "Classroom (India)"
+    ],
+    "priceCents": 99900,
+    "discountPercent": 10,
+    "currency": "USD",
+    "certification": false,
+    "sessions": [
+      {
+        "startDate": "2026-10-20",
+        "mode": "Live Online",
+        "seatsLeft": 12
+      }
+    ],
+    "corporateOnly": false,
+    "published": true
+  },
+  {
+    "id": "mbse",
+    "slug": "mbse-fundamentals",
+    "title": "Model-Based Systems Engineering (MBSE) Fundamentals",
+    "category": "Systems Engineering",
+    "summary": "Move from document-based to model-based systems engineering practice with SysML.",
+    "description": "An applied introduction to MBSE — why model-based practice reduces ambiguity and rework, and how to actually get started with SysML on a real program, not just in theory.",
+    "outcomes": [
+      "Explain the case for MBSE over document-centric systems engineering",
+      "Build core SysML diagrams (block definition, requirements, activity)",
+      "Plan an MBSE adoption path for an existing document-based program"
+    ],
+    "curriculum": [
+      {
+        "module": "Why MBSE",
+        "topics": [
+          "Limits of document-based SE"
+        ]
+      },
+      {
+        "module": "SysML Essentials",
+        "topics": [
+          "BDD, IBD, requirements diagrams"
+        ]
+      },
+      {
+        "module": "Adoption Planning",
+        "topics": [
+          "Migrating an existing program"
+        ]
+      }
+    ],
+    "audience": [
+      "Systems Engineers",
+      "Requirements Engineers",
+      "Engineering Managers"
+    ],
+    "durationDays": 3,
+    "deliveryModes": [
+      "Live Online",
+      "Corporate On-site"
+    ],
+    "priceCents": 84900,
+    "discountPercent": 0,
+    "currency": "USD",
+    "certification": false,
+    "sessions": [
+      {
+        "startDate": "2026-09-05",
+        "mode": "Live Online",
+        "seatsLeft": 18
+      }
+    ],
+    "corporateOnly": false,
+    "published": true
+  },
+  {
+    "id": "cbap",
+    "slug": "certified-business-analysis-professional",
+    "title": "Certified Business Analysis Professional (CBAP) Prep",
+    "category": "Business Analysis",
+    "summary": "Comprehensive exam preparation for IIBA's senior-level business analysis certification.",
+    "description": "Full-syllabus preparation for the CBAP exam, covering all six BABOK knowledge areas, with practice questions and exam strategy from instructors who've supported candidates through the real thing.",
+    "outcomes": [
+      "Navigate all six BABOK knowledge areas confidently",
+      "Apply BA techniques to realistic exam-style scenarios",
+      "Build a personal study and exam-day strategy"
+    ],
+    "curriculum": [
+      {
+        "module": "BABOK Knowledge Areas Overview",
+        "topics": [
+          "All six areas, mapped to the exam blueprint"
+        ]
+      },
+      {
+        "module": "Techniques Deep-Dive",
+        "topics": [
+          "The most exam-relevant BA techniques"
+        ]
+      },
+      {
+        "module": "Exam Strategy & Practice",
+        "topics": [
+          "Timed practice sets",
+          "Common pitfalls"
+        ]
+      }
+    ],
+    "audience": [
+      "Senior Business Analysts",
+      "BA Managers",
+      "Consultants"
+    ],
+    "durationDays": 3,
+    "deliveryModes": [
+      "Live Online"
+    ],
+    "priceCents": 74900,
+    "discountPercent": 0,
+    "currency": "USD",
+    "certification": true,
+    "sessions": [
+      {
+        "startDate": "2026-10-01",
+        "mode": "Live Online",
+        "seatsLeft": 15
+      }
+    ],
+    "corporateOnly": false,
+    "published": true
+  },
+  {
+    "id": "ccba",
+    "slug": "certification-of-capability-in-business-analysis",
+    "title": "Certification of Capability in Business Analysis (CCBA) Prep",
+    "category": "Business Analysis",
+    "summary": "IIBA's mid-level BA certification, for practitioners with a few years of hands-on experience.",
+    "description": "Exam preparation for the CCBA certification, aimed at business analysts with 2-3 years of experience who are ready to formalize their practice against the BABOK.",
+    "outcomes": [
+      "Map real project experience against BABOK knowledge areas",
+      "Apply core BA techniques correctly in exam scenarios",
+      "Prepare a realistic study plan for the CCBA exam"
+    ],
+    "curriculum": [
+      {
+        "module": "BABOK for Practitioners",
+        "topics": [
+          "Applied, not just theoretical"
+        ]
+      },
+      {
+        "module": "Core Techniques",
+        "topics": [
+          "The most commonly tested techniques"
+        ]
+      },
+      {
+        "module": "Exam Practice",
+        "topics": [
+          "Practice questions and review"
+        ]
+      }
+    ],
+    "audience": [
+      "Business Analysts (2-3 years experience)"
+    ],
+    "durationDays": 2,
+    "deliveryModes": [
+      "Live Online"
+    ],
+    "priceCents": 59900,
+    "discountPercent": 0,
+    "currency": "USD",
+    "certification": true,
+    "sessions": [
+      {
+        "startDate": "2026-09-29",
+        "mode": "Live Online",
+        "seatsLeft": 15
+      }
+    ],
+    "corporateOnly": false,
+    "published": true
+  },
+  {
+    "id": "re-elicitation-workshop",
+    "slug": "requirements-elicitation-workshop",
+    "title": "Requirements Elicitation Workshop",
+    "category": "Business Analysis",
+    "summary": "A hands-on, single-day workshop on running effective requirements elicitation sessions.",
+    "description": "A practical, workshop-format day focused entirely on the craft of elicitation — interviewing, facilitation, and getting to real needs, not just stated wants.",
+    "outcomes": [
+      "Run a structured stakeholder interview that surfaces real needs",
+      "Facilitate a requirements workshop with a mixed-seniority group",
+      "Recognize and probe past superficial or contradictory stakeholder statements"
+    ],
+    "curriculum": [
+      {
+        "module": "Interview Technique",
+        "topics": [
+          "Open questioning",
+          "Active listening"
+        ]
+      },
+      {
+        "module": "Workshop Facilitation",
+        "topics": [
+          "Managing group dynamics"
+        ]
+      }
+    ],
+    "audience": [
+      "Business Analysts",
+      "Product Owners",
+      "Junior Requirements Engineers"
+    ],
+    "durationDays": 1,
+    "deliveryModes": [
+      "Live Online",
+      "Corporate On-site"
+    ],
+    "priceCents": 34900,
+    "discountPercent": 0,
+    "currency": "USD",
+    "certification": false,
+    "sessions": [
+      {
+        "startDate": "2026-08-27",
+        "mode": "Live Online",
+        "seatsLeft": 20
+      }
+    ],
+    "corporateOnly": false,
+    "published": true
+  },
+  {
+    "id": "bulletproof-business-cases",
+    "slug": "bulletproof-business-cases",
+    "title": "Bulletproof Business Cases",
+    "category": "Business Analysis",
+    "summary": "Build business cases that survive scrutiny from finance, leadership, and skeptical stakeholders.",
+    "description": "A practical course on constructing business cases that hold up — realistic cost/benefit analysis, risk framing, and the storytelling that gets a good case actually approved.",
+    "outcomes": [
+      "Structure a business case that withstands financial scrutiny",
+      "Frame risk and assumptions honestly without undermining the case",
+      "Present a business case persuasively to senior stakeholders"
+    ],
+    "curriculum": [
+      {
+        "module": "Cost/Benefit Fundamentals",
+        "topics": [
+          "Realistic estimation"
+        ]
+      },
+      {
+        "module": "Risk Framing",
+        "topics": [
+          "Presenting uncertainty honestly"
+        ]
+      },
+      {
+        "module": "Persuasive Presentation",
+        "topics": [
+          "Telling the case's story"
+        ]
+      }
+    ],
+    "audience": [
+      "Business Analysts",
+      "Product Managers",
+      "PMO"
+    ],
+    "durationDays": 1,
+    "deliveryModes": [
+      "Live Online",
+      "Corporate On-site"
+    ],
+    "priceCents": 34900,
+    "discountPercent": 0,
+    "currency": "USD",
+    "certification": false,
+    "sessions": [
+      {
+        "startDate": "2026-09-17",
+        "mode": "Live Online",
+        "seatsLeft": 20
+      }
+    ],
+    "corporateOnly": false,
+    "published": true
+  },
+  {
+    "id": "aspice-fundamentals",
+    "slug": "aspice-fundamentals",
+    "title": "ASPICE Fundamentals",
+    "category": "Automotive",
+    "summary": "The foundations of Automotive SPICE — process assessment, SWE processes, and traceability.",
+    "description": "A foundational course in Automotive SPICE for teams working with or being assessed against ASPICE — process structure, key SWE processes, and the traceability evidence assessors actually look for.",
+    "outcomes": [
+      "Explain the ASPICE process reference and assessment models",
+      "Identify the traceability evidence required across SWE.1-SWE.6",
+      "Prepare for an internal ASPICE readiness review"
+    ],
+    "curriculum": [
+      {
+        "module": "ASPICE Overview",
+        "topics": [
+          "Process reference model",
+          "Assessment model"
+        ]
+      },
+      {
+        "module": "SWE Processes",
+        "topics": [
+          "SWE.1 through SWE.6"
+        ]
+      },
+      {
+        "module": "Traceability Evidence",
+        "topics": [
+          "What assessors look for"
+        ]
+      }
+    ],
+    "audience": [
+      "Automotive Software Engineers",
+      "Quality Managers",
+      "Requirements Engineers"
+    ],
+    "durationDays": 2,
+    "deliveryModes": [
+      "Live Online",
+      "Corporate On-site"
+    ],
+    "priceCents": 64900,
+    "discountPercent": 0,
+    "currency": "USD",
+    "certification": false,
+    "sessions": [
+      {
+        "startDate": "2026-10-08",
+        "mode": "Live Online",
+        "seatsLeft": 16
+      }
+    ],
+    "corporateOnly": false,
+    "published": true
+  },
+  {
+    "id": "sdv",
+    "slug": "software-defined-vehicles",
+    "title": "Software-Defined Vehicles (SDV)",
+    "category": "Automotive",
+    "summary": "What SDV architecture means for requirements, systems engineering, and organizational practice.",
+    "description": "An engineering-track overview of software-defined vehicle architecture and what it changes about requirements engineering, systems engineering, and release practice in automotive organizations moving away from fixed ECU-per-function designs.",
+    "outcomes": [
+      "Explain the architectural shift SDV represents versus traditional automotive E/E architecture",
+      "Identify how SDV changes requirements and release practice",
+      "Discuss organizational implications of SDV adoption"
+    ],
+    "curriculum": [
+      {
+        "module": "SDV Architecture",
+        "topics": [
+          "Zonal architecture",
+          "Centralized compute"
+        ]
+      },
+      {
+        "module": "Requirements & Release Impact",
+        "topics": [
+          "OTA implications",
+          "Continuous release"
+        ]
+      }
+    ],
+    "audience": [
+      "Automotive Systems Engineers",
+      "Architects",
+      "Engineering Leadership"
+    ],
+    "durationDays": 1,
+    "deliveryModes": [
+      "Live Online",
+      "Corporate On-site"
+    ],
+    "priceCents": 44900,
+    "discountPercent": 0,
+    "currency": "USD",
+    "certification": false,
+    "sessions": [
+      {
+        "startDate": "2026-09-24",
+        "mode": "Live Online",
+        "seatsLeft": 16
+      }
+    ],
+    "corporateOnly": false,
+    "published": true
+  },
+  {
+    "id": "functional-safety-overview",
+    "slug": "functional-safety-overview",
+    "title": "Functional Safety Overview",
+    "category": "Automotive",
+    "summary": "ISO 26262 fundamentals — ASIL classification, the safety lifecycle, and safety requirements.",
+    "description": "A foundational course in automotive functional safety per ISO 26262 — hazard analysis, ASIL determination, and how safety requirements flow through the development lifecycle.",
+    "outcomes": [
+      "Explain the ISO 26262 safety lifecycle end to end",
+      "Determine ASIL classification from a hazard and risk analysis",
+      "Trace safety requirements through to verification evidence"
+    ],
+    "curriculum": [
+      {
+        "module": "ISO 26262 Overview",
+        "topics": [
+          "The safety lifecycle"
+        ]
+      },
+      {
+        "module": "HARA & ASIL",
+        "topics": [
+          "Hazard analysis and risk assessment"
+        ]
+      },
+      {
+        "module": "Safety Requirements",
+        "topics": [
+          "From hazard to verified requirement"
+        ]
+      }
+    ],
+    "audience": [
+      "Automotive Engineers",
+      "Functional Safety Managers",
+      "Requirements Engineers"
+    ],
+    "durationDays": 2,
+    "deliveryModes": [
+      "Live Online",
+      "Corporate On-site"
+    ],
+    "priceCents": 64900,
+    "discountPercent": 0,
+    "currency": "USD",
+    "certification": false,
+    "sessions": [
+      {
+        "startDate": "2026-10-15",
+        "mode": "Live Online",
+        "seatsLeft": 16
+      }
+    ],
+    "corporateOnly": false,
+    "published": true
+  },
+  {
+    "id": "automotive-cybersecurity",
+    "slug": "automotive-cybersecurity-introduction",
+    "title": "Automotive Cybersecurity Introduction",
+    "category": "Automotive",
+    "summary": "ISO/SAE 21434 fundamentals and the cybersecurity requirements every automotive engineer should know.",
+    "description": "An introduction to automotive cybersecurity engineering per ISO/SAE 21434 — threat analysis, risk assessment (TARA), and how cybersecurity requirements integrate with the rest of the development process.",
+    "outcomes": [
+      "Explain the ISO/SAE 21434 cybersecurity engineering process",
+      "Run a basic threat analysis and risk assessment (TARA)",
+      "Identify where cybersecurity requirements intersect with functional and safety requirements"
+    ],
+    "curriculum": [
+      {
+        "module": "ISO/SAE 21434 Overview",
+        "topics": [
+          "Cybersecurity engineering process"
+        ]
+      },
+      {
+        "module": "TARA",
+        "topics": [
+          "Threat analysis and risk assessment"
+        ]
+      }
+    ],
+    "audience": [
+      "Automotive Engineers",
+      "Security Engineers",
+      "Requirements Engineers"
+    ],
+    "durationDays": 1,
+    "deliveryModes": [
+      "Live Online",
+      "Corporate On-site"
+    ],
+    "priceCents": 44900,
+    "discountPercent": 0,
+    "currency": "USD",
+    "certification": false,
+    "sessions": [
+      {
+        "startDate": "2026-11-10",
+        "mode": "Live Online",
+        "seatsLeft": 16
+      }
+    ],
+    "corporateOnly": false,
+    "published": true
+  }
+]

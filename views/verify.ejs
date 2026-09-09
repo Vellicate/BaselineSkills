@@ -1,0 +1,22 @@
+<%- include('partials/header') %>
+
+<section class="section" style="min-height:60vh;display:flex;align-items:center">
+  <div class="container" style="max-width:560px;text-align:center">
+    <% if (!certificate) { %>
+      <h1 style="font-size:1.8rem">Certificate not found</h1>
+      <p class="lead">This verification link doesn't match a real Baseline Skills certificate. If you believe this is an error, please <a href="/contact">contact us</a>.</p>
+    <% } else { %>
+      <div class="card" style="padding:32px">
+        <span style="font-size:2.5rem">✅</span>
+        <h1 style="font-size:1.6rem;margin-top:8px">Verified Certificate</h1>
+        <p class="lead" style="margin-top:16px"><strong><%= learner.name %></strong> has completed</p>
+        <h2 style="font-size:1.3rem"><%= course.title %></h2>
+        <p style="color:var(--muted);font-size:.9rem;margin-top:16px">
+          Issued <%= certificate.issuedAt %> · Certificate number <%= certificate.certificateNumber %>
+        </p>
+      </div>
+    <% } %>
+  </div>
+</section>
+
+<%- include('partials/footer') %>

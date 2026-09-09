@@ -1,0 +1,29 @@
+<%- include('partials/head') %>
+
+<div class="container" style="padding:24px 0">
+  <h1><%= type === 'trainer' ? 'Trainer' : 'Affiliate' %> Applications</h1>
+  <% if (typeof success !== 'undefined' && success) { %><div class="alert alert-success"><%= success %></div><% } %>
+
+  <table class="admin-table" style="background:#fff">
+    <thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Signed RoE</th><th>Actions</th></tr></thead>
+    <tbody>
+      <% applications.forEach(a => { %>
+        <tr>
+          <td><%= a.name %></td>
+          <td><%= a.email %></td>
+          <td><%= a.verificationStatus || a.status %></td>
+          <td><%= a.signedRoePath ? 'Uploaded' : '—' %></td>
+          <td>
+            <% if ((a.verificationStatus || a.status) === 'pending') { %>
+              <form method="POST" action="/admin/<%= type %>-applications/<%= a.id %>/approve" style="display:inline"><button type="submit" class="btn btn-outline btn-sm">Approve</button></form>
+              <form method="POST" action="/admin/<%= type %>-applications/<%= a.id %>/reject" style="display:inline" onsubmit="return confirm('Reject this application?')"><button type="submit" class="btn btn-outline btn-sm">Reject</button></form>
+            <% } %>
+          </td>
+        </tr>
+      <% }) %>
+      <% if (applications.length === 0) { %><tr><td colspan="5">No applications yet.</td></tr><% } %>
+    </tbody>
+  </table>
+</div>
+
+<%- include('partials/foot') %>

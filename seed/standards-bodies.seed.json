@@ -1,0 +1,26 @@
+[
+  {
+    "id": "body_ireb",
+    "slug": "ireb",
+    "name": "IREB",
+    "description": "The International Requirements Engineering Board (IREB) is the certification body behind CPRE (Certified Professional for Requirements Engineering) — the most widely recognized requirements engineering certification, held by practitioners across more than 70 countries. IREB defines the syllabus and quality criteria that CPRE Foundation, Advanced, and specialist modules are examined against."
+  },
+  {
+    "id": "body_iiba",
+    "slug": "iiba",
+    "name": "IIBA",
+    "description": "The International Institute of Business Analysis (IIBA) sets the global standard for business analysis practice through the BABOK Guide and its certification track — ECBA, CCBA, and CBAP. IIBA certifications are recognized by employers worldwide as evidence of structured, professional business analysis capability."
+  },
+  {
+    "id": "body_incose",
+    "slug": "incose",
+    "name": "INCOSE",
+    "description": "The International Council on Systems Engineering (INCOSE) is the leading professional body for systems engineering, publishing the Systems Engineering Handbook and aligning practice with ISO/IEC/IEEE 15288. INCOSE-aligned training covers the full system lifecycle — from requirements through architecture, verification, and validation — for engineers working across multiple disciplines on complex systems."
+  },
+  {
+    "id": "body_automotive",
+    "slug": "automotive-standards",
+    "name": "Automotive & Functional Safety Standards",
+    "description": "Automotive software and systems development is governed by a specific set of standards — Automotive SPICE (ASPICE) for process assessment, ISO 26262 for functional safety, and an emerging body of practice around software-defined vehicles and automotive cybersecurity (ISO/SAE 21434). Training in this area prepares engineers and assessors to work against these standards in real automotive development programs."
+  }
+]

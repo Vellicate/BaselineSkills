@@ -1,0 +1,35 @@
+<%- include('partials/head') %>
+
+<h1 style="font-size:1.6rem"><%= mode === 'new' ? 'New blog post' : 'Edit blog post' %></h1>
+
+<% if (typeof error !== 'undefined' && error) { %>
+  <div class="alert alert-error" style="margin-bottom:16px"><%= error %></div>
+<% } %>
+
+<form method="POST" action="<%= mode === 'new' ? '/admin/blogs/new' : `/admin/blogs/${blog.id}/edit` %>" class="card" style="max-width:820px">
+  <div class="form-field"><label>Title *</label><input type="text" name="title" required value="<%= blog ? blog.title : '' %>"></div>
+
+  <div class="form-row">
+    <div class="form-field">
+      <label>Category</label>
+      <select name="category">
+        <% ["Requirements Engineering","Systems Engineering","Business Analysis","Automotive","ASPICE & Automotive","MBSE","AI for Engineering","Templates & Checklists"].forEach(cat => { %>
+          <option value="<%= cat %>" <%= blog && blog.category===cat ? 'selected' : '' %>><%= cat %></option>
+        <% }) %>
+      </select>
+    </div>
+    <div class="form-field"><label>Author</label><input type="text" name="author" value="<%= blog ? blog.author : 'Baseline Skills Team' %>"></div>
+  </div>
+
+  <div class="form-field"><label>Excerpt (shown on the blog listing card) *</label><textarea name="excerpt" rows="2" required><%= blog ? blog.excerpt : '' %></textarea></div>
+  <div class="form-field"><label>Body *</label><textarea name="body" rows="14" required placeholder="Plain text or basic paragraphs — blank lines separate paragraphs."><%= blog ? blog.body : '' %></textarea></div>
+
+  <div class="checkbox-row" style="margin-bottom:14px"><input type="checkbox" name="published" <%= !blog || blog.published ? 'checked' : '' %>> <label style="margin:0;font-weight:400">Published (visible on the public blog)</label></div>
+
+  <div style="margin-top:16px">
+    <button type="submit" class="btn btn-navy btn-lg">Save post</button>
+    <a href="/admin/blogs" class="btn btn-outline btn-lg" style="margin-left:8px">Cancel</a>
+  </div>
+</form>
+
+<%- include('partials/foot') %>

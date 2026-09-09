@@ -1,0 +1,289 @@
+<%- include('partials/header') %>
+
+<script type="application/ld+json">
+<%- JSON.stringify({
+  "@context": "https://schema.org",
+  "@type": "Course",
+  "name": course.title,
+  "description": course.summary,
+  "provider": { "@type": "Organization", "name": "Baseline Skills", "sameAs": "https://baselineskills.com" },
+  "hasCourseInstance": course.sessions.map(s => ({
+    "@type": "CourseInstance",
+    "courseMode": s.mode,
+    "startDate": s.startDate,
+  })),
+  ...(reviews.length ? { "aggregateRating": { "@type": "AggregateRating", "ratingValue": avgRating.toFixed(1), "reviewCount": reviews.length } } : {}),
+}) %>
+</script>
+
+<% if (faqs.length > 0) { %>
+<script type="application/ld+json">
+<%- JSON.stringify({
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": faqs.map(f => ({
+    "@type": "Question",
+    "name": f.question,
+    "acceptedAnswer": { "@type": "Answer", "text": f.answer },
+  })),
+}) %>
+</script>
+<% } %>
+
+<script type="application/ld+json">
+<%- JSON.stringify({
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    { "@type": "ListItem", "position": 1, "name": "Courses", "item": "https://baselineskills.com/courses" },
+    { "@type": "ListItem", "position": 2, "name": course.title, "item": `https://baselineskills.com/courses/${course.slug}` },
+  ],
+}) %>
+</script>
+
+<section class="course-header">
+  <div class="container">
+    <span class="tag"><%= course.category %></span>
+    <% if(course.certification){ %><span class="tag" style="margin-left:8px">Certification</span><% } %>
+    <% if(certificationBody){ %><a href="/certifications/<%= certificationBody.slug %>" class="tag" style="margin-left:8px;text-decoration:none"><%= certificationBody.name %> Accredited</a><% } %>
+    <h1 style="color:#fff;margin-top:14px"><%= course.title %></h1>
+    <p style="color:rgba(255,255,255,.8);max-width:640px"><%= course.summary %></p>
+    <div class="course-meta">
+      <span><strong><%= course.durationDays %></strong> Day<%= course.durationDays>1?'s':'' %></span>
+      <span><strong><%= course.deliveryModes.join(', ') %></strong></span>
+      <span><strong><%= course.sessions.length %></strong> upcoming session<%= course.sessions.length!==1?'s':'' %></span>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:18px">
+      <a href="/courses/<%= course.slug %>/register" class="btn btn-gold btn-lg">Register Now</a>
+      <% if (course.courseOutlineUrl) { %><a href="<%= course.courseOutlineUrl %>" target="_blank" rel="noopener" class="btn btn-outline btn-lg" style="border-color:rgba(255,255,255,.4);color:#fff">View Course Outline</a><% } %>
+      <% if (course.brochureFilename) { %><button type="button" class="btn btn-outline btn-lg" style="border-color:rgba(255,255,255,.4);color:#fff" onclick="document.getElementById('brochure-modal').style.display='flex'">Download Brochure</button><% } %>
+    </div>
+  </div>
+</section>
+
+<div class="container course-body">
+  <div>
+    <% if (course.whyTakeThisCourse) { %>
+    <h2>Why Take This Course</h2>
+    <p style="white-space:pre-line;color:var(--text)"><%= course.whyTakeThisCourse %></p>
+    <% } %>
+
+    <h2 style="margin-top:36px">What You'll Learn</h2>
+    <ul style="padding-left:20px;color:var(--text)">
+      <% course.outcomes.forEach(o => { %><li style="margin-bottom:8px"><%= o %></li><% }) %>
+    </ul>
+
+    <h2 style="margin-top:36px">Course Overview</h2>
+    <p style="white-space:pre-line;color:var(--text)"><%= course.description %></p>
+
+    <% if (course.curriculum && course.curriculum.length) { %>
+    <h2 style="margin-top:36px">Course Contents</h2>
+    <% course.curriculum.forEach((mod, i) => { %>
+      <div class="accordion-item <%= i===0?'open':'' %>">
+        <button class="accordion-btn" onclick="this.parentElement.classList.toggle('open')">
+          <span><%= mod.module %></span><span>&#9662;</span>
+        </button>
+        <div class="accordion-panel">
+          <ul style="padding-left:18px">
+            <% mod.topics.forEach(t => { %><li><%= t %></li><% }) %>
+          </ul>
+        </div>
+      </div>
+    <% }) %>
+    <% } %>
+
+    <h2 style="margin-top:36px">Who Should Attend</h2>
+    <div style="display:flex;flex-wrap:wrap;gap:10px">
+      <% course.audience.forEach(a => { %><span class="pill"><%= a %></span><% }) %>
+    </div>
+
+    <% if (course.prerequisites && course.prerequisites.length) { %>
+    <h2 style="margin-top:36px">Prerequisites</h2>
+    <ul style="padding-left:20px;color:var(--text)">
+      <% course.prerequisites.forEach(p => { %><li style="margin-bottom:8px"><%= p %></li><% }) %>
+    </ul>
+    <% } %>
+
+    <% if (course.formatAndMaterial) { %>
+    <h2 style="margin-top:36px">Format &amp; Material</h2>
+    <p style="white-space:pre-line;color:var(--text)"><%= course.formatAndMaterial %></p>
+    <% } %>
+
+    <% if (course.whatYoullReceive && course.whatYoullReceive.length) { %>
+    <h2 style="margin-top:36px">What You'll Receive</h2>
+    <ul style="padding-left:20px;color:var(--text)">
+      <% course.whatYoullReceive.forEach(w => { %><li style="margin-bottom:8px"><%= w %></li><% }) %>
+    </ul>
+    <% } %>
+
+    <h2 style="margin-top:36px">Delivery Options</h2>
+    <div style="display:flex;flex-wrap:wrap;gap:10px">
+      <% course.deliveryModes.forEach(m => { %><span class="pill"><%= m %></span><% }) %>
+    </div>
+
+    <% if (materials.length) { %>
+    <h2 style="margin-top:36px">Course Materials</h2>
+    <% if (hasAccessToMaterials) { %>
+      <div class="grid-3">
+        <% materials.forEach(m => { %>
+          <div class="card">
+            <h4><%= m.title %></h4>
+            <% if (m.description) { %><p style="font-size:.85rem;color:var(--muted)"><%= m.description %></p><% } %>
+            <a href="/courses/<%= course.slug %>/materials/<%= m.id %>/download" class="btn btn-outline btn-sm">Download</a>
+          </div>
+        <% }) %>
+      </div>
+    <% } else { %>
+      <p class="lead"><%= materials.length %> material<%= materials.length !== 1 ? 's' : '' %> available to registered learners — <a href="/courses/<%= course.slug %>/register">register for this course</a> to access them.</p>
+    <% } %>
+    <% } %>
+
+    <% if (trainer) { %>
+    <h2 style="margin-top:36px">Your Trainer</h2>
+    <div class="card" style="max-width:420px">
+      <h4 style="margin:0"><%= trainer.name %></h4>
+      <% if (trainer.title) { %><p style="color:var(--muted);font-size:.9rem;margin:4px 0 10px"><%= trainer.title %></p><% } %>
+      <% if (trainer.bio) { %><p style="font-size:.9rem"><%= trainer.bio %></p><% } %>
+      <a href="/trainers/<%= trainer.id %>" class="btn btn-outline btn-sm">View Full Profile</a>
+    </div>
+    <% } %>
+
+    <% if (reviews.length) { %>
+    <h2 style="margin-top:36px" id="reviews">Reviews</h2>
+    <p style="font-weight:600">⭐ <%= avgRating.toFixed(1) %> / 5 <span style="font-weight:400;color:var(--muted);font-size:.9rem">(<%= reviews.length %> review<%= reviews.length !== 1 ? 's' : '' %>)</span></p>
+    <div style="margin-bottom:16px">
+      <% ratingDistribution.forEach(d => { %>
+        <div style="display:flex;align-items:center;gap:8px;font-size:.85rem;color:var(--muted)">
+          <span style="width:40px"><%= d.star %> star</span>
+          <div style="background:var(--line);border-radius:4px;height:8px;width:140px;overflow:hidden"><div style="background:gold;height:100%;width:<%= reviews.length ? (d.count/reviews.length*100) : 0 %>%"></div></div>
+          <span><%= d.count %></span>
+        </div>
+      <% }) %>
+    </div>
+    <% reviews.slice(0, 5).forEach(r => { %>
+      <div class="card" style="margin-bottom:10px">
+        <p style="font-weight:600">⭐ <%= r.rating %>/5</p>
+        <% if (r.comment) { %><p style="color:var(--muted);font-size:.9rem"><%= r.comment %></p><% } %>
+      </div>
+    <% }) %>
+    <% } else { %>
+    <h2 style="margin-top:36px" id="reviews">Reviews</h2>
+    <p class="lead">No reviews yet.</p>
+    <% } %>
+
+    <% if (canReview) { %>
+    <div class="card" style="margin-top:16px">
+      <h4>Leave a review</h4>
+      <form method="POST" action="/courses/<%= course.slug %>/review">
+        <div class="form-field">
+          <label>Rating</label>
+          <select name="rating" required>
+            <% [5,4,3,2,1].forEach(n => { %><option value="<%= n %>"><%= n %> star<%= n!==1?'s':'' %></option><% }) %>
+          </select>
+        </div>
+        <div class="form-field"><label>Comment (optional)</label><textarea name="comment" rows="2"></textarea></div>
+        <button type="submit" class="btn btn-navy">Submit Review</button>
+      </form>
+    </div>
+    <% } %>
+
+    <% if (faqs.length) { %>
+    <h2 style="margin-top:36px">Frequently Asked Questions</h2>
+    <div class="faq-accordion">
+      <% faqs.forEach((f, i) => { %>
+        <details class="card" style="margin-bottom:10px;cursor:pointer">
+          <summary style="font-weight:600;list-style:none"><%= f.question %></summary>
+          <p style="margin-top:10px;color:var(--muted)"><%= f.answer %></p>
+        </details>
+      <% }) %>
+    </div>
+    <% } %>
+
+    <% if (related.length) { %>
+    <h2 style="margin-top:36px">Courses to take after this one</h2>
+    <div class="grid-3">
+      <% related.forEach(r => { %>
+        <div class="card">
+          <h4><%= r.title %></h4>
+          <p style="font-size:.85rem;color:var(--muted);flex:1"><%= r.summary %></p>
+          <a href="/courses/<%= r.slug %>" class="btn btn-outline btn-sm">Learn More</a>
+        </div>
+      <% }) %>
+    </div>
+    <% } %>
+  </div>
+
+  <div>
+    <div class="sticky-card" id="sessions">
+      <div class="price-row">
+        <div class="price-now">$<%= ((course.priceCents*(1-(course.discountPercent||0)/100))/100).toFixed(0) %></div>
+        <% if(course.discountPercent){ %><div class="price-was">$<%= (course.priceCents/100).toFixed(0) %></div><% } %>
+      </div>
+      <% if(course.discountPercent){ %><span class="discount-badge"><%= course.discountPercent %>% OFF</span><% } %>
+      <p class="form-hint" style="margin-top:10px">per person &middot; <%= course.currency %></p>
+      <a href="/courses/<%= course.slug %>/register" class="btn btn-gold btn-block" style="margin-top:14px">Register Now</a>
+      <a href="/contact" class="btn btn-outline btn-block" style="margin-top:10px">Corporate Inquiry</a>
+      <% if (course.brochureFilename) { %>
+        <button type="button" class="btn btn-outline btn-block" style="margin-top:10px" onclick="document.getElementById('brochure-modal').style.display='flex'">Download Brochure</button>
+      <% } %>
+
+      <h4 style="margin-top:24px;font-size:.95rem">Upcoming Sessions</h4>
+      <ul class="session-list">
+        <% course.sessions.forEach(s => { %>
+          <li>
+            <span>
+              <%= s.startDate %><%= s.endDate ? ' – ' + s.endDate : '' %> &middot; <%= s.mode %>
+              <% if (s.timeFrom || s.timeTo) { %><br><span style="font-size:.8rem;color:var(--muted)"><%= s.timeFrom || '?' %>–<%= s.timeTo || '?' %></span><% } %>
+            </span>
+            <span><%= s.seatsLeft!=null ? s.seatsLeft+' seats left' : 'On request' %></span>
+          </li>
+        <% }) %>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<% if (course.brochureFilename) { %>
+<div id="brochure-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center">
+  <div class="card" style="max-width:420px;width:90%;background:#fff">
+    <h3 style="margin-top:0">Get the Brochure</h3>
+    <p style="color:var(--muted);font-size:.9rem">Enter your email and we'll send you the download link right away.</p>
+    <div id="brochure-form-area">
+      <div class="form-field"><label>Email address</label><input type="email" id="brochure-email" placeholder="you@company.com"></div>
+      <div id="brochure-error" class="alert alert-error" style="display:none;margin-bottom:14px"></div>
+      <button type="button" class="btn btn-gold btn-block" onclick="submitBrochureRequest()">Send Me the Brochure</button>
+    </div>
+    <div id="brochure-success" style="display:none">
+      <div class="alert alert-success">Check your inbox — the brochure link is on its way.</div>
+    </div>
+    <button type="button" class="btn btn-outline btn-block" style="margin-top:10px" onclick="document.getElementById('brochure-modal').style.display='none'">Close</button>
+  </div>
+</div>
+<script>
+async function submitBrochureRequest() {
+  const email = document.getElementById('brochure-email').value.trim();
+  const errorBox = document.getElementById('brochure-error');
+  errorBox.style.display = 'none';
+  try {
+    const res = await fetch('/courses/<%= course.slug %>/brochure', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      errorBox.textContent = data.error || 'Something went wrong. Please try again.';
+      errorBox.style.display = 'block';
+      return;
+    }
+    document.getElementById('brochure-form-area').style.display = 'none';
+    document.getElementById('brochure-success').style.display = 'block';
+  } catch (e) {
+    errorBox.textContent = 'Network error — please try again.';
+    errorBox.style.display = 'block';
+  }
+}
+</script>
+<% } %>
+
+<%- include('partials/footer') %>

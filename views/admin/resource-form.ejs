@@ -1,0 +1,29 @@
+<%- include('partials/head') %>
+
+<h1 style="font-size:1.6rem"><%= mode === 'new' ? 'New resource' : 'Edit resource' %></h1>
+
+<% if (typeof error !== 'undefined' && error) { %>
+  <div class="alert alert-error" style="margin-bottom:16px"><%= error %></div>
+<% } %>
+
+<form method="POST" action="<%= mode === 'new' ? '/admin/resources/new' : `/admin/resources/${resource.id}/edit` %>" class="card" style="max-width:640px">
+  <div class="form-field"><label>Title *</label><input type="text" name="title" required value="<%= resource ? resource.title : '' %>"></div>
+  <div class="form-field">
+    <label>Category</label>
+    <select name="category">
+      <% ["Requirements Engineering","Templates & Checklists","ASPICE & Automotive","MBSE","AI for Engineering","Systems Engineering","Business Analysis"].forEach(cat => { %>
+        <option value="<%= cat %>" <%= resource && resource.category===cat ? 'selected' : '' %>><%= cat %></option>
+      <% }) %>
+    </select>
+  </div>
+  <div class="form-field"><label>Excerpt *</label><textarea name="excerpt" rows="3" required><%= resource ? resource.excerpt : '' %></textarea></div>
+  <div class="form-field"><label>Article content</label><textarea name="body" rows="12" placeholder="Full article content — shown on the resource's own page. Leave blank if this resource only links elsewhere."><%= resource && resource.body ? resource.body : '' %></textarea></div>
+  <div class="form-field"><label>External link (optional)</label><input type="text" name="url" placeholder="Only needed if this resource points elsewhere instead of hosting its own content" value="<%= resource && resource.url ? resource.url : '' %>"></div>
+
+  <div style="margin-top:20px">
+    <button type="submit" class="btn btn-navy btn-lg">Save resource</button>
+    <a href="/admin/resources" class="btn btn-outline btn-lg" style="margin-left:8px">Cancel</a>
+  </div>
+</form>
+
+<%- include('partials/foot') %>

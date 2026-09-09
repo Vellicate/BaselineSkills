@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /account
+Disallow: /trainer/dashboard
+Disallow: /affiliate/dashboard
+Disallow: /register/checkout
+Disallow: /webhooks
+
+Sitemap: https://baselineskills.com/sitemap.xml

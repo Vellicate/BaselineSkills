@@ -1,0 +1,81 @@
+<%- include('partials/header') %>
+
+<% if (typeof success !== 'undefined' && success) { %>
+<div class="container" style="padding-top:16px"><div class="alert alert-success"><%= success %></div></div>
+<% } %>
+
+<section class="section-tight" style="background:#fff;border-bottom:1px solid var(--line)">
+  <div class="container">
+    <span class="eyebrow">My Account</span>
+    <h1 style="font-size:2.1rem">Welcome, <%= learner.name %>.</h1>
+    <p class="lead"><%= learner.email %> · <a href="/logout">Log out</a></p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <h2 style="margin-top:0">Your registrations</h2>
+    <% if (registrations.length === 0) { %>
+      <p class="lead">No registrations yet — <a href="/courses">browse our courses</a> to get started.</p>
+    <% } else { %>
+      <table class="admin-table" style="background:#fff">
+        <thead><tr><th>Course</th><th>Session</th><th>Status</th><th>Invoice</th></tr></thead>
+        <tbody>
+          <% registrations.forEach(r => { %>
+          <tr>
+            <td><%= r.courseTitle %></td><td><%= r.sessionStartDate %></td><td><%= r.status %></td>
+            <td><% if (invoicesByRegistration[r.id]) { %><a href="/account/invoices/<%= invoicesByRegistration[r.id].id %>/download"><%= invoicesByRegistration[r.id].invoiceNumber %></a><% } else { %>—<% } %></td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    <% } %>
+  </div>
+</section>
+
+<% if (pendingFeedback.length > 0) { %>
+<section class="section" style="padding-top:0">
+  <div class="container">
+    <h2 style="margin-top:0">We'd love your feedback</h2>
+    <% pendingFeedback.forEach(f => { %>
+      <% const fc = coursesById[f.courseId]; %>
+      <div class="card" style="margin-bottom:12px;max-width:480px">
+        <p style="font-weight:600"><%= fc ? fc.title : 'Course' %> — <%= f.stage === 'purchase' ? 'How was your registration experience?' : 'How was the course overall?' %></p>
+        <form method="POST" action="/account/feedback/<%= f.id %>">
+          <div class="form-field">
+            <label>Rating</label>
+            <select name="rating" required>
+              <% [5,4,3,2,1].forEach(n => { %><option value="<%= n %>"><%= n %> star<%= n!==1?'s':'' %></option><% }) %>
+            </select>
+          </div>
+          <div class="form-field"><label>Comment (optional)</label><textarea name="comment" rows="2"></textarea></div>
+          <button type="submit" class="btn btn-navy">Submit Feedback</button>
+        </form>
+      </div>
+    <% }) %>
+  </div>
+</section>
+<% } %>
+
+<% if (certificates.length > 0) { %>
+<section class="section" style="padding-top:0">
+  <div class="container">
+    <h2 style="margin-top:0">Your certificates</h2>
+    <div class="grid-3">
+      <% certificates.forEach(c => { %>
+        <% const course = coursesById[c.courseId]; %>
+        <div class="card">
+          <h4><%= course ? course.title : 'Course' %></h4>
+          <p style="font-size:.85rem;color:var(--muted)">Issued <%= c.issuedAt %> · <%= c.certificateNumber %></p>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <a href="/account/certificates/<%= c.id %>/download" class="btn btn-outline btn-sm">Download</a>
+            <a href="<%= c.badgeUrl %>" target="_blank" class="btn btn-outline btn-sm">View Badge</a>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+  </div>
+</section>
+<% } %>
+
+<%- include('partials/footer') %>

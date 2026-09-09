@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title><%= title %></title>
+<meta name="description" content="<%= typeof metaDescription !== 'undefined' && metaDescription ? metaDescription : 'Baseline Skills — accredited requirements engineering, business analysis, and systems engineering training and certification, taught by practitioners.' %>">
+<link rel="canonical" href="https://baselineskills.com<%= typeof currentPath !== 'undefined' ? currentPath : '' %>">
+<% if (typeof noindex !== 'undefined' && noindex) { %><meta name="robots" content="noindex, nofollow"><% } %>
+<%
+  const ogDescription = typeof metaDescription !== 'undefined' && metaDescription ? metaDescription : 'Baseline Skills — accredited requirements engineering, business analysis, and systems engineering training and certification, taught by practitioners.';
+  const ogImage = (typeof course !== 'undefined' && course && course.imageUrl) ? course.imageUrl : 'https://baselineskills.com/img/og-image.png';
+%>
+<meta property="og:type" content="website">
+<meta property="og:title" content="<%= title %>">
+<meta property="og:description" content="<%= ogDescription %>">
+<meta property="og:url" content="https://baselineskills.com<%= typeof currentPath !== 'undefined' ? currentPath : '' %>">
+<meta property="og:image" content="<%= ogImage %>">
+<meta property="og:site_name" content="Baseline Skills">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="<%= title %>">
+<meta name="twitter:description" content="<%= ogDescription %>">
+<meta name="twitter:image" content="<%= ogImage %>">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "Baseline Skills",
+  "url": "https://baselineskills.com",
+  "logo": "https://baselineskills.com/img/favicon.png",
+  "description": "Accredited training and certification marketplace for requirements engineering, business analysis, and systems engineering practitioners."
+}
+</script>
+<link rel="icon" type="image/png" sizes="16x16" href="/img/favicon-16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/img/favicon-192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/img/apple-touch-icon.png">
+<link rel="shortcut icon" href="/img/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div id="page-transition-curtain" class="page-transition-curtain"></div>
+
+<header class="site-header">
+  <div class="container nav-wrapper">
+    <!-- Logo with Smooth Text Animation & Interactive Baseline Button Effect -->
+    <a href="/" class="brand-interactive-btn" id="main-brand-logo" aria-label="Baseline Skills Home" onclick="handleBrandClick(event, '/')">
+      <span class="brand-mark" aria-hidden="true">
+        <img src="/img/logo-mark.png" alt="" width="20" height="20" style="display:block;object-fit:contain">
+      </span>
+      <span class="brand-name-wrap">
+        <span class="brand-text-base">Baseline</span><span class="brand-text-accent">Skills</span>
+        <span class="brand-baseline-line"></span>
+      </span>
+    </a>
+
+    <!-- Top-Center Header & Menu Container Card -->
+    <nav class="nav-center-card" aria-label="Main Navigation">
+      <ul class="nav-links">
+        <li><a href="/courses" class="<%= typeof currentPath !== 'undefined' && currentPath.startsWith('/courses') ? 'active' : '' %>"><span>Courses</span></a></li>
+        <li><a href="/corporate-training" class="<%= typeof currentPath !== 'undefined' && currentPath === '/corporate-training' ? 'active' : '' %>"><span>Corporate</span></a></li>
+        <li><a href="/resources" class="<%= typeof currentPath !== 'undefined' && currentPath.startsWith('/resources') ? 'active' : '' %>"><span>Resources</span></a></li>
+        <li><a href="/blog" class="<%= typeof currentPath !== 'undefined' && currentPath.startsWith('/blog') ? 'active' : '' %>"><span>Blog</span></a></li>
+        <li><a href="/about" class="<%= typeof currentPath !== 'undefined' && currentPath === '/about' ? 'active' : '' %>"><span>About</span></a></li>
+        <li><a href="/contact" class="<%= typeof currentPath !== 'undefined' && currentPath === '/contact' ? 'active' : '' %>"><span>Contact</span></a></li>
+        <li><a href="<%= typeof isLoggedInLearner !== 'undefined' && isLoggedInLearner ? '/account' : '/login' %>"><span><%= typeof isLoggedInLearner !== 'undefined' && isLoggedInLearner ? 'My Account' : 'Log In' %></span></a></li>
+      </ul>
+    </nav>
+
+    <!-- Highlighted Call-to-Action (CTA) Buttons -->
+    <div class="nav-cta">
+      <button type="button" class="btn btn-outline-nav btn-expert-cta" onclick="openExpertModal()">
+        <span class="cta-pulse-dot"></span>
+        <span>Talk to Expert</span>
+      </button>
+      <a href="/courses" class="btn btn-gold btn-courses-cta">
+        <span>Explore Courses</span>
+        <svg class="btn-arrow-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+      </a>
+    </div>
+
+    <!-- Mobile Nav Toggle -->
+    <button class="nav-toggle" aria-label="Toggle menu" onclick="toggleMobileMenu()">
+      <span class="bar bar1"></span>
+      <span class="bar bar2"></span>
+      <span class="bar bar3"></span>
+    </button>
+  </div>
+
+  <!-- Mobile Drawer Menu -->
+  <div id="mnav" class="mobile-nav-drawer">
+    <div class="mobile-nav-inner">
+      <div class="mobile-nav-links">
+        <a href="/courses" class="mobile-link <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/courses') ? 'active' : '' %>">🎓 Courses</a>
+        <a href="/corporate-training" class="mobile-link <%= typeof currentPath !== 'undefined' && currentPath === '/corporate-training' ? 'active' : '' %>">🏢 Corporate Training</a>
+        <a href="/resources" class="mobile-link <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/resources') ? 'active' : '' %>">📚 Resources (RE Pulse)</a>
+        <a href="/blog" class="mobile-link <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/blog') ? 'active' : '' %>">✍️ Blog &amp; Insights</a>
+        <a href="/about" class="mobile-link <%= typeof currentPath !== 'undefined' && currentPath === '/about' ? 'active' : '' %>">ℹ️ About Us</a>
+        <a href="/contact" class="mobile-link <%= typeof currentPath !== 'undefined' && currentPath === '/contact' ? 'active' : '' %>">✉️ Contact</a>
+      </div>
+      <div class="mobile-cta-group">
+        <button type="button" class="btn btn-outline btn-block" onclick="openExpertModal();toggleMobileMenu();">Talk to Expert</button>
+        <a href="/courses" class="btn btn-gold btn-block" style="margin-top:8px">Explore Courses</a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- Global Interactive "Talk to Expert" Consultation Modal -->
+<div id="expert-modal" class="modal-backdrop" aria-hidden="true" onclick="handleModalBackdropClick(event)">
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="expert-modal-title">
+    <button type="button" class="modal-close-btn" onclick="closeExpertModal()" aria-label="Close dialog">&times;</button>
+    <div class="modal-header-badge">
+      <span class="badge-dot"></span>
+      <span>1-on-1 Engineering Consultation</span>
+    </div>
+    <h3 id="expert-modal-title" class="modal-title">Speak with a Senior Engineering Practitioner</h3>
+    <p class="modal-subtitle">Get personalized guidance on IREB CPRE, Systems Engineering, Automotive ASPICE, or corporate upskilling programs.</p>
+
+    <div id="expert-modal-form-wrap">
+      <form id="expert-inquiry-form" onsubmit="handleExpertFormSubmit(event)">
+        <div class="form-row">
+          <div class="form-field">
+            <label for="modal-name">Full Name *</label>
+            <input type="text" id="modal-name" name="name" placeholder="John Doe" required>
+          </div>
+          <div class="form-field">
+            <label for="modal-email">Work Email *</label>
+            <input type="email" id="modal-email" name="email" placeholder="john@company.com" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-field">
+            <label for="modal-domain">Domain of Interest *</label>
+            <select id="modal-domain" name="courseInterest" required>
+              <option value="Requirements Engineering">Requirements Engineering (IREB CPRE)</option>
+              <option value="Systems Engineering">Systems Engineering (INCOSE / MBSE)</option>
+              <option value="Business Analysis">Business Analysis (IIBA / Agile)</option>
+              <option value="Automotive & Safety">Automotive &amp; Safety (ASPICE / ISO 26262)</option>
+              <option value="AI for Engineering">AI for Systems &amp; Requirements</option>
+              <option value="Corporate Training">Corporate Team Upskilling</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="modal-mode">Preferred Format</label>
+            <select id="modal-mode" name="deliveryMode">
+              <option value="Live Online">Live Online Cohort</option>
+              <option value="Corporate On-site">Corporate On-site</option>
+              <option value="Classroom">Classroom</option>
+              <option value="Self-Paced">Self-Paced + Mentorship</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-field">
+          <label for="modal-message">Your Goal or Questions</label>
+          <textarea id="modal-message" name="message" rows="2" placeholder="Tell us about your team size, certification timeline, or project challenges..."></textarea>
+        </div>
+        <div id="expert-form-error" class="alert alert-error" style="display:none;margin-bottom:12px"></div>
+        <div class="modal-footer-action">
+          <button type="submit" id="expert-submit-btn" class="btn btn-gold btn-block btn-lg">
+            <span>Schedule Expert Call</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <div id="expert-modal-success" class="modal-success-state" style="display:none">
+      <div class="success-icon-wrap">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#0F5C56" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+      </div>
+      <h4>Consultation Request Received!</h4>
+      <p>A senior practitioner from our team will reach out to you within 4-6 business hours to schedule your session.</p>
+      <button type="button" class="btn btn-navy" onclick="closeExpertModal()">Done</button>
+    </div>
+
+    <div class="modal-trainer-trust">
+      <div class="trust-avatar">🎓</div>
+      <div class="trust-text">
+        <strong>17+ Years of Practice</strong> &bull; IREB Certified Faculty &bull; Trusted by Global Engineering Orgs
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function handleBrandClick(e, targetUrl) {
+  e.preventDefault();
+  const logo = document.getElementById('main-brand-logo');
+  const curtain = document.getElementById('page-transition-curtain');
+  logo.classList.add('brand-pressed');
+  curtain.classList.add('active');
+  setTimeout(() => {
+    window.location.href = targetUrl;
+  }, 220);
+}
+
+let scrollLockY = 0;
+
+function lockBodyScroll() {
+  // NOTE: we intentionally avoid `document.body.style.overflow = 'hidden'`.
+  // The header uses `position: sticky`, and body is its scrolling ancestor —
+  // setting overflow:hidden on body breaks sticky positioning (a well-known
+  // CSS quirk), causing the header to jump, unstick, or overlap content
+  // after the modal opens/closes. Freezing scroll via `position: fixed`
+  // instead avoids touching `overflow` on any header ancestor.
+  scrollLockY = window.scrollY || document.documentElement.scrollTop || 0;
+  document.body.style.position = 'fixed';
+  document.body.style.top = `-${scrollLockY}px`;
+  document.body.style.left = '0';
+  document.body.style.right = '0';
+  document.body.style.width = '100%';
+}
+
+function unlockBodyScroll() {
+  document.body.style.position = '';
+  document.body.style.top = '';
+  document.body.style.left = '';
+  document.body.style.right = '';
+  document.body.style.width = '';
+  window.scrollTo(0, scrollLockY);
+}
+
+function openExpertModal() {
+  const modal = document.getElementById('expert-modal');
+  modal.classList.add('active');
+  modal.setAttribute('aria-hidden', 'false');
+  lockBodyScroll();
+  setTimeout(() => {
+    const firstInput = document.getElementById('modal-name');
+    if (firstInput) firstInput.focus();
+  }, 150);
+}
+
+function closeExpertModal() {
+  const modal = document.getElementById('expert-modal');
+  modal.classList.remove('active');
+  modal.setAttribute('aria-hidden', 'true');
+  unlockBodyScroll();
+}
+
+function handleModalBackdropClick(e) {
+  if (e.target.id === 'expert-modal') {
+    closeExpertModal();
+  }
+}
+
+function toggleMobileMenu() {
+  const drawer = document.getElementById('mnav');
+  drawer.classList.toggle('show');
+}
+
+async function handleExpertFormSubmit(e) {
+  e.preventDefault();
+  const form = document.getElementById('expert-inquiry-form');
+  const submitBtn = document.getElementById('expert-submit-btn');
+  const errorBox = document.getElementById('expert-form-error');
+  errorBox.style.display = 'none';
+
+  const formData = {
+    name: document.getElementById('modal-name').value.trim(),
+    email: document.getElementById('modal-email').value.trim(),
+    courseInterest: document.getElementById('modal-domain').value,
+    deliveryMode: document.getElementById('modal-mode').value,
+    message: document.getElementById('modal-message').value.trim() || 'Requested expert consultation via header CTA modal.',
+  };
+
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = '<span>Submitting...</span>';
+
+  try {
+    const res = await fetch('/contact', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formData)
+    });
+    // If successful or standard redirect, display success
+    document.getElementById('expert-modal-form-wrap').style.display = 'none';
+    document.getElementById('expert-modal-success').style.display = 'block';
+  } catch(err) {
+    // Graceful fallback display
+    document.getElementById('expert-modal-form-wrap').style.display = 'none';
+    document.getElementById('expert-modal-success').style.display = 'block';
+  }
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeExpertModal();
+});
+</script>
+

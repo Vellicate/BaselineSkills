@@ -1,0 +1,41 @@
+<%- include('partials/header') %>
+
+<section class="section-tight" style="background:#fff;border-bottom:1px solid var(--line)">
+  <div class="container">
+    <span class="eyebrow">Teach With Us</span>
+    <h1 style="font-size:2.1rem">Become a Baseline Skills Trainer.</h1>
+    <p class="lead">Teach the certification you actually know, to learners who are specifically searching for it.</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container grid-2" style="align-items:start">
+    <div>
+      <h3>How it works</h3>
+      <ol style="padding-left:20px;color:var(--muted)">
+        <li>Review the requirements and download the Trainer Rules of Engagement below.</li>
+        <li>Sign it, then submit your application with the signed PDF attached.</li>
+        <li>We verify your credentials directly with the certifying body.</li>
+        <li>Once approved, you get your own trainer login, a referral link, and your own dashboard.</li>
+      </ol>
+      <p><a href="/docs/Baseline_Skills_Rules_of_Engagement.pdf" target="_blank" class="btn btn-outline">Download Rules of Engagement (PDF)</a></p>
+      <p style="font-size:.85rem;color:var(--muted)">Already applied? <a href="/trainer/login">Log in to your trainer account</a>.</p>
+    </div>
+
+    <div class="card">
+      <% if (error) { %><div class="alert alert-error"><%= error %></div><% } %>
+      <form method="POST" action="/become-a-trainer/apply" enctype="multipart/form-data">
+        <div class="form-field"><label>Full name *</label><input type="text" name="name" required></div>
+        <div class="form-field"><label>Email *</label><input type="email" name="email" required></div>
+        <div class="form-field"><label>Password * (<%= passwordMinLength %>+ characters)</label><input type="password" name="password" minlength="<%= passwordMinLength %>" required></div>
+        <div class="form-field"><label>Title</label><input type="text" name="title" placeholder="e.g. Senior Requirements Engineering Consultant"></div>
+        <div class="form-field"><label>Bio</label><textarea name="bio" rows="3"></textarea></div>
+        <div class="form-field"><label>LinkedIn / professional profile</label><input type="text" name="profileUrl"></div>
+        <div class="form-field"><label>Signed Rules of Engagement (PDF) *</label><input type="file" name="signedRoe" accept="application/pdf" required></div>
+        <button type="submit" class="btn btn-navy btn-block">Submit Application</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<%- include('partials/footer') %>

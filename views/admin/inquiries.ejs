@@ -1,0 +1,117 @@
+<%- include('partials/head') %>
+
+<div class="page-heading">
+  <div>
+    <h1>Inquiries</h1>
+    <p>Contact requests, enterprise inquiries, and team training consultations.</p>
+  </div>
+
+  <div class="page-actions">
+    <a href="/admin/export/inquiries" class="btn btn-outline btn-sm">
+      <span>↓ Export CSV</span>
+    </a>
+  </div>
+</div>
+
+<div class="course-toolbar">
+  <div class="course-count">
+    <strong><%= inquiries.length %></strong>
+    inquir<%= inquiries.length === 1 ? 'y' : 'ies' %>
+  </div>
+
+  <input
+    type="search"
+    id="inquirySearch"
+    class="course-search"
+    placeholder="Search inquiries..."
+    aria-label="Search inquiries"
+  >
+</div>
+
+<div class="table-card course-table-card">
+  <div class="table-scroll">
+    <table class="admin-table inquiries-table showcase-table" id="inquiriesTable">
+      <thead>
+        <tr>
+          <th>Sender</th>
+          <th>Type</th>
+          <th>Company</th>
+          <th>Message</th>
+          <th>Received</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <% inquiries.forEach((inq, index) => { %>
+          <tr class="activity-row" style="--row-index: <%= index %>">
+            <td data-label="Sender">
+              <div class="person-cell" data-popup="<%= inq.name %> · <%= inq.email %>" tabindex="0">
+                <span class="person-avatar" aria-hidden="true">
+                  <%= (inq.name || '')
+                    .split(' ')
+                    .filter(Boolean)
+                    .map(part => part.charAt(0))
+                    .slice(0, 2)
+                    .join('')
+                    .toUpperCase() %>
+                </span>
+
+                <span class="person-details">
+                  <strong><%= inq.name %></strong>
+                  <small><%= inq.email %></small>
+                </span>
+              </div>
+            </td>
+
+            <td data-label="Type">
+              <span class="inquiry-type-pill <%= inq.type === 'corporate-training' ? 'type-corporate' : 'type-contact' %>">
+                <%= inq.type === 'corporate-training' ? 'Corporate training' : (inq.type==='contact' ? 'Contact request' : inq.type) %>
+              </span>
+            </td>
+
+            <td data-label="Company">
+              <span class="company-text"><%= inq.company || '—' %></span>
+            </td>
+
+            <td data-label="Message">
+              <div class="message-preview message-preview-full"><%= inq.message %></div>
+            </td>
+
+            <td data-label="Received">
+              <span class="registration-time">
+                <%= new Date(inq.createdAt).toLocaleString() %>
+              </span>
+            </td>
+          </tr>
+        <% }) %>
+
+        <% if (inquiries.length === 0) { %>
+          <tr>
+            <td colspan="5" class="empty-state">
+              No inquiries received yet.
+            </td>
+          </tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  const searchInput = document.querySelector("#inquirySearch");
+  const tableRows = document.querySelectorAll("#inquiriesTable tbody tr");
+
+  searchInput?.addEventListener("input", () => {
+    const searchTerm = searchInput.value.toLowerCase().trim();
+
+    tableRows.forEach((row) => {
+      const rowText = row.textContent.toLowerCase();
+
+      row.style.display = rowText.includes(searchTerm)
+        ? ""
+        : "none";
+    });
+  });
+</script>
+
+<%- include('partials/foot') %>

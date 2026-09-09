@@ -1,0 +1,27 @@
+<%- include('partials/header') %>
+
+<section class="section-tight" style="background:#fff;border-bottom:1px solid var(--line)">
+  <div class="container">
+    <span class="eyebrow">Blog</span>
+    <h1 style="font-size:2.1rem">Ideas, notes, and lessons from the field.</h1>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container grid-3">
+    <% posts.forEach(p => { %>
+      <div class="card">
+        <span class="tag"><%= p.category %></span>
+        <h3 style="margin-top:12px"><%= p.title %></h3>
+        <p style="color:var(--muted);font-size:.9rem;flex:1"><%= p.excerpt %></p>
+        <p style="color:var(--muted);font-size:.8rem">By <%= p.author %> &middot; <%= new Date(p.createdAt).toLocaleDateString() %></p>
+        <a href="/blog/<%= p.slug %>" class="btn btn-outline btn-sm">Read More</a>
+      </div>
+    <% }) %>
+    <% if (posts.length === 0) { %>
+      <p style="color:var(--muted)">No posts published yet — check back soon.</p>
+    <% } %>
+  </div>
+</section>
+
+<%- include('partials/footer') %>

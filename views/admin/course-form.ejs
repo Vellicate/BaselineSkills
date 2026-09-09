@@ -1,0 +1,200 @@
+<%- include('partials/head') %>
+
+<h1 style="font-size:1.6rem"><%= mode === 'new' ? 'New course' : 'Edit course' %></h1>
+
+<% if (typeof error !== 'undefined' && error) { %>
+  <div class="alert alert-error" style="margin-bottom:16px"><%= error %></div>
+<% } %>
+
+<form method="POST" action="<%= mode === 'new' ? '/admin/courses/new' : `/admin/courses/${course.id}/edit` %>" enctype="multipart/form-data" class="card" style="max-width:760px">
+  <div class="form-row">
+    <div class="form-field"><label>Title *</label><input type="text" name="title" required value="<%= course ? course.title : '' %>"></div>
+    <div class="form-field">
+      <label>Category *</label>
+      <select name="category" required>
+        <% ["Requirements Engineering","Systems Engineering","Business Analysis","Automotive"].forEach(cat => { %>
+          <option value="<%= cat %>" <%= course && course.category===cat ? 'selected' : '' %>><%= cat %></option>
+        <% }) %>
+      </select>
+    </div>
+  </div>
+
+  <div class="form-field"><label>Short summary (shown on cards) *</label><input type="text" name="summary" required value="<%= course ? course.summary : '' %>"></div>
+  <div class="form-field"><label>Full description *</label><textarea name="description" rows="5" required><%= course ? course.description : '' %></textarea></div>
+
+  <h4>Program description</h4>
+  <div class="form-field"><label>Why take this course</label><textarea name="whyTakeThisCourse" rows="3"><%= course ? course.whyTakeThisCourse : '' %></textarea></div>
+  <div class="form-field"><label>Learning objectives (one per line)</label><textarea name="outcomes" rows="4"><%= course && course.outcomes ? course.outcomes.join('\n') : '' %></textarea></div>
+  <div class="form-field"><label>Who should attend (one per line)</label><textarea name="audience" rows="3"><%= course && course.audience ? course.audience.join('\n') : '' %></textarea></div>
+  <div class="form-field"><label>Prerequisites (one per line)</label><textarea name="prerequisites" rows="3" placeholder="e.g. No prior RE experience required"><%= course && course.prerequisites ? course.prerequisites.join('\n') : '' %></textarea></div>
+  <div class="form-field"><label>Format &amp; material</label><textarea name="formatAndMaterial" rows="3" placeholder="e.g. Live instructor-led sessions, printed workbook, recorded playback for 90 days"><%= course ? course.formatAndMaterial : '' %></textarea></div>
+  <div class="form-field"><label>What you'll receive (one per line)</label><textarea name="whatYoullReceive" rows="3" placeholder="e.g. Certificate of completion&#10;Course workbook (PDF)&#10;90-day access to recordings"><%= course && course.whatYoullReceive ? course.whatYoullReceive.join('\n') : '' %></textarea></div>
+  <div class="form-field"><label>Course outline link</label><input type="url" name="courseOutlineUrl" placeholder="https://... link to a detailed outline document" value="<%= course ? course.courseOutlineUrl : '' %>"></div>
+
+  <div class="form-field">
+    <label>Trainer</label>
+    <select name="trainerId">
+      <option value="">— No trainer assigned —</option>
+      <% trainers.forEach(t => { %>
+        <option value="<%= t.id %>" <%= course && course.trainerId===t.id ? 'selected' : '' %>><%= t.name %><%= t.title ? ' — '+t.title : '' %></option>
+      <% }) %>
+    </select>
+    <p class="form-hint"><a href="/admin/trainers/new" target="_blank">+ Add a new trainer</a> if they're not listed yet.</p>
+  </div>
+
+  <div class="form-field">
+    <label>Brochure (PDF)</label>
+    <input type="file" name="brochure" accept="application/pdf">
+    <% if (course && course.brochureFilename) { %>
+      <p class="form-hint">Current brochure: <a href="/brochure/<%= course.brochureFilename %>" target="_blank">view PDF</a> — upload a new file to replace it, or leave blank to keep it.</p>
+    <% } %>
+  </div>
+
+  <div class="form-field"><label>Course contents (one module per line, format: "Module name: topic 1, topic 2")</label>
+    <textarea name="curriculumRaw" rows="4" placeholder="Requirements Elicitation: Techniques, Stakeholder analysis, Workshops"><%= course && course.curriculum && course.curriculum.length ? course.curriculum.map(m => `${m.module}: ${m.topics.join(', ')}`).join('\n') : '' %></textarea>
+    <p class="form-hint">Leave blank to keep the existing course contents unchanged.</p>
+  </div>
+
+  <div class="form-row">
+    <div class="form-field"><label>Duration (days) *</label><input type="number" name="durationDays" min="1" required value="<%= course ? course.durationDays : 1 %>"></div>
+    <div class="form-field"><label>Currency</label><input type="text" name="currency" value="<%= course ? course.currency : 'USD' %>"></div>
+  </div>
+
+  <div class="form-row">
+    <div class="form-field">
+      <label>Level *</label>
+      <select name="level" required>
+        <% ["Beginner","Intermediate","Expert"].forEach(l => { %>
+          <option value="<%= l %>" <%= course && course.level === l ? 'selected' : '' %>><%= l %></option>
+        <% }) %>
+      </select>
+    </div>
+    <div class="form-field"><label>Course image URL</label><input type="text" name="imageUrl" placeholder="/img/courses/example.jpg" value="<%= course ? (course.imageUrl || '') : '' %>"></div>
+  </div>
+
+  <div class="form-field">
+    <label>Delivery modes</label>
+    <% ["Live Online","Classroom (India)","Corporate On-site","Private Cohort"].forEach(m => { %>
+      <div class="checkbox-row"><input type="checkbox" name="deliveryModes" value="<%= m %>" <%= course && course.deliveryModes && course.deliveryModes.includes(m) ? 'checked' : '' %>> <label style="margin:0;font-weight:400"><%= m %></label></div>
+    <% }) %>
+  </div>
+
+  <div class="form-row">
+    <div class="form-field"><label>Price (USD, before discount) *</label><input type="number" step="0.01" name="price" required value="<%= course ? (course.priceCents/100).toFixed(2) : '' %>"></div>
+    <div class="form-field"><label>Discount (%)</label><input type="number" name="discountPercent" min="0" max="100" value="<%= course ? (course.discountPercent||0) : 0 %>"></div>
+  </div>
+
+  <div class="checkbox-row" style="margin-bottom:14px"><input type="checkbox" name="certification" <%= course && course.certification ? 'checked' : '' %>> <label style="margin:0;font-weight:400">Leads to a certification</label></div>
+  <div class="checkbox-row" style="margin-bottom:14px"><input type="checkbox" name="published" <%= !course || course.published ? 'checked' : '' %>> <label style="margin:0;font-weight:400">Published (visible on the public site)</label></div>
+
+  <h4>Sessions (dates &amp; times)</h4>
+  <div id="sessions-wrap">
+    <% const sessions = (course && course.sessions && course.sessions.length) ? course.sessions : [{startDate:'',endDate:'',timeFrom:'',timeTo:'',mode:'Live Online',seatsLeft:''}]; %>
+    <% sessions.forEach(s => { %>
+      <div class="form-row session-row" style="grid-template-columns:1fr 1fr 90px 90px 1fr 80px auto;align-items:end">
+        <div class="form-field"><label>Start date</label><input type="text" name="sessionStartDate" placeholder="2026-09-11 or 'On Demand'" value="<%= s.startDate %>"></div>
+        <div class="form-field"><label>End date</label><input type="text" name="sessionEndDate" placeholder="2026-09-14" value="<%= s.endDate || '' %>"></div>
+        <div class="form-field"><label>Time from</label><input type="time" name="sessionTimeFrom" value="<%= s.timeFrom || '' %>"></div>
+        <div class="form-field"><label>Time to</label><input type="time" name="sessionTimeTo" value="<%= s.timeTo || '' %>"></div>
+        <div class="form-field"><label>Mode</label><input type="text" name="sessionMode" value="<%= s.mode %>"></div>
+        <div class="form-field"><label>Seats</label><input type="number" name="sessionSeats" value="<%= s.seatsLeft==null ? '' : s.seatsLeft %>"></div>
+        <button type="button" class="btn btn-outline btn-sm" onclick="this.closest('.session-row').remove()" style="margin-bottom:18px">Remove</button>
+      </div>
+    <% }) %>
+  </div>
+  <button type="button" class="btn btn-outline btn-sm" onclick="addSessionRow()">+ Add session</button>
+
+  <div style="margin-top:26px"><button type="submit" class="btn btn-navy btn-lg">Save course</button></div>
+</form>
+
+<% if (course && course.id) { %>
+<div class="card" style="margin-top:32px">
+  <h3>FAQs for this course</h3>
+  <% (faqs || []).forEach(f => { %>
+    <div style="display:flex;justify-content:space-between;align-items:start;padding:10px 0;border-bottom:1px solid var(--line)">
+      <div>
+        <strong><%= f.question %></strong>
+        <p style="color:var(--muted);font-size:.9rem;margin:4px 0 0"><%= f.answer %></p>
+        <span style="font-size:.8rem;color:<%= f.published ? 'green' : 'var(--muted)' %>"><%= f.published ? 'Published' : 'Unpublished' %></span>
+      </div>
+      <div style="display:flex;gap:6px;flex-shrink:0">
+        <form method="POST" action="/admin/faqs/<%= f.id %>/move-up"><button type="submit" class="btn btn-outline btn-sm">↑</button></form>
+        <form method="POST" action="/admin/faqs/<%= f.id %>/move-down"><button type="submit" class="btn btn-outline btn-sm">↓</button></form>
+        <form method="POST" action="/admin/faqs/<%= f.id %>/toggle-published"><button type="submit" class="btn btn-outline btn-sm"><%= f.published ? 'Unpublish' : 'Publish' %></button></form>
+        <form method="POST" action="/admin/faqs/<%= f.id %>/delete" onsubmit="return confirm('Delete this FAQ?')"><button type="submit" class="btn btn-outline btn-sm">Delete</button></form>
+      </div>
+    </div>
+  <% }) %>
+  <form method="POST" action="/admin/courses/<%= course.id %>/faqs/new" style="margin-top:16px">
+    <div class="form-field"><label>Question</label><input type="text" name="question" required></div>
+    <div class="form-field"><label>Answer</label><textarea name="answer" rows="2" required></textarea></div>
+    <button type="submit" class="btn btn-navy">Add FAQ</button>
+  </form>
+</div>
+<% } %>
+
+<% if (course && course.id) { %>
+<div class="card" style="margin-top:32px">
+  <h3>Certification exam for this course</h3>
+  <% if (examProduct) { %>
+    <p><strong><%= examProduct.certificationName %></strong> (<%= examProduct.certificationBody %>) — $<%= (examProduct.priceCents/100).toFixed(2) %></p>
+    <p style="color:var(--muted);font-size:.9rem"><%= examProduct.description %></p>
+    <form method="POST" action="/admin/certification-exams/<%= examProduct.id %>/delete" onsubmit="return confirm('Remove this exam product?')"><button type="submit" class="btn btn-outline btn-sm">Remove</button></form>
+  <% } else { %>
+  <form method="POST" action="/admin/courses/<%= course.id %>/certification-exams/new">
+    <div class="form-row">
+      <div class="form-field"><label>Certification name</label><input type="text" name="certificationName" required placeholder="e.g. CPRE Foundation Level"></div>
+      <div class="form-field"><label>Certification body</label><input type="text" name="certificationBody" required placeholder="e.g. IREB"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-field"><label>Exam price ($)</label><input type="number" step="0.01" name="price" required></div>
+      <div class="form-field"><label>Exam provider</label><input type="text" name="examProvider" placeholder="e.g. iSQI"></div>
+    </div>
+    <div class="form-field"><label>Description</label><textarea name="description" rows="2"></textarea></div>
+    <div class="form-field"><label>Eligibility</label><input type="text" name="eligibility" placeholder="e.g. No prerequisites"></div>
+    <button type="submit" class="btn btn-navy">Add Exam Product</button>
+  </form>
+  <% } %>
+</div>
+
+<% if (course && course.id) { %>
+<div class="card" style="margin-top:32px">
+  <h3>Course materials</h3>
+  <p style="color:var(--muted);font-size:.85rem">Only visible to learners with a confirmed registration for this course — never reachable through a public link.</p>
+  <% (materials || []).forEach(m => { %>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)">
+      <span><%= m.title %> <span style="color:var(--muted);font-size:.8rem">(<%= Math.round(m.fileSizeBytes/1024) %> KB)</span></span>
+      <form method="POST" action="/admin/materials/<%= m.id %>/delete" onsubmit="return confirm('Delete this material?')"><button type="submit" class="btn btn-outline btn-sm">Delete</button></form>
+    </div>
+  <% }) %>
+  <form method="POST" action="/admin/courses/<%= course.id %>/materials/new" enctype="multipart/form-data" style="margin-top:16px">
+    <div class="form-field"><label>Title</label><input type="text" name="title" required></div>
+    <div class="form-field"><label>Description</label><input type="text" name="description"></div>
+    <div class="form-field"><label>File</label><input type="file" name="file" required></div>
+    <button type="submit" class="btn btn-navy">Upload Material</button>
+  </form>
+</div>
+<% } %>
+<% } %>
+
+
+<script>
+function addSessionRow(){
+  const wrap = document.getElementById('sessions-wrap');
+  const row = document.createElement('div');
+  row.className = 'form-row session-row';
+  row.style.gridTemplateColumns = '1fr 1fr 90px 90px 1fr 80px auto';
+  row.style.alignItems = 'end';
+  row.innerHTML = `
+    <div class="form-field"><label>Start date</label><input type="text" name="sessionStartDate" placeholder="2026-09-11 or 'On Demand'"></div>
+    <div class="form-field"><label>End date</label><input type="text" name="sessionEndDate" placeholder="2026-09-14"></div>
+    <div class="form-field"><label>Time from</label><input type="time" name="sessionTimeFrom"></div>
+    <div class="form-field"><label>Time to</label><input type="time" name="sessionTimeTo"></div>
+    <div class="form-field"><label>Mode</label><input type="text" name="sessionMode" value="Live Online"></div>
+    <div class="form-field"><label>Seats</label><input type="number" name="sessionSeats"></div>
+    <button type="button" class="btn btn-outline btn-sm" onclick="this.closest('.session-row').remove()" style="margin-bottom:18px">Remove</button>`;
+  wrap.appendChild(row);
+}
+</script>
+
+<%- include('partials/foot') %>

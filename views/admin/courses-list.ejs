@@ -1,0 +1,158 @@
+<%- include('partials/head') %>
+
+<div class="page-heading">
+  <div>
+    <h1>Courses</h1>
+    <p>Manage your course catalogue, pricing, sessions, and publishing status.</p>
+  </div>
+
+  <a href="/admin/courses/new" class="btn btn-gold btn-animated-shine">
+    <span class="btn-icon">+</span>
+    <span>New course</span>
+  </a>
+</div>
+
+<div class="course-toolbar">
+  <div class="course-count">
+    <strong><%= courses.length %></strong>
+    course<%= courses.length === 1 ? '' : 's' %>
+  </div>
+
+  <input
+    type="search"
+    id="courseSearch"
+    class="course-search"
+    placeholder="Search courses..."
+    aria-label="Search courses"
+  >
+</div>
+
+<div class="table-card course-table-card">
+  <div class="table-scroll">
+    <table class="admin-table showcase-table" id="coursesTable">
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Category</th>
+          <th>Price</th>
+          <th>Discount</th>
+          <th>Sessions</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <% courses.forEach((c, index) => { %>
+          <tr class="activity-row" style="--row-index: <%= index %>">
+            <td data-label="Title" class="course-title-cell">
+              <strong class="table-title-main"><%= c.title %></strong>
+            </td>
+
+            <td data-label="Category">
+              <span class="course-category">
+                <%= c.category %>
+              </span>
+            </td>
+
+            <td data-label="Price">
+              <span class="price-chip">
+                $<%= (c.priceCents / 100).toFixed(2) %>
+              </span>
+            </td>
+
+            <td data-label="Discount">
+              <% if (c.discountPercent && c.discountPercent > 0) { %>
+                <span class="discount-badge"><%= c.discountPercent %>% off</span>
+              <% } else { %>
+                <span class="text-muted">—</span>
+              <% } %>
+            </td>
+
+            <td data-label="Sessions">
+              <span class="session-counter-badge">
+                <%= (c.sessions || []).length %> session<%= (c.sessions || []).length === 1 ? '' : 's' %>
+              </span>
+            </td>
+
+            <td data-label="Status">
+              <div class="status-gold-card <%= c.published ? 'status-gold-published' : 'status-gold-draft' %>">
+                <span class="status-gold-dot"></span>
+                <span class="status-gold-text"><%= c.published ? 'Published' : 'Draft' %></span>
+              </div>
+            </td>
+
+            <td data-label="Actions" class="admin-actions">
+              <a
+                href="/admin/courses/<%= c.id %>/edit"
+                class="btn-action btn-action-edit"
+                title="Edit course"
+              >
+                <span class="btn-action-icon">✎</span>
+                <span>Edit</span>
+              </a>
+
+              <form
+                method="POST"
+                action="/admin/courses/<%= c.id %>/toggle-published"
+                style="display:inline"
+              >
+                <button
+                  class="btn-action <%= c.published ? 'btn-action-unpublish' : 'btn-action-publish' %>"
+                  type="submit"
+                  title="<%= c.published ? 'Unpublish course' : 'Publish course' %>"
+                >
+                  <span class="btn-action-icon"><%= c.published ? '⏻' : '✓' %></span>
+                  <span><%= c.published ? 'Unpublish' : 'Publish' %></span>
+                </button>
+              </form>
+
+              <form
+                method="POST"
+                action="/admin/courses/<%= c.id %>/delete"
+                onsubmit="return confirm('Delete this course permanently?')"
+                style="display:inline"
+              >
+                <button
+                  class="btn-action btn-action-delete"
+                  type="submit"
+                  title="Delete course"
+                >
+                  <span class="btn-action-icon">🗑</span>
+                  <span>Delete</span>
+                </button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+
+        <% if (courses.length === 0) { %>
+          <tr>
+            <td colspan="7" class="empty-state">
+              No courses yet — create your first one.
+            </td>
+          </tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  const searchInput = document.querySelector("#courseSearch");
+  const tableRows = document.querySelectorAll("#coursesTable tbody tr");
+
+  searchInput?.addEventListener("input", () => {
+    const searchTerm = searchInput.value.toLowerCase().trim();
+
+    tableRows.forEach((row) => {
+      const rowText = row.textContent.toLowerCase();
+
+      row.style.display = rowText.includes(searchTerm)
+        ? ""
+        : "none";
+    });
+  });
+</script>
+
+<%- include('partials/foot') %>

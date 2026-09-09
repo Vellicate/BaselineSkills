@@ -1,0 +1,61 @@
+<%- include('partials/header') %>
+
+<script type="application/ld+json">
+<%- JSON.stringify({
+  "@context": "https://schema.org",
+  "@type": "EducationalOrganization",
+  "name": body.name,
+  "description": body.description,
+}) %>
+</script>
+<% if (courses.length > 0) { %>
+<script type="application/ld+json">
+<%- JSON.stringify({
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  "itemListElement": courses.map((c, i) => ({
+    "@type": "ListItem", "position": i + 1, "name": c.title, "url": `https://baselineskills.com/courses/${c.slug}`,
+  })),
+}) %>
+</script>
+<% } %>
+<script type="application/ld+json">
+<%- JSON.stringify({
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    { "@type": "ListItem", "position": 1, "name": "Courses", "item": "https://baselineskills.com/courses" },
+    { "@type": "ListItem", "position": 2, "name": body.name, "item": `https://baselineskills.com/certifications/${body.slug}` },
+  ],
+}) %>
+</script>
+
+<section class="course-header">
+  <div class="container">
+    <span class="tag">Certification Body</span>
+    <h1 style="color:#fff;margin-top:14px"><%= body.name %> Certification Training</h1>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container" style="max-width:800px">
+    <p class="lead"><%= body.description %></p>
+
+    <h2 style="margin-top:36px"><%= body.name %> Courses at Baseline Skills</h2>
+    <% if (courses.length === 0) { %>
+      <p class="lead">No <%= body.name %> courses are currently listed — <a href="/contact">contact us</a> for upcoming availability.</p>
+    <% } else { %>
+    <div class="grid-3">
+      <% courses.forEach(c => { %>
+        <div class="card">
+          <h4><%= c.title %></h4>
+          <p style="font-size:.85rem;color:var(--muted)"><%= c.summary %></p>
+          <a href="/courses/<%= c.slug %>" class="btn btn-outline btn-sm">View course</a>
+        </div>
+      <% }) %>
+    </div>
+    <% } %>
+  </div>
+</section>
+
+<%- include('partials/footer') %>

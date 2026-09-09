@@ -1,0 +1,18 @@
+<%- include('partials/header') %>
+
+<section class="section" style="min-height:60vh;display:flex;align-items:center;justify-content:center">
+  <div class="container" style="max-width:420px">
+    <h1 style="font-size:1.6rem;text-align:center">Trainer login</h1>
+    <div class="card" style="margin-top:20px">
+      <% if (error) { %><div class="alert alert-error"><%= error %></div><% } %>
+      <form method="POST" action="/trainer/login">
+        <div class="form-field"><label>Email</label><input type="email" name="email" required autofocus></div>
+        <div class="form-field"><label>Password</label><input type="password" name="password" required></div>
+        <button type="submit" class="btn btn-navy btn-block">Log In</button>
+      </form>
+      <p style="margin-top:16px;font-size:.9rem;color:var(--muted)">Not a trainer yet? <a href="/become-a-trainer">Apply here</a>.</p>
+    </div>
+  </div>
+</section>
+
+<%- include('partials/footer') %>

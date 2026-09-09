@@ -1,0 +1,40 @@
+<%- include('partials/header') %>
+
+<section class="section-tight" style="background:#fff;border-bottom:1px solid var(--line)">
+  <div class="container" style="display:flex;gap:24px;align-items:center;flex-wrap:wrap">
+    <% if (trainer.photoPath) { %><img src="<%= trainer.photoPath %>" alt="<%= trainer.name %>" style="width:96px;height:96px;border-radius:50%;object-fit:cover"><% } %>
+    <div>
+      <span class="eyebrow">Instructor</span>
+      <h1 style="font-size:2rem;margin:6px 0 0"><%= trainer.name %></h1>
+      <% if (trainer.title) { %><p class="lead" style="margin-top:4px"><%= trainer.title %></p><% } %>
+      <% if (trainer.profileUrl) { %><a href="<%= trainer.profileUrl %>" target="_blank" rel="noopener" class="btn btn-outline btn-sm" style="margin-top:10px">Connect on LinkedIn</a><% } %>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <% if (trainer.bio) { %>
+      <h2>About</h2>
+      <p class="lead" style="max-width:720px"><%= trainer.bio %></p>
+    <% } %>
+
+    <h2 style="margin-top:32px">Courses taught by <%= trainer.name %></h2>
+    <% if (courses.length === 0) { %>
+      <p class="lead">No published courses listed for this instructor yet.</p>
+    <% } else { %>
+    <div class="grid-3">
+      <% courses.forEach(c => { %>
+        <div class="card">
+          <span class="domain-sub-kicker"><%= c.category %></span>
+          <h4><%= c.title %></h4>
+          <p style="font-size:.85rem;color:var(--muted);flex:1"><%= c.summary %></p>
+          <a href="/courses/<%= c.slug %>" class="btn btn-outline btn-sm">View Course</a>
+        </div>
+      <% }) %>
+    </div>
+    <% } %>
+  </div>
+</section>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,39 @@
+<%- include('partials/header') %>
+
+<section class="section-tight" style="background:#fff;border-bottom:1px solid var(--line)">
+  <div class="container">
+    <span class="eyebrow">Partner With Us</span>
+    <h1 style="font-size:2.1rem">Become an Affiliate.</h1>
+    <p class="lead">Earn a commission for every learner you refer — no course of your own required.</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container grid-2" style="align-items:start">
+    <div>
+      <h3>How it works</h3>
+      <ol style="padding-left:20px;color:var(--muted)">
+        <li>Review the requirements and download the Affiliate Rules of Engagement below.</li>
+        <li>Sign it, then submit your application with the signed PDF attached.</li>
+        <li>Once approved, you get your own affiliate login and referral link.</li>
+        <li>Earn a one-time commission on the first purchase anyone refers.</li>
+      </ol>
+      <p><a href="/docs/Baseline_Skills_Rules_of_Engagement.pdf" target="_blank" class="btn btn-outline">Download Rules of Engagement (PDF)</a></p>
+      <p style="font-size:.85rem;color:var(--muted)">Already applied? <a href="/affiliate/login">Log in to your affiliate account</a>.</p>
+    </div>
+
+    <div class="card">
+      <% if (error) { %><div class="alert alert-error"><%= error %></div><% } %>
+      <form method="POST" action="/become-an-affiliate/apply" enctype="multipart/form-data">
+        <div class="form-field"><label>Full name *</label><input type="text" name="name" required></div>
+        <div class="form-field"><label>Email *</label><input type="email" name="email" required></div>
+        <div class="form-field"><label>Password * (<%= passwordMinLength %>+ characters)</label><input type="password" name="password" minlength="<%= passwordMinLength %>" required></div>
+        <div class="form-field"><label>Organization (if applicable)</label><input type="text" name="organization"></div>
+        <div class="form-field"><label>Signed Rules of Engagement (PDF) *</label><input type="file" name="signedRoe" accept="application/pdf" required></div>
+        <button type="submit" class="btn btn-navy btn-block">Submit Application</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<%- include('partials/footer') %>

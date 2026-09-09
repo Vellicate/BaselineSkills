@@ -1,0 +1,55 @@
+<%- include('partials/head') %>
+
+<div class="container" style="padding:24px 0">
+  <h1>Payouts</h1>
+  <% if (typeof success !== 'undefined' && success) { %><div class="alert alert-success"><%= success %></div><% } %>
+  <% if (typeof error !== 'undefined' && error) { %><div class="alert alert-error"><%= error %></div><% } %>
+
+  <div class="card" style="margin-bottom:24px;max-width:600px">
+    <h3 style="margin-top:0">Generate a payout</h3>
+    <form method="POST" action="/admin/payouts/generate">
+      <div class="form-field">
+        <label>Recipient</label>
+        <select name="recipientType" id="recipientType" onchange="document.getElementById('instructorSelect').style.display=this.value==='instructor'?'block':'none';document.getElementById('affiliateSelect').style.display=this.value==='affiliate'?'block':'none'">
+          <option value="instructor">Instructor</option>
+          <option value="affiliate">Affiliate</option>
+        </select>
+      </div>
+      <div class="form-field" id="instructorSelect">
+        <label>Instructor</label>
+        <select name="recipientId">
+          <% instructors.forEach(i => { %><option value="<%= i.id %>"><%= i.name %></option><% }) %>
+        </select>
+      </div>
+      <div class="form-field" id="affiliateSelect" style="display:none">
+        <label>Affiliate</label>
+        <select name="recipientId">
+          <% affiliates.forEach(a => { %><option value="<%= a.id %>"><%= a.name %></option><% }) %>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-field"><label>Period start</label><input type="date" name="periodStart" required></div>
+        <div class="form-field"><label>Period end</label><input type="date" name="periodEnd" required></div>
+      </div>
+      <button type="submit" class="btn btn-navy">Generate Payout</button>
+    </form>
+  </div>
+
+  <table class="admin-table" style="background:#fff">
+    <thead><tr><th>Recipient</th><th>Period</th><th>Amount</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+      <% payouts.forEach(p => { %>
+        <tr>
+          <td><%= recipientName(p) %> (<%= p.recipientType %>)</td>
+          <td><%= p.periodStart %> – <%= p.periodEnd %></td>
+          <td>$<%= (p.totalAmountCents/100).toFixed(2) %></td>
+          <td><span class="status-badge <%= p.status === 'processed' ? 'status-published' : (p.status === 'failed' ? 'status-error' : 'status-draft') %>"><%= p.status %></span></td>
+          <td><a href="/admin/payouts/<%= p.id %>">View</a></td>
+        </tr>
+      <% }) %>
+      <% if (payouts.length === 0) { %><tr><td colspan="5">No payouts generated yet.</td></tr><% } %>
+    </tbody>
+  </table>
+</div>
+
+<%- include('partials/foot') %>

@@ -1,0 +1,47 @@
+<%- include('partials/header') %>
+
+<section class="section-tight" style="background:#fff;border-bottom:1px solid var(--line)">
+  <div class="container">
+    <span class="eyebrow">Contact</span>
+    <h1 style="font-size:2.1rem">Let's talk about your training needs.</h1>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container grid-2" style="align-items:start">
+    <div>
+      <h3>Reach us directly</h3>
+      <p style="color:var(--muted)">Email: hello@baselineskills.com<br>Phone: +1 (555) 010-0100<br>We typically respond within one business day.</p>
+    </div>
+    <div class="card">
+      <% if (typeof success !== 'undefined' && success) { %>
+        <div class="alert alert-success">Thanks — your message has been sent. We'll be in touch shortly.</div>
+      <% } %>
+      <% if (typeof error !== 'undefined' && error) { %><div class="alert alert-error"><%= error %></div><% } %>
+      <form method="POST" action="/contact">
+        <div class="form-row">
+          <div class="form-field"><label>Name *</label><input type="text" name="name" required></div>
+          <div class="form-field"><label>Email *</label><input type="email" name="email" required></div>
+        </div>
+        <div class="form-row">
+          <div class="form-field"><label>Company</label><input type="text" name="company"></div>
+          <div class="form-field"><label>Role</label><input type="text" name="role"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-field"><label>Course of interest</label><input type="text" name="courseInterest"></div>
+          <div class="form-field"><label>Team size</label><input type="text" name="teamSize"></div>
+        </div>
+        <div class="form-field">
+          <label>Preferred delivery mode</label>
+          <select name="deliveryMode">
+            <option>Live Online</option><option>Classroom (India)</option><option>Corporate On-site</option><option>Not sure yet</option>
+          </select>
+        </div>
+        <div class="form-field"><label>Message *</label><textarea name="message" rows="4" required></textarea></div>
+        <button type="submit" class="btn btn-navy btn-block">Send Message</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<%- include('partials/footer') %>

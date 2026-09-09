@@ -1,0 +1,167 @@
+<%- include('partials/head') %>
+
+<div class="page-heading">
+  <div>
+    <h1>Registrations</h1>
+    <p>All enrolled learners, session schedules, and confirmation records.</p>
+  </div>
+
+  <div class="page-actions">
+    <a href="/admin/export/registrations<%= activeCourseId || activeStatus ? '?' + (activeCourseId ? 'courseId=' + activeCourseId : '') + (activeCourseId && activeStatus ? '&' : '') + (activeStatus ? 'status=' + activeStatus : '') : '' %>" class="btn btn-outline btn-sm">
+      <span>↓ Export CSV</span>
+    </a>
+  </div>
+</div>
+
+<form method="GET" action="/admin/registrations" style="display:flex;gap:12px;margin-bottom:16px;align-items:end">
+  <div class="form-field" style="margin-bottom:0">
+    <label>Course</label>
+    <select name="courseId" onchange="this.form.submit()">
+      <option value="">All courses</option>
+      <% filterCourses.forEach(c => { %><option value="<%= c.id %>" <%= c.id === activeCourseId ? 'selected' : '' %>><%= c.title %></option><% }) %>
+    </select>
+  </div>
+  <div class="form-field" style="margin-bottom:0">
+    <label>Status</label>
+    <select name="status" onchange="this.form.submit()">
+      <option value="">All statuses</option>
+      <% ["pending_payment","confirmed","invoice_pending"].forEach(s => { %><option value="<%= s %>" <%= s === activeStatus ? 'selected' : '' %>><%= s.replace('_',' ') %></option><% }) %>
+    </select>
+  </div>
+</form>
+
+<div class="course-toolbar">
+  <div class="course-count">
+    <strong><%= registrations.length %></strong>
+    learner registration<%= registrations.length === 1 ? '' : 's' %>
+  </div>
+
+  <input
+    type="search"
+    id="registrationSearch"
+    class="course-search"
+    placeholder="Search registrations..."
+    aria-label="Search registrations"
+  >
+</div>
+
+<div class="table-card course-table-card">
+  <div class="table-scroll">
+    <table class="admin-table registrations-table showcase-table" id="registrationsTable">
+      <thead>
+        <tr>
+          <th>Learner</th>
+          <th>Course</th>
+          <th>Session</th>
+          <th>Company</th>
+          <th>Amount</th>
+          <th>Status</th>
+          <th>Registered</th>
+          <th>Completion</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <% registrations.forEach((r, index) => { %>
+          <tr class="activity-row" style="--row-index: <%= index %>">
+            <td data-label="Learner">
+              <div class="person-cell" data-popup="<%= r.name %> · <%= r.email %>" tabindex="0">
+                <span class="person-avatar" aria-hidden="true">
+                  <%= (r.name || '')
+                    .split(' ')
+                    .filter(Boolean)
+                    .map(part => part.charAt(0))
+                    .slice(0, 2)
+                    .join('')
+                    .toUpperCase() %>
+                </span>
+
+                <span class="person-details">
+                  <strong><%= r.name %></strong>
+                  <small><%= r.email %></small>
+                </span>
+              </div>
+            </td>
+
+            <td data-label="Course">
+              <span class="course-name">
+                <%= r.courseTitle %>
+              </span>
+            </td>
+
+            <td data-label="Session">
+              <div class="session-info-cell">
+                <span class="session-date"><%= r.sessionStartDate %></span>
+                <% if (r.deliveryMode) { %>
+                  <span class="session-mode-tag"><%= r.deliveryMode %></span>
+                <% } %>
+              </div>
+            </td>
+
+            <td data-label="Company">
+              <span class="company-text"><%= r.company || '—' %></span>
+            </td>
+
+            <td data-label="Amount">
+              <strong class="amount-value">
+                <%= r.currency %>
+                <%= (r.priceCentsCharged / 100).toFixed(2) %>
+              </strong>
+            </td>
+
+            <td data-label="Status">
+              <span class="status-badge <%= r.status === 'confirmed' ? 'status-published' : 'status-draft' %>">
+                <span class="status-dot"></span>
+                <%= (r.status || '').replace('_', ' ') %>
+              </span>
+            </td>
+
+            <td data-label="Registered">
+              <span class="registration-time">
+                <%= new Date(r.createdAt).toLocaleString() %>
+              </span>
+            </td>
+            <td data-label="Completion">
+              <% if (completedPairs.has(`${r.learnerId}|${r.courseId}`)) { %>
+                <span class="status-badge status-published"><span class="status-dot"></span>Certified</span>
+              <% } else if (r.status === "confirmed" || r.status === "invoice_pending") { %>
+                <form method="POST" action="/admin/registrations/<%= r.id %>/complete" onsubmit="return confirm('Mark this course complete and issue a certificate?')">
+                  <button type="submit" class="btn btn-outline btn-sm">Mark Complete</button>
+                </form>
+              <% } else { %>
+                —
+              <% } %>
+            </td>
+          </tr>
+        <% }) %>
+
+        <% if (registrations.length === 0) { %>
+          <tr>
+            <td colspan="8" class="empty-state">
+              No registrations recorded yet.
+            </td>
+          </tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  const searchInput = document.querySelector("#registrationSearch");
+  const tableRows = document.querySelectorAll("#registrationsTable tbody tr");
+
+  searchInput?.addEventListener("input", () => {
+    const searchTerm = searchInput.value.toLowerCase().trim();
+
+    tableRows.forEach((row) => {
+      const rowText = row.textContent.toLowerCase();
+
+      row.style.display = rowText.includes(searchTerm)
+        ? ""
+        : "none";
+    });
+  });
+</script>
+
+<%- include('partials/foot') %>
