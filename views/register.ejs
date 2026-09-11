@@ -47,7 +47,7 @@
           <label style="display:flex;align-items:start;gap:10px;cursor:pointer">
             <input type="checkbox" name="addExam" value="1" style="margin-top:4px">
             <span>
-              <strong>Add the <%= examProduct.certificationName %> certification exam</strong> (<%= examProduct.certificationBody %>) — $<%= (examFinalPriceCents/100).toFixed(2) %>
+              <strong>Add the <%= examProduct.certificationName %> certification exam</strong> (<%= examProduct.certificationBody %>) — <%= currencySymbol(course.currency) %><%= (examFinalPriceCents/100).toFixed(2) %>
               <br><span style="color:var(--muted);font-size:.85rem"><%= examProduct.description %></span>
             </span>
           </label>
@@ -62,8 +62,11 @@
         <h4 style="margin-top:0"><%= course.title %></h4>
         <p style="font-size:.85rem;color:var(--muted)"><%= course.durationDays %> day<%= course.durationDays>1?'s':'' %> &middot; <%= course.category %></p>
         <div class="price-row" style="margin-top:16px">
-          <div class="price-now">$<%= (finalPrice/100).toFixed(2) %></div>
-          <% if(finalPrice < course.priceCents){ %><div class="price-was">$<%= (course.priceCents/100).toFixed(2) %></div><% } %>
+          <div class="price-now"><%= currencySymbol(course.currency) %><%= (finalPrice/100).toFixed(2) %></div>
+          <% if(finalPrice < course.priceCents){ %>
+            <div class="price-was"><%= currencySymbol(course.currency) %><%= (course.priceCents/100).toFixed(2) %></div>
+            <div class="price-savings" style="color:#16847B;font-size:.85rem;font-weight:600">You save <%= currencySymbol(course.currency) %><%= ((course.priceCents-finalPrice)/100).toFixed(2) %></div>
+          <% } %>
         </div>
         <% if (discountInfo.tierLabel === 'Very Early Bird' || discountInfo.tierLabel === 'Early Bird') { %>
           <span class="discount-badge"><%= discountInfo.tierLabel %> — save on this session</span>
@@ -77,9 +80,9 @@
         <% } %>
         <% if (examProduct) { %>
         <p style="font-size:.85rem;color:var(--muted);margin-top:14px;border-top:1px solid var(--line);padding-top:10px">
-          Course fee: $<%= (finalPrice/100).toFixed(2) %><br>
-          + Exam (if added): $<%= (examFinalPriceCents/100).toFixed(2) %><br>
-          <strong>Total with exam: $<%= ((finalPrice+examFinalPriceCents)/100).toFixed(2) %></strong>
+          Course fee: <%= currencySymbol(course.currency) %><%= (finalPrice/100).toFixed(2) %><br>
+          + Exam (if added): <%= currencySymbol(course.currency) %><%= (examFinalPriceCents/100).toFixed(2) %><br>
+          <strong>Total with exam: <%= currencySymbol(course.currency) %><%= ((finalPrice+examFinalPriceCents)/100).toFixed(2) %></strong>
         </p>
         <% } %>
       </div>

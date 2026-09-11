@@ -73,7 +73,7 @@
           
           <div class="mini-price-row">
             <div class="price-val-wrap">
-              <span class="price-current">$<%= ((c.priceCents*(1-(c.discountPercent||0)/100))/100).toFixed(0) %></span>
+              <span class="price-current"><%= currencySymbol(c.currency) %><%= ((c.priceCents*(1-(c.discountPercent||0)/100))/100).toFixed(0) %></span>
               <% if(c.discountPercent){ %><span class="price-discount-pill"><%= c.discountPercent %>% OFF</span><% } %>
             </div>
             <div class="seats-status-pill">

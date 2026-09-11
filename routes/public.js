@@ -53,6 +53,18 @@ function publishedCourses() {
   return store.readAll("courses").filter((c) => c.published);
 }
 
+router.get("/set-language/:lang", (req, res) => {
+  const { SUPPORTED_LANGUAGES } = require("../lib/i18n");
+  if (SUPPORTED_LANGUAGES.includes(req.params.lang)) {
+    req.session.lang = req.params.lang;
+  }
+  const back = req.get("Referer");
+  // Only redirect back to a same-origin page — an open redirect via a
+  // crafted Referer/query value is a real vulnerability class, not a
+  // theoretical one, so this is checked rather than trusted blindly.
+  res.redirect(back && back.startsWith(`${req.protocol}://${req.get("host")}`) ? back : "/");
+});
+
 router.get("/sitemap.xml", (req, res) => {
   const base = "https://baselineskills.com";
   const today = new Date().toISOString().slice(0, 10);
@@ -74,19 +86,49 @@ router.get("/sitemap.xml", (req, res) => {
 
 router.get("/", (req, res) => {
   const courses = publishedCourses();
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
   const upcoming = courses
     .flatMap((c) => (c.sessions || []).map((s) => ({ ...s, course: c })))
-    .filter((s) => s.startDate !== "On Demand")
+    .filter((s) => s.startDate !== "On Demand" && new Date(s.startDate) >= today)
     .sort((a, b) => new Date(a.startDate) - new Date(b.startDate))
     .slice(0, 4);
 
-  const categories = ["Requirements Engineering", "Systems Engineering", "Business Analysis", "Automotive"];
+  const categories = ["Requirements Engineering", "Systems Engineering", "Business Analysis", "Project Management", "Business Process Modeling", "AI", "Automotive"];
   const byCategory = {};
   categories.forEach((cat) => {
     byCategory[cat] = courses.filter((c) => c.category === cat).slice(0, 5);
   });
 
-  res.render("home", { title: "Baseline Skills — Build Skills. Establish Excellence.", metaDescription: "Accredited IREB CPRE, IIBA business analysis, and systems engineering training and certification. Live online and corporate cohorts, taught by practitioners.", byCategory, upcoming });
+  // The homepage's featured-course card used to be entirely hardcoded static
+  // markup — title, perks, and price all fixed text with no connection to
+  // the actual course record. That meant it silently drifted out of sync
+  // with reality the moment a real price or discount changed (exactly the
+  // $899-vs-$899-15%-off inconsistency flagged in review). Now computed
+  // from the real course and the same discount logic used everywhere else,
+  // so it can never show a stale price again.
+  const featuredCourse = courses.find((c) => c.slug === "cpre-foundation-level") || courses[0] || null;
+  let featuredPricing = null;
+  if (featuredCourse) {
+    const nextSession = (featuredCourse.sessions || []).find((s) => s.startDate !== "On Demand" && new Date(s.startDate) >= today);
+    const sessionDate = nextSession ? nextSession.startDate : "";
+    const discountInfo = discounts.earlyBirdForSession(sessionDate);
+    featuredPricing = {
+      finalPriceCents: discounts.finalPriceCentsForSession(featuredCourse, sessionDate),
+      originalPriceCents: featuredCourse.priceCents,
+      discountPercent: discounts.effectiveDiscountPercent(featuredCourse, sessionDate),
+      nextSessionDate: sessionDate,
+    };
+  }
+
+  const siteStats = {
+    founded: store.getSetting("stat_founded_year", "2009"),
+    rating: store.getSetting("stat_average_rating", "4.8"),
+    professionals: store.getSetting("stat_professionals_trained", "20,000+"),
+    industries: store.getSetting("stat_industries_served", "10+"),
+  };
+
+  res.render("home", { title: "Baseline Skills — Build Skills. Establish Excellence.", metaDescription: "Accredited IREB CPRE, IIBA business analysis, and systems engineering training and certification. Live online and corporate cohorts, taught by practitioners.", byCategory, upcoming, featuredCourse, featuredPricing, siteStats });
 });
 
 router.get("/courses", (req, res) => {
@@ -256,13 +298,123 @@ router.post("/corporate-training/inquiry", formRateLimiter, (req, res) => {
   res.render("corporate-training", { title: "Corporate Training — Baseline Skills", metaDescription: "Upskill your engineering, product, and business analysis teams with corporate requirements engineering and systems engineering training programs.", success: true });
 });
 
+// For Teams — a corporate group nominating participants into an EXISTING
+// public cohort, typically paying via a company purchase order rather than
+// individual online checkout. This is a distinct funnel from Corporate
+// Training (custom, private programs) — kept separate per that explicit
+// clarification, not merged into the existing inquiry type.
+router.get("/for-teams/team-cohorts", (req, res) => {
+  res.render("for-teams-form", {
+    title: "Team Cohorts — Baseline Skills",
+    metaDescription: "Nominate a group of colleagues into an upcoming public Baseline Skills cohort — billed by purchase order, not individual checkout.",
+    formType: "team-cohorts",
+    heading: "Team Cohorts",
+    intro: "Send several colleagues to an upcoming public cohort together. We'll confirm seats and invoice your organization directly — no individual online payment needed.",
+  });
+});
+
+router.post("/for-teams/team-cohorts", formRateLimiter, (req, res) => {
+  const { name, company, email, teamSize, courseInterest, deliveryMode, message } = req.body;
+  if (!name || !company || !email || !teamSize) {
+    return res.status(400).render("for-teams-form", {
+      title: "Team Cohorts — Baseline Skills", formType: "team-cohorts", heading: "Team Cohorts",
+      intro: "Send several colleagues to an upcoming public cohort together. We'll confirm seats and invoice your organization directly — no individual online payment needed.",
+      error: "Name, organization, work email, and number of participants are required.", form: req.body,
+    });
+  }
+  store.insert("inquiries", {
+    id: newId("inq"), type: "team-cohort", name, company, email,
+    teamSize, courseInterest: courseInterest || "", deliveryMode: deliveryMode || "",
+    message: message || "", createdAt: new Date().toISOString(),
+  });
+  sendMail({
+    to: process.env.ADMIN_EMAIL || "admin@baselineskills.example",
+    subject: `New team cohort request — ${company.replace(/[\r\n]/g, "")}`,
+    html: `<p><strong>${escapeHtml(name)}</strong> at <strong>${escapeHtml(company)}</strong> (${escapeHtml(email)}) wants to nominate ${escapeHtml(teamSize)} participant(s) into a public cohort.</p>
+           <p>Course/interest: ${escapeHtml(courseInterest) || "not specified"}</p>
+           <p>Preferred delivery format: ${escapeHtml(deliveryMode) || "not specified"}</p>
+           <p>Message: ${escapeHtml(message) || "(none)"}</p>`,
+  });
+  res.render("for-teams-form", {
+    title: "Team Cohorts — Baseline Skills", formType: "team-cohorts", heading: "Team Cohorts",
+    intro: "Send several colleagues to an upcoming public cohort together. We'll confirm seats and invoice your organization directly — no individual online payment needed.",
+    success: true,
+  });
+});
+
+router.get("/for-teams/request-conversation", (req, res) => {
+  res.render("for-teams-form", {
+    title: "Request a Conversation — Baseline Skills",
+    metaDescription: "Not sure which path fits your team? Request a short conversation with Baseline Skills.",
+    formType: "request-conversation",
+    heading: "Request a Conversation",
+    intro: "Not sure whether Corporate Learning or Team Cohorts fits better? Tell us a bit about what you need and we'll point you the right way.",
+  });
+});
+
+router.post("/for-teams/request-conversation", formRateLimiter, (req, res) => {
+  const { name, company, email, phone, courseInterest, message } = req.body;
+  if (!name || !email) {
+    return res.status(400).render("for-teams-form", {
+      title: "Request a Conversation — Baseline Skills", formType: "request-conversation", heading: "Request a Conversation",
+      intro: "Not sure whether Corporate Learning or Team Cohorts fits better? Tell us a bit about what you need and we'll point you the right way.",
+      error: "Name and email are required.", form: req.body,
+    });
+  }
+  store.insert("inquiries", {
+    id: newId("inq"), type: "request-conversation", name, company: company || "", email,
+    phone: phone || "", courseInterest: courseInterest || "", message: message || "",
+    createdAt: new Date().toISOString(),
+  });
+  sendMail({
+    to: process.env.ADMIN_EMAIL || "admin@baselineskills.example",
+    subject: `New conversation request — ${name.replace(/[\r\n]/g, "")}`,
+    html: `<p><strong>${escapeHtml(name)}</strong>${company ? ` at <strong>${escapeHtml(company)}</strong>` : ""} (${escapeHtml(email)}, ${escapeHtml(phone) || "no phone given"}) requested a conversation.</p>
+           <p>Reason: ${escapeHtml(courseInterest) || "not specified"}</p>
+           <p>Message: ${escapeHtml(message) || "(none)"}</p>`,
+  });
+  res.render("for-teams-form", {
+    title: "Request a Conversation — Baseline Skills", formType: "request-conversation", heading: "Request a Conversation",
+    intro: "Not sure whether Corporate Learning or Team Cohorts fits better? Tell us a bit about what you need and we'll point you the right way.",
+    success: true,
+  });
+});
+
 router.get("/about", (req, res) => {
   res.render("about", { title: "About Us — Baseline Skills", metaDescription: "Baseline Skills is a specialized training and certification marketplace for requirements engineering, business analysis, and systems engineering practitioners." });
 });
 
+// Fixed resource taxonomy per the homepage redesign brief — a constrained
+// set of category values (enforced in the admin form as a dropdown, not a
+// free-text field), each with its own navigable landing page. "Blog" is
+// intentionally not part of this list: it's a distinct, pre-existing content
+// type with its own table and route, surfaced under the same Resources nav
+// dropdown for the visitor rather than duplicated into this taxonomy.
+const RESOURCE_CATEGORIES = [
+  { slug: "ba-re", label: "BA & RE" },
+  { slug: "systems-engineering", label: "Systems Engineering" },
+  { slug: "pm", label: "PM" },
+  { slug: "automobile", label: "Automobile" },
+];
+
 router.get("/resources", (req, res) => {
   const articles = store.readAll("resources").sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-  res.render("resources", { title: "RE Pulse — Baseline Skills", metaDescription: "RE Pulse — practical articles, guides, and insights on requirements engineering, business analysis, and systems engineering from Baseline Skills.", articles });
+  res.render("resources", { title: "RE Pulse — Baseline Skills", metaDescription: "RE Pulse — practical articles, guides, and insights on requirements engineering, business analysis, and systems engineering from Baseline Skills.", articles, categories: RESOURCE_CATEGORIES });
+});
+
+router.get("/resources/blog", (req, res) => res.redirect("/blog"));
+
+RESOURCE_CATEGORIES.forEach(({ slug, label }) => {
+  router.get(`/resources/${slug}`, (req, res) => {
+    const articles = store.readAll("resources")
+      .filter((r) => r.category === label)
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    res.render("resources", {
+      title: `${label} Resources — Baseline Skills`,
+      metaDescription: `Practical ${label} articles and guides from Baseline Skills.`,
+      articles, categories: RESOURCE_CATEGORIES, activeCategory: label,
+    });
+  });
 });
 
 router.get("/resources/:slug", (req, res) => {
@@ -274,6 +426,18 @@ router.get("/resources/:slug", (req, res) => {
   if (!resource.body && resource.url) return res.redirect(resource.url);
   const related = store.readAll("resources").filter((r) => r.id !== resource.id && r.category === resource.category).slice(0, 3);
   res.render("resource-detail", { title: `${resource.title} — Baseline Skills`, metaDescription: resource.excerpt, resource, related });
+});
+
+router.get("/exams", (req, res) => {
+  const exams = store.readAll("certification_exams").map((exam) => {
+    const course = exam.courseId ? store.findOne("courses", (c) => c.id === exam.courseId && c.published) : null;
+    return { ...exam, course };
+  });
+  res.render("exams", {
+    title: "Certification Exams — Baseline Skills",
+    metaDescription: "Certification examinations available through Baseline Skills, administered independently of training delivery.",
+    exams,
+  });
 });
 
 router.get("/certifications/:slug", (req, res) => {

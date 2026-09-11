@@ -4,19 +4,32 @@
   <div class="container">
     <span class="eyebrow">RE Pulse</span>
     <h1 style="font-size:2.1rem">Free resources to sharpen your practice.</h1>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:16px">
+      <a href="/resources" class="pill <%= typeof activeCategory === 'undefined' ? 'active' : '' %>">All</a>
+      <a href="/resources/blog" class="pill">Blog</a>
+      <% categories.forEach(c => { %>
+        <a href="/resources/<%= c.slug %>" class="pill <%= typeof activeCategory !== 'undefined' && activeCategory === c.label ? 'active' : '' %>"><%= c.label %></a>
+      <% }) %>
+    </div>
   </div>
 </section>
 
 <section class="section">
-  <div class="container grid-3">
-    <% articles.forEach(a => { %>
-      <div class="card">
-        <span class="tag"><%= a.category %></span>
-        <h3 style="margin-top:12px"><%= a.title %></h3>
-        <p style="color:var(--muted);font-size:.9rem;flex:1"><%= a.excerpt %></p>
-        <a href="/resources/<%= a.slug %>" class="btn btn-outline btn-sm">Get the full guide</a>
-      </div>
-    <% }) %>
+  <div class="container">
+    <% if (articles.length === 0) { %>
+      <p class="lead">We're preparing new resources for this area.</p>
+    <% } else { %>
+    <div class="grid-3">
+      <% articles.forEach(a => { %>
+        <div class="card">
+          <span class="tag"><%= a.category %></span>
+          <h3 style="margin-top:12px"><%= a.title %></h3>
+          <p style="color:var(--muted);font-size:.9rem;flex:1"><%= a.excerpt %></p>
+          <a href="/resources/<%= a.slug %>" class="btn btn-outline btn-sm">Get the full guide</a>
+        </div>
+      <% }) %>
+    </div>
+    <% } %>
   </div>
 </section>
 

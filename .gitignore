@@ -6,9 +6,15 @@ node_modules/
 # (the folder is created automatically at startup if missing).
 public/uploads/
 
+# Signed Rules of Engagement documents and course materials — private
+# uploads that can contain real signatures, personal details, or licensed
+# course content. Found missing from this file entirely while preparing
+# push instructions: without this, running the app locally (no DATA_DIR
+# set) and pushing would commit real uploaded files straight into git
+# history, which `git rm` afterward does not retroactively undo.
+private-uploads/
+
 # SQLite database files — generated at runtime, not source
 data/*.sqlite3
 data/*.sqlite3-wal
 data/*.sqlite3-shm
-
-data/*.json

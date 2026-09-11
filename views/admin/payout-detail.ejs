@@ -6,7 +6,7 @@
   <% if (typeof success !== 'undefined' && success) { %><div class="alert alert-success"><%= success %></div><% } %>
 
   <p>Period: <%= payout.periodStart %> – <%= payout.periodEnd %> · Status: <strong><%= payout.status %></strong><% if (payout.paidAt) { %> · Paid <%= new Date(payout.paidAt).toLocaleDateString() %><% } %></p>
-  <p style="font-size:1.3rem;font-weight:600">Total: $<%= (payout.totalAmountCents/100).toFixed(2) %></p>
+  <p style="font-size:1.3rem;font-weight:600">Total: <%= currencySymbol() %><%= (payout.totalAmountCents/100).toFixed(2) %></p>
 
   <% if (payout.status === 'pending') { %>
   <div style="display:flex;gap:10px;margin-bottom:24px">
@@ -27,9 +27,9 @@
         <tr>
           <td><%= li.registration ? li.registration.courseTitle : 'Deleted registration' %></td>
           <td><%= li.registration ? li.registration.name : '—' %></td>
-          <td>$<%= (li.grossAmountCents/100).toFixed(2) %></td>
+          <td><%= currencySymbol() %><%= (li.grossAmountCents/100).toFixed(2) %></td>
           <td><%= li.rateApplied %>%</td>
-          <td>$<%= (li.netAmountCents/100).toFixed(2) %></td>
+          <td><%= currencySymbol() %><%= (li.netAmountCents/100).toFixed(2) %></td>
         </tr>
       <% }) %>
     </tbody>

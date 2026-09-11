@@ -48,39 +48,56 @@
   <div class="container nav-wrapper">
     <!-- Logo with Smooth Text Animation & Interactive Baseline Button Effect -->
     <a href="/" class="brand-interactive-btn" id="main-brand-logo" aria-label="Baseline Skills Home" onclick="handleBrandClick(event, '/')">
-      <span class="brand-mark" aria-hidden="true">
-        <img src="/img/logo-mark.png" alt="" width="20" height="20" style="display:block;object-fit:contain">
-      </span>
-      <span class="brand-name-wrap">
-        <span class="brand-text-base">Baseline</span><span class="brand-text-accent">Skills</span>
-        <span class="brand-baseline-line"></span>
-      </span>
+      <img src="/img/wordmark.png" alt="Baseline Skills" style="height:32px;width:auto;display:block">
     </a>
 
     <!-- Top-Center Header & Menu Container Card -->
     <nav class="nav-center-card" aria-label="Main Navigation">
       <ul class="nav-links">
-        <li><a href="/courses" class="<%= typeof currentPath !== 'undefined' && currentPath.startsWith('/courses') ? 'active' : '' %>"><span>Courses</span></a></li>
-        <li><a href="/corporate-training" class="<%= typeof currentPath !== 'undefined' && currentPath === '/corporate-training' ? 'active' : '' %>"><span>Corporate</span></a></li>
-        <li><a href="/resources" class="<%= typeof currentPath !== 'undefined' && currentPath.startsWith('/resources') ? 'active' : '' %>"><span>Resources</span></a></li>
-        <li><a href="/blog" class="<%= typeof currentPath !== 'undefined' && currentPath.startsWith('/blog') ? 'active' : '' %>"><span>Blog</span></a></li>
-        <li><a href="/about" class="<%= typeof currentPath !== 'undefined' && currentPath === '/about' ? 'active' : '' %>"><span>About</span></a></li>
-        <li><a href="/contact" class="<%= typeof currentPath !== 'undefined' && currentPath === '/contact' ? 'active' : '' %>"><span>Contact</span></a></li>
-        <li><a href="<%= typeof isLoggedInLearner !== 'undefined' && isLoggedInLearner ? '/account' : '/login' %>"><span><%= typeof isLoggedInLearner !== 'undefined' && isLoggedInLearner ? 'My Account' : 'Log In' %></span></a></li>
+        <li><a href="/courses" class="<%= typeof currentPath !== 'undefined' && currentPath.startsWith('/courses') ? 'active' : '' %>"><span><%= t('nav_courses') %></span></a></li>
+        <li><a href="/corporate-training" class="<%= typeof currentPath !== 'undefined' && currentPath === '/corporate-training' ? 'active' : '' %>"><span><%= t('nav_corporate') %></span></a></li>
+        <li class="nav-dropdown">
+          <a href="/resources" class="<%= typeof currentPath !== 'undefined' && (currentPath.startsWith('/resources') || currentPath.startsWith('/blog')) ? 'active' : '' %>"><span><%= t('nav_resources') %> ▾</span></a>
+          <ul class="nav-dropdown-menu">
+            <li><a href="/blog">Blog</a></li>
+            <li><a href="/resources/ba-re">BA &amp; RE</a></li>
+            <li><a href="/resources/systems-engineering">Systems Engineering</a></li>
+            <li><a href="/resources/pm">PM</a></li>
+            <li><a href="/resources/automobile">Automobile</a></li>
+          </ul>
+        </li>
+        <li><a href="/exams" class="<%= typeof currentPath !== 'undefined' && currentPath.startsWith('/exams') ? 'active' : '' %>"><span>Exams</span></a></li>
+        <li><a href="/teach-with-us" class="<%= typeof currentPath !== 'undefined' && currentPath === '/teach-with-us' ? 'active' : '' %>"><span>Teach with us</span></a></li>
+        <li><a href="/about" class="<%= typeof currentPath !== 'undefined' && currentPath === '/about' ? 'active' : '' %>"><span><%= t('nav_about') %></span></a></li>
+        <li><a href="/contact" class="<%= typeof currentPath !== 'undefined' && currentPath === '/contact' ? 'active' : '' %>"><span><%= t('nav_contact') %></span></a></li>
+        <li><a href="<%= typeof isLoggedInLearner !== 'undefined' && isLoggedInLearner ? '/account' : '/login' %>"><span><%= typeof isLoggedInLearner !== 'undefined' && isLoggedInLearner ? t('nav_account') : t('nav_login') %></span></a></li>
       </ul>
     </nav>
 
-    <!-- Highlighted Call-to-Action (CTA) Buttons -->
-    <div class="nav-cta">
-      <button type="button" class="btn btn-outline-nav btn-expert-cta" onclick="openExpertModal()">
-        <span class="cta-pulse-dot"></span>
-        <span>Talk to Expert</span>
-      </button>
-      <a href="/courses" class="btn btn-gold btn-courses-cta">
-        <span>Explore Courses</span>
-        <svg class="btn-arrow-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
-      </a>
+    <!-- Search + Language Toggle -->
+    <div class="nav-utility">
+      <div class="nav-search-wrap">
+        <button type="button" class="nav-search-toggle" aria-label="Search courses" onclick="toggleNavSearch()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        </button>
+        <form action="/courses" method="GET" class="nav-search-form" id="navSearchForm">
+          <input type="text" name="q" placeholder="<%= t('nav_search_placeholder') %>" class="nav-search-input" id="navSearchInput">
+        </form>
+      </div>
+      <div class="nav-lang-toggle">
+        <a href="/set-language/en" class="<%= lang === 'en' ? 'active' : '' %>">EN</a>
+        <span>/</span>
+        <a href="/set-language/de" class="<%= lang === 'de' ? 'active' : '' %>">DE</a>
+      </div>
     </div>
+
+    <script>
+      function toggleNavSearch() {
+        const form = document.getElementById('navSearchForm');
+        form.classList.toggle('open');
+        if (form.classList.contains('open')) document.getElementById('navSearchInput').focus();
+      }
+    </script>
 
     <!-- Mobile Nav Toggle -->
     <button class="nav-toggle" aria-label="Toggle menu" onclick="toggleMobileMenu()">
@@ -96,14 +113,16 @@
       <div class="mobile-nav-links">
         <a href="/courses" class="mobile-link <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/courses') ? 'active' : '' %>">🎓 Courses</a>
         <a href="/corporate-training" class="mobile-link <%= typeof currentPath !== 'undefined' && currentPath === '/corporate-training' ? 'active' : '' %>">🏢 Corporate Training</a>
-        <a href="/resources" class="mobile-link <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/resources') ? 'active' : '' %>">📚 Resources (RE Pulse)</a>
-        <a href="/blog" class="mobile-link <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/blog') ? 'active' : '' %>">✍️ Blog &amp; Insights</a>
+        <a href="/resources" class="mobile-link <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/resources') ? 'active' : '' %>">📚 Resources</a>
+        <a href="/blog" class="mobile-link mobile-sublink <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/blog') ? 'active' : '' %>" style="padding-left:32px;font-size:.9rem">↳ Blog</a>
+        <a href="/resources/ba-re" class="mobile-link mobile-sublink" style="padding-left:32px;font-size:.9rem">↳ BA &amp; RE</a>
+        <a href="/resources/systems-engineering" class="mobile-link mobile-sublink" style="padding-left:32px;font-size:.9rem">↳ Systems Engineering</a>
+        <a href="/resources/pm" class="mobile-link mobile-sublink" style="padding-left:32px;font-size:.9rem">↳ PM</a>
+        <a href="/resources/automobile" class="mobile-link mobile-sublink" style="padding-left:32px;font-size:.9rem">↳ Automobile</a>
+        <a href="/exams" class="mobile-link <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/exams') ? 'active' : '' %>">📝 Exams</a>
+        <a href="/teach-with-us" class="mobile-link <%= typeof currentPath !== 'undefined' && currentPath === '/teach-with-us' ? 'active' : '' %>">🎤 Teach with us</a>
         <a href="/about" class="mobile-link <%= typeof currentPath !== 'undefined' && currentPath === '/about' ? 'active' : '' %>">ℹ️ About Us</a>
         <a href="/contact" class="mobile-link <%= typeof currentPath !== 'undefined' && currentPath === '/contact' ? 'active' : '' %>">✉️ Contact</a>
-      </div>
-      <div class="mobile-cta-group">
-        <button type="button" class="btn btn-outline btn-block" onclick="openExpertModal();toggleMobileMenu();">Talk to Expert</button>
-        <a href="/courses" class="btn btn-gold btn-block" style="margin-top:8px">Explore Courses</a>
       </div>
     </div>
   </div>
@@ -180,7 +199,7 @@
     <div class="modal-trainer-trust">
       <div class="trust-avatar">🎓</div>
       <div class="trust-text">
-        <strong>17+ Years of Practice</strong> &bull; IREB Certified Faculty &bull; Trusted by Global Engineering Orgs
+        <strong>Accredited Since 2009</strong> &bull; IREB Certified Faculty &bull; Trusted by Global Engineering Orgs
       </div>
     </div>
   </div>

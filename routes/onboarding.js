@@ -53,10 +53,15 @@ function handleRoeUpload(viewName) {
   };
 }
 
-// ==================== Become a Trainer ====================
-router.get("/become-a-trainer", (req, res) => {
-  res.render("become-a-trainer", { title: "Become a Trainer — Baseline Skills", error: null });
+// ==================== Become a Trainer / Teach with Us ====================
+// "Teach with Us" is the same underlying application flow as the original
+// "Become a Trainer" page, not a separate system — /teach-with-us is now the
+// primary URL (matching the new nav label), with the old path redirecting to
+// it rather than serving duplicate content at two URLs.
+router.get("/teach-with-us", (req, res) => {
+  res.render("become-a-trainer", { title: "Teach with Us — Baseline Skills", error: null });
 });
+router.get("/become-a-trainer", (req, res) => res.redirect(301, "/teach-with-us"));
 
 router.post("/become-a-trainer/apply", applicationRateLimiter, handleRoeUpload("become-a-trainer"), (req, res) => {
   const { name, email, password, title, bio, profileUrl } = req.body;

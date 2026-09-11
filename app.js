@@ -113,6 +113,12 @@ app.use(
 app.use((req, res, next) => {
   res.locals.isAdmin = !!(req.session && req.session.adminId);
   res.locals.isLoggedInLearner = !!(req.session && req.session.learnerId);
+  res.locals.currencySymbol = require("./lib/currency").currencySymbol;
+  res.locals.trainingModeShort = require("./lib/training-mode").trainingModeShort;
+  res.locals.trainingModeCategory = require("./lib/training-mode").trainingModeCategory;
+  res.locals.trainingModeSymbol = (mode) => require("./lib/training-mode").SYMBOLS[require("./lib/training-mode").trainingModeCategory(mode)];
+  res.locals.lang = (req.session && req.session.lang) || "en";
+  res.locals.t = require("./lib/i18n").translator(res.locals.lang);
   res.locals.currentPath = req.path;
   next();
 });

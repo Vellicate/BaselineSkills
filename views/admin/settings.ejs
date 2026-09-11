@@ -1,0 +1,20 @@
+<%- include('partials/head') %>
+
+<h1 style="font-size:1.6rem">Site Settings</h1>
+<p style="color:var(--muted);max-width:640px">These are business-level facts shown on the homepage — real historical figures, not values calculated from live registration data. Update them here rather than in code.</p>
+
+<% if (typeof success !== 'undefined' && success) { %>
+  <div class="alert alert-success" style="margin-bottom:16px"><%= success %></div>
+<% } %>
+
+<form method="POST" action="/admin/settings" class="card" style="max-width:560px">
+  <% settings.forEach(s => { %>
+    <div class="form-field">
+      <label><%= s.label %></label>
+      <input type="text" name="<%= s.key %>" value="<%= s.value %>">
+    </div>
+  <% }) %>
+  <button type="submit" class="btn btn-navy">Save Settings</button>
+</form>
+
+<%- include('partials/foot') %>

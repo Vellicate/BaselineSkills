@@ -1,0 +1,50 @@
+<%- include('partials/header') %>
+
+<section class="course-header">
+  <div class="container">
+    <span class="tag">Certification</span>
+    <h1 style="color:#fff;margin-top:14px">Certification Exams</h1>
+    <p style="color:rgba(255,255,255,.8);max-width:640px">
+      A certification exam is administered independently of the training you take —
+      passing it, not attending the course, is what earns the credential.
+    </p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <% if (exams.length === 0) { %>
+      <p class="lead">New learning opportunities are coming soon. Explore our <a href="/courses">courses</a> or <a href="/contact">tell us what you'd like to learn</a>.</p>
+    <% } else { %>
+    <div class="grid-3">
+      <% exams.forEach(exam => { %>
+        <div class="card">
+          <% if (exam.certificationBody) { %><span class="tag"><%= exam.certificationBody %></span><% } %>
+          <% if (exam.level) { %><span class="tag" style="margin-left:6px"><%= exam.level %></span><% } %>
+          <h3 style="margin-top:12px"><%= exam.certificationName %></h3>
+          <% if (exam.examName && exam.examName !== exam.certificationName) { %>
+            <p style="color:var(--muted);font-size:.85rem">Exam: <%= exam.examName %></p>
+          <% } %>
+          <% if (exam.description) { %><p style="color:var(--muted);font-size:.9rem;flex:1"><%= exam.description %></p><% } %>
+          <ul style="font-size:.85rem;color:var(--muted);padding-left:18px;margin:10px 0">
+            <% if (exam.eligibility) { %><li>Eligibility: <%= exam.eligibility %></li><% } %>
+            <% if (exam.durationMinutes) { %><li>Duration: <%= exam.durationMinutes %> minutes</li><% } %>
+            <% if (exam.format) { %><li>Format: <%= exam.format %></li><% } %>
+            <% if (exam.examProvider) { %><li>Administered by: <%= exam.examProvider %></li><% } %>
+            <li>Exam fee: <%= currencySymbol(exam.course ? exam.course.currency : null) %><%= (exam.priceCents/100).toFixed(2) %></li>
+          </ul>
+          <p style="font-size:.8rem;color:var(--muted);font-style:italic">
+            This is a certification examination, administered independently of Baseline
+            Skills — it is distinct from the training course itself.
+          </p>
+          <% if (exam.course) { %>
+            <a href="/courses/<%= exam.course.slug %>" class="btn btn-outline btn-sm" style="margin-top:8px">Related preparation course</a>
+          <% } %>
+        </div>
+      <% }) %>
+    </div>
+    <% } %>
+  </div>
+</section>
+
+<%- include('partials/footer') %>

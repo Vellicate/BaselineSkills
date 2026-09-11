@@ -30,13 +30,13 @@
     <% } %>
 
     <h2 style="margin-top:32px">Earnings</h2>
-    <p class="lead">Total earned to date: <strong>$<%= (totalEarnedCents/100).toFixed(2) %></strong></p>
+    <p class="lead">Total earned to date: <strong><%= currencySymbol() %><%= (totalEarnedCents/100).toFixed(2) %></strong></p>
     <% if (earnings.length > 0) { %>
     <table class="admin-table" style="background:#fff">
       <thead><tr><th>Tier</th><th>Rate</th><th>Gross</th><th>Commission</th></tr></thead>
       <tbody>
         <% earnings.forEach(e => { %>
-          <tr><td><%= e.tier %></td><td><%= e.ratePercent %>%</td><td>$<%= (e.grossCourseRevenueCents/100).toFixed(2) %></td><td>$<%= (e.commissionCents/100).toFixed(2) %></td></tr>
+          <tr><td><%= e.tier %></td><td><%= e.ratePercent %>%</td><td><%= currencySymbol() %><%= (e.grossCourseRevenueCents/100).toFixed(2) %></td><td><%= currencySymbol() %><%= (e.commissionCents/100).toFixed(2) %></td></tr>
         <% }) %>
       </tbody>
     </table>
@@ -54,7 +54,7 @@
       <thead><tr><th>Period</th><th>Amount</th><th>Status</th></tr></thead>
       <tbody>
         <% payouts.forEach(p => { %>
-          <tr><td><%= p.periodStart %> – <%= p.periodEnd %></td><td>$<%= (p.totalAmountCents/100).toFixed(2) %></td><td><%= p.status %></td></tr>
+          <tr><td><%= p.periodStart %> – <%= p.periodEnd %></td><td><%= currencySymbol() %><%= (p.totalAmountCents/100).toFixed(2) %></td><td><%= p.status %></td></tr>
         <% }) %>
       </tbody>
     </table>

@@ -57,7 +57,7 @@
 
             <td data-label="Price">
               <span class="price-chip">
-                $<%= (c.priceCents / 100).toFixed(2) %>
+                <%= currencySymbol(c.currency) %><%= (c.priceCents / 100).toFixed(2) %>
               </span>
             </td>
 

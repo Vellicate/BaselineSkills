@@ -328,7 +328,7 @@ function courseFromForm(body, existing, uploadedFile) {
     deliveryModes: deliveryModes.length ? deliveryModes : ["Live Online"],
     priceCents: Math.round(Number(body.price || 0) * 100),
     discountPercent: Number(body.discountPercent || 0),
-    currency: body.currency || "USD",
+    currency: body.currency || "EUR",
     certification: !!body.certification,
     sessions,
     corporateOnly: !!body.corporateOnly,
@@ -728,6 +728,34 @@ router.get("/inquiries", (req, res) => {
     inquiries,
     ...getAlerts(req)
   });
+});
+
+// ==================== Site Settings ====================
+// Homepage statistics and other business-level facts that are true numbers,
+// not calculated from live data (a rating average or learner count *could*
+// be computed from the database, but "trained 20,000+ professionals since
+// 2009" reflects the company's full history, most of which predates this
+// system's own records — so this is intentionally a configurable value an
+// admin can update, not a hardcoded string in the homepage template.
+const HOMEPAGE_SETTING_KEYS = [
+  { key: "stat_founded_year", label: "Training since (year)", default: "2009" },
+  { key: "stat_average_rating", label: "Average course rating", default: "4.8" },
+  { key: "stat_professionals_trained", label: "Professionals trained", default: "20,000+" },
+  { key: "stat_industries_served", label: "Industries served", default: "10+" },
+];
+
+router.get("/settings", auth.requireSuperAdmin, (req, res) => {
+  const settings = HOMEPAGE_SETTING_KEYS.map((s) => ({ ...s, value: store.getSetting(s.key, s.default) }));
+  res.render("admin/settings", { title: "Site Settings — Baseline Skills", settings, ...getAlerts(req) });
+});
+
+router.post("/settings", auth.requireSuperAdmin, (req, res) => {
+  HOMEPAGE_SETTING_KEYS.forEach((s) => {
+    if (typeof req.body[s.key] === "string" && req.body[s.key].trim()) {
+      store.setSetting(s.key, req.body[s.key].trim());
+    }
+  });
+  res.redirect("/admin/settings?success=Settings+updated");
 });
 
 // ==================== Trainers ====================

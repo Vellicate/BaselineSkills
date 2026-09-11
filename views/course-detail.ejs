@@ -121,6 +121,25 @@
       <% course.deliveryModes.forEach(m => { %><span class="pill"><%= m %></span><% }) %>
     </div>
 
+    <% if (certificationBody) { %>
+    <h2 style="margin-top:36px">How Certification Works</h2>
+    <p style="color:var(--muted);max-width:640px">Certification follows a clear three-party structure — each party has a distinct role:</p>
+    <div class="grid-3" style="margin-top:12px">
+      <div class="card">
+        <h4 style="margin-top:0"><%= certificationBody.name %> defines the standard</h4>
+        <p style="font-size:.9rem;color:var(--muted)"><%= certificationBody.name %> sets the syllabus and quality criteria this course is built against.</p>
+      </div>
+      <div class="card">
+        <h4 style="margin-top:0">Baseline Skills delivers the training</h4>
+        <p style="font-size:.9rem;color:var(--muted)">Your instructor teaches the syllabus and prepares you for the exam — training and examination are kept separate for objectivity.</p>
+      </div>
+      <div class="card">
+        <h4 style="margin-top:0">An independent body examines you</h4>
+        <p style="font-size:.9rem;color:var(--muted)">The certification exam is administered independently of the training provider, so your result reflects your own knowledge, not the course you happened to take.</p>
+      </div>
+    </div>
+    <% } %>
+
     <% if (materials.length) { %>
     <h2 style="margin-top:36px">Course Materials</h2>
     <% if (hasAccessToMaterials) { %>
@@ -150,7 +169,8 @@
 
     <% if (reviews.length) { %>
     <h2 style="margin-top:36px" id="reviews">Reviews</h2>
-    <p style="font-weight:600">⭐ <%= avgRating.toFixed(1) %> / 5 <span style="font-weight:400;color:var(--muted);font-size:.9rem">(<%= reviews.length %> review<%= reviews.length !== 1 ? 's' : '' %>)</span></p>
+    <% if (reviews.length >= 5) { %>
+    <p style="font-weight:600">⭐ <%= avgRating.toFixed(1) %> / 5 <span style="font-weight:400;color:var(--muted);font-size:.9rem">(<%= reviews.length %> reviews)</span></p>
     <div style="margin-bottom:16px">
       <% ratingDistribution.forEach(d => { %>
         <div style="display:flex;align-items:center;gap:8px;font-size:.85rem;color:var(--muted)">
@@ -160,6 +180,7 @@
         </div>
       <% }) %>
     </div>
+    <% } %>
     <% reviews.slice(0, 5).forEach(r => { %>
       <div class="card" style="margin-bottom:10px">
         <p style="font-weight:600">⭐ <%= r.rating %>/5</p>
@@ -216,8 +237,11 @@
   <div>
     <div class="sticky-card" id="sessions">
       <div class="price-row">
-        <div class="price-now">$<%= ((course.priceCents*(1-(course.discountPercent||0)/100))/100).toFixed(0) %></div>
-        <% if(course.discountPercent){ %><div class="price-was">$<%= (course.priceCents/100).toFixed(0) %></div><% } %>
+        <div class="price-now"><%= currencySymbol(course.currency) %><%= ((course.priceCents*(1-(course.discountPercent||0)/100))/100).toFixed(0) %></div>
+        <% if(course.discountPercent){ %>
+          <div class="price-was"><%= currencySymbol(course.currency) %><%= (course.priceCents/100).toFixed(0) %></div>
+          <div class="price-savings" style="color:#16847B;font-size:.85rem;font-weight:600">You save <%= currencySymbol(course.currency) %><%= (course.priceCents*(course.discountPercent/100)/100).toFixed(0) %></div>
+        <% } %>
       </div>
       <% if(course.discountPercent){ %><span class="discount-badge"><%= course.discountPercent %>% OFF</span><% } %>
       <p class="form-hint" style="margin-top:10px">per person &middot; <%= course.currency %></p>

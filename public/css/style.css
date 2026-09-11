@@ -468,6 +468,163 @@ p {
   align-items: center
 }
 
+/* Organization logo/name slider — auto-scrolling marquee, pauses on hover,
+   built from CSS animation over a doubled list (rendered twice in the
+   template) so the loop is seamless with no visible jump. */
+.logo-slider-track {
+  width: 100%;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+}
+.logo-slider-inner {
+  display: flex;
+  width: max-content;
+  gap: 48px;
+  padding: 8px 24px;
+  animation: logoScroll 40s linear infinite;
+}
+.logo-slider-track:hover .logo-slider-inner {
+  animation-play-state: paused;
+}
+.logo-slider-item {
+  flex: 0 0 auto;
+  font-weight: 600;
+  color: var(--muted, #5b6577);
+  font-size: 1rem;
+  white-space: nowrap;
+}
+@keyframes logoScroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .logo-slider-inner { animation: none; overflow-x: auto; }
+}
+
+/* Nav search + language toggle */
+.nav-utility {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.next-steps-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 28px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.12);
+}
+.next-step-item {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  margin-bottom: 18px;
+}
+.next-step-num {
+  font-weight: 800;
+  font-size: 1.1rem;
+  color: var(--gold, #D98E04);
+  min-width: 32px;
+}
+
+/* Resources dropdown */
+.nav-dropdown {
+  position: relative;
+}
+.nav-dropdown-menu {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  min-width: 190px;
+  padding: 8px 0;
+  z-index: 60;
+  list-style: none;
+  margin: 0;
+}
+.nav-dropdown:hover .nav-dropdown-menu,
+.nav-dropdown:focus-within .nav-dropdown-menu {
+  display: block;
+}
+.nav-dropdown-menu li a {
+  display: block;
+  padding: 8px 18px;
+  color: var(--navy);
+  text-decoration: none;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+.nav-dropdown-menu li a:hover {
+  background: rgba(15, 92, 86, 0.06);
+}
+.nav-search-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.nav-search-toggle {
+  background: rgba(15, 92, 86, 0.05);
+  border: 1px solid rgba(15, 92, 86, 0.2);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--navy);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.nav-search-toggle:hover { background: rgba(15, 92, 86, 0.12); }
+.nav-search-form {
+  position: absolute;
+  right: 0;
+  top: 44px;
+  width: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: width 0.2s ease, opacity 0.2s ease;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+  z-index: 50;
+}
+.nav-search-form.open {
+  width: 260px;
+  opacity: 1;
+}
+.nav-search-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 14px;
+  border: 1px solid var(--line, #e2e8f0);
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+.nav-lang-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.nav-lang-toggle a {
+  color: var(--muted, #5b6577);
+  text-decoration: none;
+  padding: 4px 6px;
+  border-radius: 4px;
+}
+.nav-lang-toggle a.active {
+  color: var(--navy);
+  background: rgba(15, 92, 86, 0.08);
+}
+.nav-lang-toggle span {
+  color: var(--line, #e2e8f0);
+}
+
 .btn-outline-nav {
   background: rgba(15, 92, 86, 0.05);
   border-color: rgba(15, 92, 86, 0.2);
@@ -1786,7 +1943,7 @@ footer.site-footer {
 
 .foot-grid {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr;
+  grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
   gap: 36px
 }
 

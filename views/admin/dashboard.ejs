@@ -20,7 +20,7 @@
     </div>
     <div class="stat-card" tabindex="0">
       <div class="stat-card-backdrop"></div>
-      <div class="num">$<%= revenueDisplay %></div>
+      <div class="num"><%= currencySymbol() %><%= revenueDisplay %></div>
       <div class="label">Recorded revenue</div>
     </div>
     <div class="stat-card" tabindex="0">
@@ -46,7 +46,7 @@
     <% if (!isScoped) { %>
     <div class="stat-card" tabindex="0">
       <div class="stat-card-backdrop"></div>
-      <div class="num">$<%= (commissionSummary.totalCommissionCents/100).toFixed(2) %></div>
+      <div class="num"><%= currencySymbol() %><%= (commissionSummary.totalCommissionCents/100).toFixed(2) %></div>
       <div class="label">Total commissions owed</div>
     </div>
     <div class="stat-card" tabindex="0">

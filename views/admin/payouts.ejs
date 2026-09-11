@@ -42,7 +42,7 @@
         <tr>
           <td><%= recipientName(p) %> (<%= p.recipientType %>)</td>
           <td><%= p.periodStart %> – <%= p.periodEnd %></td>
-          <td>$<%= (p.totalAmountCents/100).toFixed(2) %></td>
+          <td><%= currencySymbol() %><%= (p.totalAmountCents/100).toFixed(2) %></td>
           <td><span class="status-badge <%= p.status === 'processed' ? 'status-published' : (p.status === 'failed' ? 'status-error' : 'status-draft') %>"><%= p.status %></span></td>
           <td><a href="/admin/payouts/<%= p.id %>">View</a></td>
         </tr>
