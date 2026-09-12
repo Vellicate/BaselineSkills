@@ -53,6 +53,68 @@ function publishedCourses() {
   return store.readAll("courses").filter((c) => c.published);
 }
 
+// Returns a badge label for a course's certifying body, or null if the
+// course has no mapping (or the body is deliberately excluded from
+// badges — see below). IREB and IIBA get a short "IREB"/"IIBA" label;
+// INCOSE and Automotive Standards are intentionally given no badge at
+// all, falling back to the generic "Skills Mastery" tag instead.
+// Returns every category a course belongs to — its primary `category`
+// column plus any additional categories from the course_categories
+// junction table (e.g., AI4RE is primarily "Requirements Engineering" but
+// also belongs to "AI"). The primary category is left untouched by this —
+// it still drives the certification-body mapping and other single-value
+// logic — this only adds *extra* categories on top, never replaces it.
+function allCategoriesForCourse(course) {
+  const extra = store.readAll("course_categories").filter((cc) => cc.courseId === course.id).map((cc) => cc.category);
+  return [...new Set([course.category, ...extra])];
+}
+
+function certifyingBodyLabel(course) {
+  const mapping = store.findOne("course_standards_mapping", (m) => m.courseId === course.id);
+  if (!mapping) return null;
+  const body = store.findOne("standards_bodies", (b) => b.id === mapping.standardsBodyId);
+  if (!body) return null;
+  if (body.slug === "ireb") return "IREB";
+  if (body.slug === "iiba") return "IIBA";
+  return null;
+}
+
+// Centralizes the computed values a course card needs — certifying body,
+// next real session, review stats, seat-availability wording, and pricing —
+// so this logic exists once, not duplicated across every template that
+// renders a course card. Only real, existing data drives every field; this
+// never invents a rating, a review count, or a seat number.
+function courseCardViewModel(course) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const nextSession = (course.sessions || [])
+    .filter((s) => s.startDate !== "On Demand" && new Date(s.startDate) >= today)
+    .sort((a, b) => new Date(a.startDate) - new Date(b.startDate))[0] || null;
+
+  const reviews = store.readAll("reviews").filter((r) => r.courseId === course.id);
+  const avgRating = reviews.length ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length : null;
+
+  let availabilityLabel = null;
+  if (nextSession && nextSession.seatsLeft != null) {
+    if (nextSession.seatsLeft <= 0) availabilityLabel = "Fully booked";
+    else if (nextSession.seatsLeft <= 3) availabilityLabel = "Almost full";
+    else if (nextSession.seatsLeft <= 8) availabilityLabel = "Limited seats";
+    else availabilityLabel = "Available";
+  }
+
+  const discountPercent = nextSession ? discounts.effectiveDiscountPercent(course, nextSession.startDate) : (course.discountPercent || 0);
+  const finalPriceCents = nextSession ? discounts.finalPriceCentsForSession(course, nextSession.startDate) : Math.round(course.priceCents * (1 - (course.discountPercent || 0) / 100));
+
+  return {
+    certifyingBodyLabel: certifyingBodyLabel(course),
+    nextSession,
+    reviewCount: reviews.length,
+    avgRating,
+    availabilityLabel,
+    pricing: { originalPriceCents: course.priceCents, finalPriceCents, discountPercent },
+  };
+}
+
 router.get("/set-language/:lang", (req, res) => {
   const { SUPPORTED_LANGUAGES } = require("../lib/i18n");
   if (SUPPORTED_LANGUAGES.includes(req.params.lang)) {
@@ -97,7 +159,8 @@ router.get("/", (req, res) => {
   const categories = ["Requirements Engineering", "Systems Engineering", "Business Analysis", "Project Management", "Business Process Modeling", "AI", "Automotive"];
   const byCategory = {};
   categories.forEach((cat) => {
-    byCategory[cat] = courses.filter((c) => c.category === cat).slice(0, 5);
+    byCategory[cat] = courses.filter((c) => allCategoriesForCourse(c).includes(cat)).slice(0, 5)
+      .map((c) => ({ ...c, certifyingBodyLabel: certifyingBodyLabel(c) }));
   });
 
   // The homepage's featured-course card used to be entirely hardcoded static
@@ -136,14 +199,23 @@ router.get("/courses", (req, res) => {
   const category = req.query.category || "All";
   const level = req.query.level || "All";
   const format = req.query.format || "All";
+  const certBody = req.query.certBody || "All";
   const q = (req.query.q || "").trim().toLowerCase();
   const maxPrice = req.query.maxPrice ? Number(req.query.maxPrice) : null;
 
-  let filtered = category === "All" ? courses : courses.filter((c) => c.category === category);
+  let filtered = category === "All" ? courses : courses.filter((c) => allCategoriesForCourse(c).includes(category));
   if (level !== "All") filtered = filtered.filter((c) => c.level === level);
   if (format !== "All") filtered = filtered.filter((c) => (c.deliveryModes || []).includes(format));
   if (maxPrice != null && !Number.isNaN(maxPrice)) filtered = filtered.filter((c) => (c.priceCents || 0) / 100 <= maxPrice);
   if (q) filtered = filtered.filter((c) => c.title.toLowerCase().includes(q) || (c.summary || "").toLowerCase().includes(q));
+
+  const allBodies = store.readAll("standards_bodies");
+  const bodyByCourseId = {};
+  store.readAll("course_standards_mapping").forEach((m) => {
+    const body = allBodies.find((b) => b.id === m.standardsBodyId);
+    if (body) bodyByCourseId[m.courseId] = body.slug;
+  });
+  if (certBody !== "All") filtered = filtered.filter((c) => bodyByCourseId[c.id] === certBody);
 
   // Log every search so zero-result queries are visible later (Gap Analysis
   // Section 9 — supply/demand reporting depends on this existing).
@@ -151,15 +223,24 @@ router.get("/courses", (req, res) => {
     try { store.insert("search_logs", { id: newId("search"), query: q, resultCount: filtered.length, timestamp: new Date().toISOString() }); } catch (e) { /* logging failure shouldn't break the search itself */ }
   }
 
-  const categories = ["All", ...new Set(courses.map((c) => c.category))];
+  const categories = ["All", ...new Set(courses.flatMap((c) => allCategoriesForCourse(c)))];
   const levels = ["All", "Beginner", "Intermediate", "Expert"];
-  const formats = ["All", ...new Set(courses.flatMap((c) => c.deliveryModes || []))];
+  // A fixed, curated list rather than one derived from whatever
+  // deliveryModes values happen to exist on courses today — "Recorded"
+  // and "Hybrid" have no matching courses in the current catalog, so
+  // selecting them will correctly show the empty-results state, not an
+  // error. That reflects a real content gap (no self-paced/hybrid
+  // offerings exist yet), not a bug in the filter itself.
+  const formats = ["All", "Live Online", "Classroom", "Recorded", "Hybrid"];
+  const certBodies = ["All", ...allBodies.map((b) => ({ slug: b.slug, name: b.name }))].filter((v, i, arr) => v === "All" || arr.findIndex((x) => x.slug === v.slug) === i);
+  filtered = filtered.map((c) => ({ ...c, cardData: courseCardViewModel(c) }));
 
   res.render("courses", {
     title: "Courses — Baseline Skills", metaDescription: "Browse accredited requirements engineering, business analysis, and systems engineering courses. Filter by certification body, level, and delivery format.", courses: filtered,
     categories, activeCategory: category,
     levels, activeLevel: level,
     formats, activeFormat: format,
+    certBodies, activeCertBody: certBody,
     q, maxPrice: req.query.maxPrice || "",
   });
 });

@@ -12,11 +12,16 @@
     <div class="form-field">
       <label>Category *</label>
       <select name="category" required>
-        <% ["Requirements Engineering","Systems Engineering","Business Analysis","Automotive"].forEach(cat => { %>
+        <% ["Requirements Engineering","Systems Engineering","Business Analysis","Project Management","Business Process Modeling","AI","Automotive"].forEach(cat => { %>
           <option value="<%= cat %>" <%= course && course.category===cat ? 'selected' : '' %>><%= cat %></option>
         <% }) %>
       </select>
     </div>
+  </div>
+
+  <div class="form-field">
+    <label>Additional categories (one per line, optional)</label>
+    <textarea name="additionalCategories" rows="2" placeholder="e.g. AI — for a course that's primarily Requirements Engineering but also belongs under AI"><%= course && course.additionalCategories ? course.additionalCategories.join('\n') : '' %></textarea>
   </div>
 
   <div class="form-field"><label>Short summary (shown on cards) *</label><input type="text" name="summary" required value="<%= course ? course.summary : '' %>"></div>
@@ -28,6 +33,7 @@
   <div class="form-field"><label>Who should attend (one per line)</label><textarea name="audience" rows="3"><%= course && course.audience ? course.audience.join('\n') : '' %></textarea></div>
   <div class="form-field"><label>Prerequisites (one per line)</label><textarea name="prerequisites" rows="3" placeholder="e.g. No prior RE experience required"><%= course && course.prerequisites ? course.prerequisites.join('\n') : '' %></textarea></div>
   <div class="form-field"><label>Format &amp; material</label><textarea name="formatAndMaterial" rows="3" placeholder="e.g. Live instructor-led sessions, printed workbook, recorded playback for 90 days"><%= course ? course.formatAndMaterial : '' %></textarea></div>
+  <div class="form-field"><label>How you'll use this at work (optional)</label><textarea name="practicalApplication" rows="3" placeholder="e.g. Apply this directly in stakeholder interviews, requirement reviews, and SRS development — leave blank if not yet written"><%= course ? course.practicalApplication : '' %></textarea></div>
   <div class="form-field"><label>What you'll receive (one per line)</label><textarea name="whatYoullReceive" rows="3" placeholder="e.g. Certificate of completion&#10;Course workbook (PDF)&#10;90-day access to recordings"><%= course && course.whatYoullReceive ? course.whatYoullReceive.join('\n') : '' %></textarea></div>
   <div class="form-field"><label>Course outline link</label><input type="url" name="courseOutlineUrl" placeholder="https://... link to a detailed outline document" value="<%= course ? course.courseOutlineUrl : '' %>"></div>
 

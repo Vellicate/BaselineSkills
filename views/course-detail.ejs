@@ -63,21 +63,43 @@
 
 <div class="container course-body">
   <div>
-    <% if (course.whyTakeThisCourse) { %>
-    <h2>Why Take This Course</h2>
-    <p style="white-space:pre-line;color:var(--text)"><%= course.whyTakeThisCourse %></p>
+    <h2>Course Overview</h2>
+    <p style="white-space:pre-line;color:var(--text)"><%= course.description %></p>
+
+    <h2 style="margin-top:36px">Is This Course Right For You?</h2>
+    <p style="color:var(--muted)">This course is ideal for:</p>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px">
+      <% course.audience.forEach(a => { %><span class="pill"><%= a %></span><% }) %>
+    </div>
+    <% if (course.level) { %>
+      <p style="color:var(--muted);font-size:.9rem">
+        <% if (course.level === 'Foundation' || course.level === 'Beginner') { %>
+          If you're already an experienced practitioner in this area, our Advanced-level courses may be a better fit than this Foundation-level course.
+        <% } else { %>
+          If you're new to this area, our Foundation-level courses are a better starting point than this Advanced-level course.
+        <% } %>
+      </p>
     <% } %>
 
-    <h2 style="margin-top:36px">What You'll Learn</h2>
+    <% if (course.whyTakeThisCourse) { %>
+    <h2 style="margin-top:36px">What You'll Be Able To Do</h2>
+    <p style="white-space:pre-line;color:var(--text);margin-bottom:14px"><%= course.whyTakeThisCourse %></p>
+    <% } else { %>
+    <h2 style="margin-top:36px">What You'll Be Able To Do</h2>
+    <% } %>
     <ul style="padding-left:20px;color:var(--text)">
       <% course.outcomes.forEach(o => { %><li style="margin-bottom:8px"><%= o %></li><% }) %>
     </ul>
 
-    <h2 style="margin-top:36px">Course Overview</h2>
-    <p style="white-space:pre-line;color:var(--text)"><%= course.description %></p>
+    <h2 style="margin-top:36px">How You'll Use This At Work</h2>
+    <% if (course.practicalApplication) { %>
+      <p style="white-space:pre-line;color:var(--text)"><%= course.practicalApplication %></p>
+    <% } else { %>
+      <p class="lead">We're still writing up specific workplace examples for this course — check back soon, or ask your trainer during the course itself.</p>
+    <% } %>
 
     <% if (course.curriculum && course.curriculum.length) { %>
-    <h2 style="margin-top:36px">Course Contents</h2>
+    <h2 style="margin-top:36px">Curriculum</h2>
     <% course.curriculum.forEach((mod, i) => { %>
       <div class="accordion-item <%= i===0?'open':'' %>">
         <button class="accordion-btn" onclick="this.parentElement.classList.toggle('open')">
@@ -92,37 +114,23 @@
     <% }) %>
     <% } %>
 
-    <h2 style="margin-top:36px">Who Should Attend</h2>
+    <h2 style="margin-top:36px">How You'll Learn</h2>
+    <% if (course.formatAndMaterial) { %>
+    <p style="white-space:pre-line;color:var(--text);margin-bottom:14px"><%= course.formatAndMaterial %></p>
+    <% } %>
     <div style="display:flex;flex-wrap:wrap;gap:10px">
-      <% course.audience.forEach(a => { %><span class="pill"><%= a %></span><% }) %>
+      <% course.deliveryModes.forEach(m => { %><span class="pill"><%= m %></span><% }) %>
     </div>
 
     <% if (course.prerequisites && course.prerequisites.length) { %>
-    <h2 style="margin-top:36px">Prerequisites</h2>
+    <h2 style="margin-top:36px">Before You Start</h2>
     <ul style="padding-left:20px;color:var(--text)">
       <% course.prerequisites.forEach(p => { %><li style="margin-bottom:8px"><%= p %></li><% }) %>
     </ul>
     <% } %>
 
-    <% if (course.formatAndMaterial) { %>
-    <h2 style="margin-top:36px">Format &amp; Material</h2>
-    <p style="white-space:pre-line;color:var(--text)"><%= course.formatAndMaterial %></p>
-    <% } %>
-
-    <% if (course.whatYoullReceive && course.whatYoullReceive.length) { %>
-    <h2 style="margin-top:36px">What You'll Receive</h2>
-    <ul style="padding-left:20px;color:var(--text)">
-      <% course.whatYoullReceive.forEach(w => { %><li style="margin-bottom:8px"><%= w %></li><% }) %>
-    </ul>
-    <% } %>
-
-    <h2 style="margin-top:36px">Delivery Options</h2>
-    <div style="display:flex;flex-wrap:wrap;gap:10px">
-      <% course.deliveryModes.forEach(m => { %><span class="pill"><%= m %></span><% }) %>
-    </div>
-
     <% if (certificationBody) { %>
-    <h2 style="margin-top:36px">How Certification Works</h2>
+    <h2 style="margin-top:36px">Certification &amp; Exam</h2>
     <p style="color:var(--muted);max-width:640px">Certification follows a clear three-party structure — each party has a distinct role:</p>
     <div class="grid-3" style="margin-top:12px">
       <div class="card">
@@ -138,6 +146,14 @@
         <p style="font-size:.9rem;color:var(--muted)">The certification exam is administered independently of the training provider, so your result reflects your own knowledge, not the course you happened to take.</p>
       </div>
     </div>
+    <p style="color:var(--muted);font-size:.85rem;margin-top:12px">Certification exam information (format, fees, retake policy) is provided separately from training details — see the Exams page or ask your trainer for the current details.</p>
+    <% } %>
+
+    <% if (course.whatYoullReceive && course.whatYoullReceive.length) { %>
+    <h2 style="margin-top:36px">What You'll Get With Baseline Skills</h2>
+    <ul style="padding-left:20px;color:var(--text)">
+      <% course.whatYoullReceive.forEach(w => { %><li style="margin-bottom:8px"><%= w %></li><% }) %>
+    </ul>
     <% } %>
 
     <% if (materials.length) { %>
@@ -168,7 +184,7 @@
     <% } %>
 
     <% if (reviews.length) { %>
-    <h2 style="margin-top:36px" id="reviews">Reviews</h2>
+    <h2 style="margin-top:36px" id="reviews">Learner Experiences</h2>
     <% if (reviews.length >= 5) { %>
     <p style="font-weight:600">⭐ <%= avgRating.toFixed(1) %> / 5 <span style="font-weight:400;color:var(--muted);font-size:.9rem">(<%= reviews.length %> reviews)</span></p>
     <div style="margin-bottom:16px">
@@ -188,7 +204,7 @@
       </div>
     <% }) %>
     <% } else { %>
-    <h2 style="margin-top:36px" id="reviews">Reviews</h2>
+    <h2 style="margin-top:36px" id="reviews">Learner Experiences</h2>
     <p class="lead">No reviews yet.</p>
     <% } %>
 
@@ -221,7 +237,7 @@
     <% } %>
 
     <% if (related.length) { %>
-    <h2 style="margin-top:36px">Courses to take after this one</h2>
+    <h2 style="margin-top:36px">Where Do You Go Next?</h2>
     <div class="grid-3">
       <% related.forEach(r => { %>
         <div class="card">

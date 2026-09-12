@@ -272,6 +272,19 @@ router.get("/courses", (req, res) => {
   });
 });
 
+// Replaces a course's additional-category rows with whatever was submitted
+// this time — simplest correct way to handle add/remove/reorder from a
+// plain textarea without tracking individual row diffs. The course's own
+// primary `category` column is untouched by this; those are kept
+// deliberately separate (see course_categories table comment).
+function syncAdditionalCategories(courseId, rawTextarea) {
+  store.readAll("course_categories").filter((cc) => cc.courseId === courseId).forEach((cc) => store.remove("course_categories", cc.id));
+  const categories = (rawTextarea || "").split("\n").map((s) => s.trim()).filter(Boolean);
+  categories.forEach((category) => {
+    store.insert("course_categories", { id: newId("cc"), courseId, category });
+  });
+}
+
 function courseFromForm(body, existing, uploadedFile) {
   const outcomes = (body.outcomes || "").split("\n").map((s) => s.trim()).filter(Boolean);
   const audience = (body.audience || "").split("\n").map((s) => s.trim()).filter(Boolean);
@@ -338,6 +351,7 @@ function courseFromForm(body, existing, uploadedFile) {
     whyTakeThisCourse: body.whyTakeThisCourse || "",
     prerequisites,
     formatAndMaterial: body.formatAndMaterial || "",
+    practicalApplication: body.practicalApplication || "",
     whatYoullReceive,
     brochureFilename: uploadedFile ? uploadedFile.filename : (existing ? existing.brochureFilename : ""),
     createdAt: (existing && existing.createdAt) ? existing.createdAt : new Date().toISOString(),
@@ -376,6 +390,7 @@ router.get("/courses/new", (req, res) => {
 router.post("/courses/new", handleBrochureUpload, (req, res) => {
   const course = courseFromForm(req.body, { id: newId("course") }, req.file);
   store.insert("courses", course);
+  syncAdditionalCategories(course.id, req.body.additionalCategories);
   res.redirect("/admin/courses?success=Course+created+successfully");
 });
 
@@ -383,6 +398,7 @@ router.post("/courses/new", handleBrochureUpload, (req, res) => {
 router.get("/courses/:id/edit", auth.requireCourseAccess(r => r.params.id), (req, res) => {
   const course = store.findOne("courses", (c) => c.id === req.params.id);
   if (!course) return res.status(404).send("Course not found");
+  course.additionalCategories = store.readAll("course_categories").filter((cc) => cc.courseId === course.id).map((cc) => cc.category);
   res.render("admin/course-form", { 
     title: `Edit ${course.title} — Baseline Skills`, 
     course, 
@@ -400,6 +416,7 @@ router.post("/courses/:id/edit", auth.requireCourseAccess(r => r.params.id), han
   if (!existing) return res.status(404).send("Course not found");
   const updated = courseFromForm(req.body, existing, req.file);
   store.update("courses", req.params.id, updated);
+  syncAdditionalCategories(req.params.id, req.body.additionalCategories);
   res.redirect("/admin/courses?success=Course+updated+successfully");
 });
 

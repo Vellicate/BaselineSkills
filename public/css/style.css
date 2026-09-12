@@ -107,6 +107,42 @@ p {
   line-height: 1.65
 }
 
+/* Course discovery filter bar — a single, left-aligned row on desktop/
+   tablet. Uses a compound selector (form.course-filter-bar) specifically
+   because .card — applied to the same element — sets its own
+   display:flex/flex-direction:column later in this file; with equal
+   class-only specificity, .card's column direction was silently winning
+   and stacking every field vertically. The higher-specificity selector
+   here guarantees this rule wins regardless of source order, rather than
+   depending on staying below .card in the file. Fixed pixel widths (not
+   flex-grow) keep every field a predictable size so they actually fit in
+   one row instead of wrapping unpredictably. */
+form.course-filter-bar {
+  display: flex !important;
+  flex-direction: row !important;
+  gap: 16px;
+  align-items: end;
+  justify-content: flex-start;
+  flex-wrap: nowrap;
+}
+form.course-filter-bar .form-field {
+  margin-bottom: 0;
+  flex: 0 0 auto;
+}
+form.course-filter-bar .filter-field-search { width: 220px; }
+form.course-filter-bar .filter-field-select { width: 150px; }
+form.course-filter-bar .filter-field-price { width: 110px; }
+@media (max-width: 900px) {
+  form.course-filter-bar {
+    flex-wrap: wrap;
+  }
+  form.course-filter-bar .filter-field-search,
+  form.course-filter-bar .filter-field-select,
+  form.course-filter-bar .filter-field-price {
+    width: 100%;
+  }
+}
+
 .eyebrow {
   font-size: .76rem;
   font-weight: 800;
