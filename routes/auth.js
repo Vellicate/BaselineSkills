@@ -6,9 +6,12 @@ const security = require("../lib/security");
 const invoicesLib = require("../lib/invoices");
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
 const { newId } = require("../lib/id");
 const createRateLimiter = require("../lib/rate-limiter");
 const discounts = require("../lib/discounts"); // also the home of the generic loadConfig() used for security parameters below
+const { sendMail, escapeHtml } = require("../lib/mailer");
+const { generateCaptcha, verifyCaptcha } = require("../lib/captcha");
 
 const cfg = discounts.loadConfig().security;
 
@@ -156,6 +159,42 @@ router.get("/account/invoices/:id/download", auth.requireLearner, (req, res) => 
 });
 
 // ---- Set password (for accounts auto-created during anonymous registration) ----
+// Requesting a reset is deliberately answered identically whether or not
+// the email matches an account — revealing that distinction is an
+// account-enumeration leak. The email itself, if sent, reuses the exact
+// same passwordResetToken/passwordResetExpires columns and the existing
+// /set-password route below — no second reset mechanism to keep in sync.
+router.get("/forgot-password", (req, res) => {
+  const captcha = generateCaptcha(req.session);
+  res.render("forgot-password", { title: "Forgot Password — Baseline Skills", error: null, sent: false, captchaQuestion: captcha.question });
+});
+
+router.post("/forgot-password", authRateLimiter, async (req, res) => {
+  const { email, captchaAnswer } = req.body;
+  if (!verifyCaptcha(req.session, captchaAnswer)) {
+    const captcha = generateCaptcha(req.session);
+    return res.status(400).render("forgot-password", { title: "Forgot Password — Baseline Skills", error: "That answer wasn't correct — please try again.", sent: false, captchaQuestion: captcha.question });
+  }
+  const learner = email ? store.findOne("learners", (l) => l.email === email.toLowerCase()) : null;
+  if (learner) {
+    const token = crypto.randomBytes(32).toString("hex");
+    store.update("learners", learner.id, {
+      passwordResetToken: token,
+      passwordResetExpires: new Date(Date.now() + 60 * 60 * 1000).toISOString(), // 1 hour — a deliberately shorter window than the 7-day first-time-setup link, since this resets an already-active account
+    });
+    const resetUrl = `${req.protocol}://${req.get("host")}/set-password?token=${token}`;
+    await sendMail({
+      to: learner.email,
+      subject: "Reset your Baseline Skills password",
+      html: `<p>We received a request to reset your password.</p>
+             <p><a href="${resetUrl}">Click here to set a new password</a>. This link expires in 1 hour.</p>
+             <p>If you didn't request this, you can safely ignore this email — your password hasn't been changed.</p>`,
+    });
+  }
+  // Same response either way — see comment above.
+  res.render("forgot-password", { title: "Forgot Password — Baseline Skills", error: null, sent: true, captchaQuestion: null });
+});
+
 router.get("/set-password", (req, res) => {
   const learner = store.findOne("learners", (l) => l.passwordResetToken === req.query.token);
   if (!learner || new Date(learner.passwordResetExpires) < new Date()) {

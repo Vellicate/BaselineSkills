@@ -9,10 +9,10 @@
 </section>
 
 <section class="section">
-  <div class="container" style="max-width:760px">
+  <div class="container" style="max-width:980px">
     <% if (typeof error !== 'undefined' && error) { %><div class="alert alert-error"><%= error %></div><% } %>
 
-    <div class="grid-2" style="align-items:start">
+    <div class="grid-2 register-grid" style="align-items:start">
       <form method="POST" action="/courses/<%= course.slug %>/register" class="card" style="grid-column:1">
         <div class="form-row">
           <div class="form-field"><label>Full name *</label><input type="text" name="name" required value="<%= typeof form!=='undefined' ? form.name||'' : '' %>"></div>

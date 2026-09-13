@@ -2096,6 +2096,10 @@ footer.site-footer {
   gap: 24px
 }
 
+.register-grid {
+  grid-template-columns: 1.7fr 1fr
+}
+
 .grid-3 {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
