@@ -1,0 +1,43 @@
+<%- include('partials/head') %>
+
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+  <div>
+    <h1 style="font-size:1.6rem;margin:0">Course Categories</h1>
+    <p style="color:var(--muted);font-size:.9rem;margin:4px 0 0">These are the categories shown on the homepage and the course listing page. A category can't be deleted while any course still uses it.</p>
+  </div>
+</div>
+
+<% if (typeof error !== 'undefined' && error) { %>
+  <div class="alert alert-error" style="margin-bottom:16px"><%= error %></div>
+<% } %>
+<% if (typeof success !== 'undefined' && success) { %>
+  <div class="alert alert-success" style="margin-bottom:16px"><%= success %></div>
+<% } %>
+
+<form method="POST" action="/admin/categories/new" class="card" style="margin-bottom:24px;padding:20px;display:flex;gap:12px;align-items:end">
+  <div class="form-field" style="margin-bottom:0;flex:1;max-width:320px">
+    <label>New category name</label>
+    <input type="text" name="name" placeholder="e.g. Cloud Engineering" required>
+  </div>
+  <button type="submit" class="btn btn-gold">+ Add Category</button>
+</form>
+
+<table class="admin-table">
+  <thead><tr><th>Name</th><th>Courses using it</th><th>Actions</th></tr></thead>
+  <tbody>
+    <% categories.forEach(cat => { %>
+    <tr>
+      <td><strong><%= cat.name %></strong></td>
+      <td><%= usageCount[cat.id] %> course<%= usageCount[cat.id] !== 1 ? 's' : '' %></td>
+      <td class="admin-actions">
+        <form method="POST" action="/admin/categories/<%= cat.id %>/delete" style="display:inline" onsubmit="return confirm('Delete the <%= cat.name %> category?')">
+          <button class="btn btn-outline btn-sm" type="submit" style="color:#b91c1c;border-color:#fecaca" <%= usageCount[cat.id] > 0 ? 'disabled title="In use — reassign courses first"' : '' %>>Delete</button>
+        </form>
+      </td>
+    </tr>
+    <% }) %>
+    <% if (categories.length===0) { %><tr><td colspan="3" style="color:var(--muted)">No categories yet — add one above.</td></tr><% } %>
+  </tbody>
+</table>
+
+<%- include('partials/foot') %>

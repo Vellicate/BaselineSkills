@@ -1355,17 +1355,20 @@ form.course-filter-bar .filter-field-price { width: 110px; }
 .path-tabs-container {
   display: flex;
   justify-content: center;
-  margin-bottom: 34px
+  margin-bottom: 56px
 }
 
 .path-tabs {
-  display: inline-flex;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   background: var(--bg);
-  padding: 6px;
-  border-radius: 999px;
+  padding: 10px;
+  border-radius: 20px;
   border: 1px solid var(--line);
-  gap: 6px;
-  flex-wrap: wrap
+  gap: 8px;
+  row-gap: 10px;
+  max-width: 900px
 }
 
 .path-tab {

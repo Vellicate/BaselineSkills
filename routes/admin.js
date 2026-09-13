@@ -383,6 +383,7 @@ router.get("/courses/new", (req, res) => {
     course: null, 
     mode: "new", 
     trainers: store.readAll("trainers"),
+    categories: store.readAll("categories"),
     ...getAlerts(req)
   });
 });
@@ -404,6 +405,7 @@ router.get("/courses/:id/edit", auth.requireCourseAccess(r => r.params.id), (req
     course, 
     mode: "edit", 
     trainers: store.readAll("trainers"),
+    categories: store.readAll("categories"),
     faqs: store.readAll("faqs").filter(f => f.scope === "course" && f.courseId === course.id).sort((a, b) => a.order - b.order),
     examProduct: store.findOne("certification_exams", e => e.courseId === course.id),
     materials: store.readAll("materials").filter(m => m.courseId === course.id),
@@ -866,6 +868,53 @@ router.post("/trainers/:id/delete", (req, res) => {
   }
   store.remove("trainers", req.params.id);
   res.redirect("/admin/trainers?success=Trainer+deleted");
+});
+
+// ==================== Categories ====================
+router.get("/categories", (req, res) => {
+  const categories = store.readAll("categories").sort((a, b) => a.name.localeCompare(b.name));
+  const courses = store.readAll("courses");
+  const additional = store.readAll("course_categories");
+  // How many courses currently use each category, as either their
+  // primary category or an additional one — shown so an admin can see
+  // the impact before trying to delete one.
+  const usageCount = {};
+  categories.forEach((cat) => {
+    const primary = courses.filter((c) => c.category === cat.name).length;
+    const extra = additional.filter((cc) => cc.category === cat.name).length;
+    usageCount[cat.id] = primary + extra;
+  });
+  res.render("admin/categories-list", {
+    title: "Manage categories — Baseline Skills",
+    categories, usageCount,
+    ...getAlerts(req),
+  });
+});
+
+router.post("/categories/new", auth.requireSuperAdmin, (req, res) => {
+  const name = (req.body.name || "").trim();
+  if (!name) {
+    return res.redirect("/admin/categories?error=Category+name+is+required");
+  }
+  const existing = store.findOne("categories", (c) => c.name.toLowerCase() === name.toLowerCase());
+  if (existing) {
+    return res.redirect("/admin/categories?error=That+category+already+exists");
+  }
+  store.insert("categories", { id: newId("cat"), name, createdAt: new Date().toISOString() });
+  res.redirect("/admin/categories?success=Category+added");
+});
+
+router.post("/categories/:id/delete", auth.requireSuperAdmin, (req, res) => {
+  const category = store.findOne("categories", (c) => c.id === req.params.id);
+  if (!category) return res.status(404).send("Category not found");
+  const primaryCount = store.readAll("courses").filter((c) => c.category === category.name).length;
+  const additionalCount = store.readAll("course_categories").filter((cc) => cc.category === category.name).length;
+  const total = primaryCount + additionalCount;
+  if (total > 0) {
+    return res.redirect(`/admin/categories?error=Can't+delete+"${encodeURIComponent(category.name)}"+—+${total}+course(s)+still+use+it.+Reassign+those+courses+first.`);
+  }
+  store.remove("categories", req.params.id);
+  res.redirect("/admin/categories?success=Category+deleted");
 });
 
 // ==================== Blogs ====================

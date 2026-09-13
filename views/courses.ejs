@@ -13,8 +13,8 @@
 <section class="section" style="padding-top:40px">
   <div class="container">
     <% const courseCategoryDisplayLabel = (cat) => cat === 'AI' ? 'Artificial Intelligence' : cat; %>
-    <div class="path-tabs-container" style="margin-bottom:24px">
-      <div class="path-tabs" style="justify-content:center">
+    <div class="path-tabs-container">
+      <div class="path-tabs">
         <% categories.forEach(cat => { %>
           <a href="/courses?category=<%= encodeURIComponent(cat) %>&level=<%= encodeURIComponent(activeLevel) %>&format=<%= encodeURIComponent(activeFormat) %>&q=<%= encodeURIComponent(q) %>" class="path-tab <%= cat===activeCategory?'active':'' %>" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px">
             <span><%= courseCategoryDisplayLabel(cat) %></span>

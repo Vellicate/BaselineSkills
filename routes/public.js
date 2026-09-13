@@ -156,7 +156,7 @@ router.get("/", (req, res) => {
     .sort((a, b) => new Date(a.startDate) - new Date(b.startDate))
     .slice(0, 4);
 
-  const categories = ["Requirements Engineering", "Systems Engineering", "Business Analysis", "Project Management", "Business Process Modeling", "AI", "Automotive"];
+  const categories = store.readAll("categories").map((c) => c.name);
   const byCategory = {};
   categories.forEach((cat) => {
     byCategory[cat] = courses.filter((c) => allCategoriesForCourse(c).includes(cat)).slice(0, 5)
@@ -223,7 +223,11 @@ router.get("/courses", (req, res) => {
     try { store.insert("search_logs", { id: newId("search"), query: q, resultCount: filtered.length, timestamp: new Date().toISOString() }); } catch (e) { /* logging failure shouldn't break the search itself */ }
   }
 
-  const categories = ["All", ...new Set(courses.flatMap((c) => allCategoriesForCourse(c)))];
+  // Read from the admin-managed categories table — a category shouldn't
+  // disappear from the filter just because it's temporarily empty; the
+  // person should still be able to see it exists and land on the "no
+  // courses match" state, rather than the option vanishing entirely.
+  const categories = ["All", ...store.readAll("categories").map((c) => c.name)];
   const levels = ["All", "Beginner", "Intermediate", "Expert"];
   // A fixed, curated list rather than one derived from whatever
   // deliveryModes values happen to exist on courses today — "Recorded"

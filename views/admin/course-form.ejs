@@ -12,8 +12,8 @@
     <div class="form-field">
       <label>Category *</label>
       <select name="category" required>
-        <% ["Requirements Engineering","Systems Engineering","Business Analysis","Project Management","Business Process Modeling","AI","Automotive"].forEach(cat => { %>
-          <option value="<%= cat %>" <%= course && course.category===cat ? 'selected' : '' %>><%= cat %></option>
+        <% categories.forEach(cat => { %>
+          <option value="<%= cat.name %>" <%= course && course.category===cat.name ? 'selected' : '' %>><%= cat.name %></option>
         <% }) %>
       </select>
     </div>
