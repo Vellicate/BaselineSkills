@@ -465,13 +465,14 @@ form.course-filter-bar .filter-field-price { width: 110px; }
 .nav-links a {
   display: inline-flex;
   align-items: center;
-  padding: 7px 15px;
+  padding: 7px 12px;
   border-radius: 999px;
   font-weight: 600;
   font-size: .88rem;
   color: var(--muted);
   transition: all .18s ease;
-  position: relative
+  position: relative;
+  white-space: nowrap
 }
 
 .nav-links a:hover {

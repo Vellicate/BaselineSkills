@@ -141,6 +141,18 @@ router.get("/account/certificates/:id/download", auth.requireLearner, (req, res)
   res.download(filePath, `${certificate.certificateNumber}.pdf`);
 });
 
+// Badge download — same ownership check as the certificate above; the two
+// are separate generated files (see lib/certificates.js), not the same PDF
+// reused under two names.
+router.get("/account/certificates/:id/badge", auth.requireLearner, (req, res) => {
+  const certificate = store.findOne("certificates", (c) => c.id === req.params.id);
+  if (!certificate || certificate.learnerId !== req.session.learnerId) return res.status(403).send("You don't have access to this badge.");
+  const certificatesLib = require("../lib/certificates");
+  const filePath = path.join(certificatesLib.BADGE_DIR, certificate.badgeUrl);
+  if (!fs.existsSync(filePath)) return res.status(404).render("404", { title: "Badge file not found" });
+  res.download(filePath, `${certificate.certificateNumber}-badge.pdf`);
+});
+
 // Invoice download — only the learner who owns the underlying registration
 // (by learnerId or matching email, same dual-match as the account page
 // itself) may download it, checked server-side, not just hidden from the

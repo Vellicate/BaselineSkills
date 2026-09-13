@@ -69,7 +69,7 @@
           <p style="font-size:.85rem;color:var(--muted)">Issued <%= c.issuedAt %> · <%= c.certificateNumber %></p>
           <div style="display:flex;gap:8px;margin-top:8px">
             <a href="/account/certificates/<%= c.id %>/download" class="btn btn-outline btn-sm">Download</a>
-            <a href="<%= c.badgeUrl %>" target="_blank" class="btn btn-outline btn-sm">View Badge</a>
+            <a href="/account/certificates/<%= c.id %>/badge" class="btn btn-outline btn-sm">Download Badge</a>
           </div>
         </div>
       <% }) %>
