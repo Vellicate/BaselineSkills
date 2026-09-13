@@ -33,6 +33,7 @@ router.use((req, res, next) => {
 });
 
 const { BROCHURE_DIR } = require("../lib/brochures");
+const { RESOURCE_DOWNLOAD_DIR } = require("../lib/resource-downloads");
 const publicCfg = discounts.loadConfig().security;
 
 const formRateLimiter = createRateLimiter({
@@ -47,6 +48,16 @@ const brochureRateLimiter = createRateLimiter({
   max: publicCfg.BROCHURE_REQUEST_RATE_LIMIT_MAX,
   keyPrefix: "brochure_request",
   message: "Too many brochure requests. Please wait a few minutes before trying again.",
+});
+
+// Same thresholds as the brochure request limiter — same shape of action
+// (email capture triggers an emailed link) — but a separate bucket so the
+// two features don't share a rate-limit budget with each other.
+const resourceDownloadRateLimiter = createRateLimiter({
+  windowMs: publicCfg.BROCHURE_REQUEST_RATE_LIMIT_WINDOW_MINUTES * 60 * 1000,
+  max: publicCfg.BROCHURE_REQUEST_RATE_LIMIT_MAX,
+  keyPrefix: "resource_download_request",
+  message: "Too many download requests. Please wait a few minutes before trying again.",
 });
 
 function publishedCourses() {
@@ -511,6 +522,58 @@ router.get("/resources/:slug", (req, res) => {
   if (!resource.body && resource.url) return res.redirect(resource.url);
   const related = store.readAll("resources").filter((r) => r.id !== resource.id && r.category === resource.category).slice(0, 3);
   res.render("resource-detail", { title: `${resource.title} — Baseline Skills`, metaDescription: resource.excerpt, resource, related });
+});
+
+// Same pattern as the course brochure flow: email a link rather than
+// downloading directly, so we capture the requester's email as a lead —
+// the file itself lives at an unguessable URL, not behind real access
+// control (see lib/resource-downloads.js).
+router.post("/resources/:slug/download", resourceDownloadRateLimiter, async (req, res) => {
+  const resource = store.findOne("resources", (r) => r.slug === req.params.slug);
+  if (!resource) return res.status(404).json({ error: "Resource not found" });
+  const { email } = req.body;
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return res.status(400).json({ error: "A valid email address is required." });
+  }
+  if (!resource.downloadFilename) {
+    return res.status(404).json({ error: "No download is available for this resource yet." });
+  }
+
+  const downloadUrl = `${req.protocol}://${req.get("host")}/resource-downloads/${resource.downloadFilename}`;
+
+  await sendMail({
+    to: email,
+    subject: `Your download: ${resource.title.replace(/[\r\n]/g, "")}`,
+    html: `<p>Thanks for your interest in <strong>${escapeHtml(resource.title)}</strong>.</p>
+           <p>Download it here: <a href="${downloadUrl}">${downloadUrl}</a></p>
+           <p>Questions? Just reply to this email or visit <a href="https://baselineskills.com/contact">our contact page</a>.</p>`,
+  });
+
+  // Logged alongside other inquiries, same as brochure requests — visible
+  // in the existing admin Inquiries view without a new page.
+  store.insert("inquiries", {
+    id: newId("inq"),
+    type: "resource-download-request",
+    name: email.split("@")[0],
+    email,
+    company: "", teamSize: "", role: "", courseInterest: resource.title, deliveryMode: "",
+    message: `Requested the download for "${resource.title}".`,
+    createdAt: new Date().toISOString(),
+  });
+
+  res.json({ ok: true });
+});
+
+// Deliberately unauthenticated, same tradeoff as /brochure/:filename — the
+// long random filename is the only thing standing between "public" and
+// "gated" here.
+router.get("/resource-downloads/:filename", (req, res) => {
+  const filename = path.basename(req.params.filename); // strip any path traversal attempt
+  if (!/^[a-z0-9_]+\.(pdf|docx|xlsx)$/i.test(filename)) return res.status(400).send("Invalid file name");
+  const filePath = path.join(RESOURCE_DOWNLOAD_DIR, filename);
+  res.sendFile(filePath, (err) => {
+    if (err && !res.headersSent) res.status(404).send("File not found");
+  });
 });
 
 router.get("/exams", (req, res) => {

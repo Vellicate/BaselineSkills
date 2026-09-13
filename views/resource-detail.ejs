@@ -34,6 +34,46 @@
     <p class="lead"><%= resource.excerpt %></p>
     <div style="white-space:pre-line;line-height:1.7;color:var(--body-text,#333)"><%= resource.body %></div>
 
+    <% if (resource.downloadFilename) { %>
+    <div class="card" style="margin-top:32px;max-width:460px">
+      <h3 style="margin-top:0">Download This Resource</h3>
+      <p style="color:var(--muted);font-size:.9rem">Enter your email and we'll send you the download link right away.</p>
+      <div id="download-form-area">
+        <div class="form-field"><label>Email address</label><input type="email" id="download-email" placeholder="you@company.com"></div>
+        <div id="download-error" class="alert alert-error" style="display:none;margin-bottom:14px"></div>
+        <button type="button" class="btn btn-gold btn-block" onclick="submitResourceDownloadRequest()">Send Me the Download</button>
+      </div>
+      <div id="download-success" style="display:none">
+        <div class="alert alert-success">Check your inbox — the download link is on its way.</div>
+      </div>
+    </div>
+    <script>
+    async function submitResourceDownloadRequest() {
+      const email = document.getElementById('download-email').value.trim();
+      const errorBox = document.getElementById('download-error');
+      errorBox.style.display = 'none';
+      try {
+        const res = await fetch('/resources/<%= resource.slug %>/download', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          errorBox.textContent = data.error || 'Something went wrong. Please try again.';
+          errorBox.style.display = 'block';
+          return;
+        }
+        document.getElementById('download-form-area').style.display = 'none';
+        document.getElementById('download-success').style.display = 'block';
+      } catch (e) {
+        errorBox.textContent = 'Something went wrong. Please try again.';
+        errorBox.style.display = 'block';
+      }
+    }
+    </script>
+    <% } %>
+
     <% if (related.length > 0) { %>
     <h3 style="margin-top:48px">More from <%= resource.category %></h3>
     <div class="grid-3">

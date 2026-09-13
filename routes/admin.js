@@ -13,6 +13,7 @@ const slugify = require("slugify");
 const createRateLimiter = require("../lib/rate-limiter");
 const multer = require("multer");
 const { BROCHURE_DIR } = require("../lib/brochures");
+const { RESOURCE_DOWNLOAD_DIR } = require("../lib/resource-downloads");
 const { MATERIAL_DIR } = require("../lib/materials");
 
 const materialUpload = multer({
@@ -31,6 +32,25 @@ const brochureUpload = multer({
   fileFilter: (req, file, cb) => {
     if (file.mimetype !== "application/pdf") {
       return cb(new Error("Brochure must be a PDF file"));
+    }
+    cb(null, true);
+  },
+  limits: { fileSize: adminCfg.BROCHURE_MAX_FILE_SIZE_MB * 1024 * 1024 },
+});
+
+const RESOURCE_DOWNLOAD_ALLOWED_MIMES = {
+  "application/pdf": ".pdf",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": ".xlsx",
+};
+const resourceDownloadUpload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => cb(null, RESOURCE_DOWNLOAD_DIR),
+    filename: (req, file, cb) => cb(null, `${newId("resdl")}${RESOURCE_DOWNLOAD_ALLOWED_MIMES[file.mimetype] || ""}`),
+  }),
+  fileFilter: (req, file, cb) => {
+    if (!RESOURCE_DOWNLOAD_ALLOWED_MIMES[file.mimetype]) {
+      return cb(new Error("Resource download must be a PDF, Word, or Excel file"));
     }
     cb(null, true);
   },
@@ -373,6 +393,20 @@ function handleBrochureUpload(req, res, next) {
       examProduct: isEdit && course ? store.findOne("certification_exams", e => e.courseId === course.id) : null,
       materials: isEdit && course ? store.readAll("materials").filter(m => m.courseId === course.id) : [],
       error: err.message === "Brochure must be a PDF file" ? err.message : `Brochure upload failed — please try a PDF under ${adminCfg.BROCHURE_MAX_FILE_SIZE_MB}MB.`,
+    });
+  });
+}
+
+function handleResourceDownloadUpload(req, res, next) {
+  resourceDownloadUpload.single("downloadFile")(req, res, (err) => {
+    if (!err) return next();
+    const isEdit = req.params.id != null;
+    const resource = isEdit ? store.findOne("resources", (r) => r.id === req.params.id) : null;
+    res.status(400).render("admin/resource-form", {
+      title: isEdit ? `Edit ${resource ? resource.title : ""} — Baseline Skills` : "New resource — Baseline Skills",
+      resource: isEdit ? resource : req.body,
+      mode: isEdit ? "edit" : "new",
+      error: err.message === "Resource download must be a PDF, Word, or Excel file" ? err.message : `File upload failed — please try a file under ${adminCfg.BROCHURE_MAX_FILE_SIZE_MB}MB.`,
     });
   });
 }
@@ -1011,7 +1045,7 @@ router.get("/resources/new", (req, res) => {
   });
 });
 
-router.post("/resources/new", (req, res) => {
+router.post("/resources/new", handleResourceDownloadUpload, (req, res) => {
   const { title, category, excerpt, body, url } = req.body;
   if (!title || !excerpt || (!body && !url)) {
     return res.status(400).render("admin/resource-form", { title: "New resource — Baseline Skills", resource: req.body, mode: "new", error: "Title, excerpt, and either article content or an external link are required." });
@@ -1020,6 +1054,7 @@ router.post("/resources/new", (req, res) => {
     id: newId("res"),
     slug: slugify(title, { lower: true, strict: true }),
     title, category: category || "Requirements Engineering", excerpt, body: body || null, url: url || null,
+    downloadFilename: req.file ? req.file.filename : "",
     createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
   });
   res.redirect("/admin/resources?success=Resource+created");
@@ -1036,14 +1071,14 @@ router.get("/resources/:id/edit", (req, res) => {
   });
 });
 
-router.post("/resources/:id/edit", (req, res) => {
+router.post("/resources/:id/edit", handleResourceDownloadUpload, (req, res) => {
   const existing = store.findOne("resources", (r) => r.id === req.params.id);
   if (!existing) return res.status(404).send("Resource not found");
   const { title, category, excerpt, body, url } = req.body;
   if (!title || !excerpt || (!body && !url)) {
     return res.status(400).render("admin/resource-form", { title: `Edit ${existing.title} — Baseline Skills`, resource: { ...existing, ...req.body }, mode: "edit", error: "Title, excerpt, and either article content or an external link are required." });
   }
-  store.update("resources", req.params.id, { title, category: category || existing.category, excerpt, body: body || null, url: url || null, updatedAt: new Date().toISOString() });
+  store.update("resources", req.params.id, { title, category: category || existing.category, excerpt, body: body || null, url: url || null, downloadFilename: req.file ? req.file.filename : existing.downloadFilename, updatedAt: new Date().toISOString() });
   res.redirect("/admin/resources?success=Resource+updated");
 });
 

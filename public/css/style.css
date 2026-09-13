@@ -1732,6 +1732,11 @@ form.course-filter-bar .filter-field-price { width: 110px; }
   overflow: hidden
 }
 
+.table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch
+}
+
 .programs-table-enhanced {
   width: 100%;
   border-collapse: collapse;
@@ -2229,7 +2234,18 @@ footer.site-footer {
   display: grid;
   grid-template-columns: 2fr 1fr;
   gap: 48px;
-  padding: 54px 0
+  padding: 54px 0;
+  align-items: start
+}
+
+@media (max-width: 900px) {
+  .course-body {
+    grid-template-columns: 1fr;
+    gap: 32px
+  }
+  .sticky-card {
+    position: static
+  }
 }
 
 .accordion-item {

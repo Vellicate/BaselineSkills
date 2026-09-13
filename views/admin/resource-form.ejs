@@ -6,7 +6,7 @@
   <div class="alert alert-error" style="margin-bottom:16px"><%= error %></div>
 <% } %>
 
-<form method="POST" action="<%= mode === 'new' ? '/admin/resources/new' : `/admin/resources/${resource.id}/edit` %>" class="card" style="max-width:640px">
+<form method="POST" action="<%= mode === 'new' ? '/admin/resources/new' : `/admin/resources/${resource.id}/edit` %>" class="card" style="max-width:640px" enctype="multipart/form-data">
   <div class="form-field"><label>Title *</label><input type="text" name="title" required value="<%= resource ? resource.title : '' %>"></div>
   <div class="form-field">
     <label>Category</label>
@@ -19,6 +19,15 @@
   <div class="form-field"><label>Excerpt *</label><textarea name="excerpt" rows="3" required><%= resource ? resource.excerpt : '' %></textarea></div>
   <div class="form-field"><label>Article content</label><textarea name="body" rows="12" placeholder="Full article content — shown on the resource's own page. Leave blank if this resource only links elsewhere."><%= resource && resource.body ? resource.body : '' %></textarea></div>
   <div class="form-field"><label>External link (optional)</label><input type="text" name="url" placeholder="Only needed if this resource points elsewhere instead of hosting its own content" value="<%= resource && resource.url ? resource.url : '' %>"></div>
+
+  <div class="form-field">
+    <label>Downloadable file (optional — PDF, Word, or Excel)</label>
+    <% if (resource && resource.downloadFilename) { %>
+      <p style="font-size:.85rem;color:var(--muted);margin-bottom:6px">Currently has a file attached. Uploading a new one replaces it.</p>
+    <% } %>
+    <input type="file" name="downloadFile" accept=".pdf,.docx,.xlsx">
+    <p style="font-size:.8rem;color:var(--muted);margin-top:4px">When set, visitors see a "Request Download" form instead of reading the article directly — they enter their email and receive a download link.</p>
+  </div>
 
   <div style="margin-top:20px">
     <button type="submit" class="btn btn-navy btn-lg">Save resource</button>
