@@ -472,6 +472,29 @@ function validateCourseFields(body, existingCourseId, existing) {
   return errors;
 }
 
+// Rebuilds a properly-shaped course object for redisplaying the form
+// after a failed save — never a naive spread of req.body over existing.
+// req.body's array-backed fields (outcomes, audience, prerequisites,
+// whatYoullReceive, additionalCategories) arrive as raw newline-joined
+// strings or differently-shaped values from the form, not the arrays the
+// template expects; a naive {...existing, ...req.body} spread overwrites
+// a real array with a string, and the template's own .join('\n') call on
+// it throws a SECOND, different error while rendering the failure page —
+// which is exactly why a real save failure was showing the generic
+// app-wide error page instead of this route's own specific message.
+// courseFromForm already knows how to parse the form's raw shapes into
+// the correct one; reusing it here (never actually persisting the
+// result) keeps redisplay and real saves parsing identically by
+// construction, so the two can never drift apart again.
+function courseForRedisplay(body, existing) {
+  try {
+    return courseFromForm(body, existing || { id: newId("course") }, null);
+  } catch (e) {
+    console.error("[admin] courseForRedisplay failed, falling back to existing/raw body:", e.message);
+    return existing || body;
+  }
+}
+
 function courseFromForm(body, existing, uploadedFile) {
   const outcomes = (body.outcomes || "").split("\n").map((s) => s.trim()).filter(Boolean);
   const audience = (body.audience || "").split("\n").map((s) => s.trim()).filter(Boolean);
@@ -595,7 +618,7 @@ router.post("/courses/new", handleBrochureUpload, (req, res) => {
   const errors = validateCourseFields(req.body, null);
   if (errors.length) {
     return res.status(400).render("admin/course-form", {
-      title: "New course — Baseline Skills", course: req.body, mode: "new",
+      title: "New course — Baseline Skills", course: courseForRedisplay(req.body, null), mode: "new",
       trainers: store.readAll("trainers"), categories: store.readAll("categories"),
       faqs: [], examProduct: null, materials: [], courseDiscounts: [],
       fieldErrors: errors, error: `${errors.length} field${errors.length !== 1 ? "s need" : " needs"} attention — see below.`,
@@ -609,7 +632,7 @@ router.post("/courses/new", handleBrochureUpload, (req, res) => {
   } catch (e) {
     console.error("[admin] course creation failed:", e.message, "\n", e.stack);
     res.status(500).render("admin/course-form", {
-      title: "New course — Baseline Skills", course: req.body, mode: "new",
+      title: "New course — Baseline Skills", course: courseForRedisplay(req.body, null), mode: "new",
       trainers: store.readAll("trainers"), categories: store.readAll("categories"),
       faqs: [], examProduct: null, materials: [], courseDiscounts: [],
       fieldErrors: [], error: "Something went wrong saving this course. Nothing was saved — please try again, and if this keeps happening, contact support with what you were entering.",
@@ -642,7 +665,7 @@ router.post("/courses/:id/edit", auth.requireCourseAccess(r => r.params.id), han
   const errors = validateCourseFields(req.body, req.params.id, existing);
   if (errors.length) {
     return res.status(400).render("admin/course-form", {
-      title: `Edit ${existing.title} — Baseline Skills`, course: { ...existing, ...req.body, id: existing.id }, mode: "edit",
+      title: `Edit ${existing.title} — Baseline Skills`, course: courseForRedisplay(req.body, existing), mode: "edit",
       trainers: store.readAll("trainers"), categories: store.readAll("categories"),
       faqs: store.readAll("faqs").filter(f => f.scope === "course" && f.courseId === existing.id).sort((a, b) => a.order - b.order),
       examProduct: store.findOne("certification_exams", e => e.courseId === existing.id),
@@ -659,7 +682,7 @@ router.post("/courses/:id/edit", auth.requireCourseAccess(r => r.params.id), han
   } catch (e) {
     console.error(`[admin] course update failed for ${req.params.id}:`, e.message, "\n", e.stack);
     res.status(500).render("admin/course-form", {
-      title: `Edit ${existing.title} — Baseline Skills`, course: { ...existing, ...req.body, id: existing.id }, mode: "edit",
+      title: `Edit ${existing.title} — Baseline Skills`, course: courseForRedisplay(req.body, existing), mode: "edit",
       trainers: store.readAll("trainers"), categories: store.readAll("categories"),
       faqs: store.readAll("faqs").filter(f => f.scope === "course" && f.courseId === existing.id).sort((a, b) => a.order - b.order),
       examProduct: store.findOne("certification_exams", e => e.courseId === existing.id),
