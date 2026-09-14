@@ -6,9 +6,41 @@
   <div class="alert alert-error" style="margin-bottom:16px"><%= error %></div>
 <% } %>
 
+<%
+  // Looks up a field's validation error (if any) from fieldErrors, passed
+  // in only when the last submission failed validation — absent on a
+  // normal page load, where every lookup correctly returns null.
+  const fieldError = (name) => {
+    const found = (typeof fieldErrors !== 'undefined' ? fieldErrors : []).find(e => e.field === name);
+    return found ? found.message : null;
+  };
+%>
+
+<script>
+// Shared live character counter for every free-text field below. Reads
+// its own max from a data attribute set server-side (from
+// config/business-rules.json's courseFieldLimits) rather than a
+// hardcoded number here, so the two can never silently drift apart.
+function updateCharCount(el) {
+  const max = Number(el.dataset.maxlen);
+  const counter = document.getElementById(el.dataset.counterId);
+  if (!counter) return;
+  const len = el.value.length;
+  counter.textContent = `${len} / ${max} characters`;
+  counter.style.color = len > max ? '#b91c1c' : 'var(--muted)';
+}
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('[data-counter-id]').forEach(updateCharCount);
+});
+</script>
+
 <form method="POST" id="course-form" action="<%= mode === 'new' ? '/admin/courses/new' : `/admin/courses/${course.id}/edit` %>" enctype="multipart/form-data" class="card" style="max-width:760px">
   <div class="form-row">
-    <div class="form-field"><label>Title *</label><input type="text" name="title" required value="<%= course ? course.title : '' %>"></div>
+    <div class="form-field">
+      <label>Title * <span style="font-weight:400;color:var(--muted)">(text, max <%= courseFieldLimits.TITLE_MAX %> characters)</span></label>
+      <input type="text" name="title" required maxlength="<%= courseFieldLimits.TITLE_MAX %>" value="<%= course ? course.title : '' %>">
+      <% if (fieldError('title')) { %><p style="color:#b91c1c;font-size:.82rem;margin-top:4px"><%= fieldError('title') %></p><% } %>
+    </div>
     <div class="form-field">
       <label>Category *</label>
       <select name="category" required>
@@ -16,6 +48,7 @@
           <option value="<%= cat.name %>" <%= course && course.category===cat.name ? 'selected' : '' %>><%= cat.name %></option>
         <% }) %>
       </select>
+      <% if (fieldError('category')) { %><p style="color:#b91c1c;font-size:.82rem;margin-top:4px"><%= fieldError('category') %></p><% } %>
     </div>
   </div>
 
@@ -29,18 +62,60 @@
     <p style="font-size:.8rem;color:var(--muted);margin-top:4px">For a course that's primarily one category but also belongs under another — e.g. AI4RE is primarily Requirements Engineering but also belongs under AI.</p>
   </div>
 
-  <div class="form-field"><label>Short summary (shown on cards) *</label><input type="text" name="summary" required value="<%= course ? course.summary : '' %>"></div>
-  <div class="form-field"><label>Full description *</label><textarea name="description" rows="5" required><%= course ? course.description : '' %></textarea></div>
+  <div class="form-field">
+    <label>Short summary (shown on cards) * <span style="font-weight:400;color:var(--muted)">(text, max <%= courseFieldLimits.SUMMARY_MAX %> characters)</span></label>
+    <input type="text" name="summary" required maxlength="<%= courseFieldLimits.SUMMARY_MAX %>" data-maxlen="<%= courseFieldLimits.SUMMARY_MAX %>" data-counter-id="count-summary" oninput="updateCharCount(this)" value="<%= course ? course.summary : '' %>">
+    <span id="count-summary" style="font-size:.78rem;color:var(--muted)"></span>
+    <% if (fieldError('summary')) { %><p style="color:#b91c1c;font-size:.82rem;margin-top:4px"><%= fieldError('summary') %></p><% } %>
+  </div>
+  <div class="form-field">
+    <label>Full description * <span style="font-weight:400;color:var(--muted)">(text, max <%= courseFieldLimits.DESCRIPTION_MAX %> characters)</span></label>
+    <textarea name="description" rows="5" required data-maxlen="<%= courseFieldLimits.DESCRIPTION_MAX %>" data-counter-id="count-description" oninput="updateCharCount(this)"><%= course ? course.description : '' %></textarea>
+    <span id="count-description" style="font-size:.78rem;color:var(--muted)"></span>
+    <% if (fieldError('description')) { %><p style="color:#b91c1c;font-size:.82rem;margin-top:4px"><%= fieldError('description') %></p><% } %>
+  </div>
 
   <h4>Program description</h4>
-  <div class="form-field"><label>Why take this course</label><textarea name="whyTakeThisCourse" rows="3"><%= course ? course.whyTakeThisCourse : '' %></textarea></div>
-  <div class="form-field"><label>Learning objectives (one per line)</label><textarea name="outcomes" rows="4"><%= course && course.outcomes ? course.outcomes.join('\n') : '' %></textarea></div>
-  <div class="form-field"><label>Who should attend (one per line)</label><textarea name="audience" rows="3"><%= course && course.audience ? course.audience.join('\n') : '' %></textarea></div>
-  <div class="form-field"><label>Prerequisites (one per line)</label><textarea name="prerequisites" rows="3" placeholder="e.g. No prior RE experience required"><%= course && course.prerequisites ? course.prerequisites.join('\n') : '' %></textarea></div>
-  <div class="form-field"><label>Format &amp; material</label><textarea name="formatAndMaterial" rows="3" placeholder="e.g. Live instructor-led sessions, printed workbook, recorded playback for 90 days"><%= course ? course.formatAndMaterial : '' %></textarea></div>
-  <div class="form-field"><label>How you'll use this at work (optional)</label><textarea name="practicalApplication" rows="3" placeholder="e.g. Apply this directly in stakeholder interviews, requirement reviews, and SRS development — leave blank if not yet written"><%= course ? course.practicalApplication : '' %></textarea></div>
-  <div class="form-field"><label>What you'll receive (one per line)</label><textarea name="whatYoullReceive" rows="3" placeholder="e.g. Certificate of completion&#10;Course workbook (PDF)&#10;90-day access to recordings"><%= course && course.whatYoullReceive ? course.whatYoullReceive.join('\n') : '' %></textarea></div>
-  <div class="form-field"><label>Course outline link</label><input type="url" name="courseOutlineUrl" placeholder="https://... link to a detailed outline document" value="<%= course ? course.courseOutlineUrl : '' %>"></div>
+  <div class="form-field">
+    <label>Why take this course <span style="font-weight:400;color:var(--muted)">(text, max <%= courseFieldLimits.WHY_TAKE_THIS_COURSE_MAX %> characters)</span></label>
+    <textarea name="whyTakeThisCourse" rows="3" data-maxlen="<%= courseFieldLimits.WHY_TAKE_THIS_COURSE_MAX %>" data-counter-id="count-why" oninput="updateCharCount(this)"><%= course ? course.whyTakeThisCourse : '' %></textarea>
+    <span id="count-why" style="font-size:.78rem;color:var(--muted)"></span>
+  </div>
+  <div class="form-field">
+    <label>Learning objectives (one per line) <span style="font-weight:400;color:var(--muted)">(text, max <%= courseFieldLimits.OUTCOMES_MAX %> characters total)</span></label>
+    <textarea name="outcomes" rows="4" data-maxlen="<%= courseFieldLimits.OUTCOMES_MAX %>" data-counter-id="count-outcomes" oninput="updateCharCount(this)"><%= course && course.outcomes ? course.outcomes.join('\n') : '' %></textarea>
+    <span id="count-outcomes" style="font-size:.78rem;color:var(--muted)"></span>
+  </div>
+  <div class="form-field">
+    <label>Who should attend (one per line) <span style="font-weight:400;color:var(--muted)">(text, max <%= courseFieldLimits.AUDIENCE_MAX %> characters total)</span></label>
+    <textarea name="audience" rows="3" data-maxlen="<%= courseFieldLimits.AUDIENCE_MAX %>" data-counter-id="count-audience" oninput="updateCharCount(this)"><%= course && course.audience ? course.audience.join('\n') : '' %></textarea>
+    <span id="count-audience" style="font-size:.78rem;color:var(--muted)"></span>
+  </div>
+  <div class="form-field">
+    <label>Prerequisites (one per line) <span style="font-weight:400;color:var(--muted)">(text, max <%= courseFieldLimits.PREREQUISITES_MAX %> characters total)</span></label>
+    <textarea name="prerequisites" rows="3" placeholder="e.g. No prior RE experience required" data-maxlen="<%= courseFieldLimits.PREREQUISITES_MAX %>" data-counter-id="count-prereq" oninput="updateCharCount(this)"><%= course && course.prerequisites ? course.prerequisites.join('\n') : '' %></textarea>
+    <span id="count-prereq" style="font-size:.78rem;color:var(--muted)"></span>
+  </div>
+  <div class="form-field">
+    <label>Format &amp; material <span style="font-weight:400;color:var(--muted)">(text, max <%= courseFieldLimits.FORMAT_AND_MATERIAL_MAX %> characters)</span></label>
+    <textarea name="formatAndMaterial" rows="3" placeholder="e.g. Live instructor-led sessions, printed workbook, recorded playback for 90 days" data-maxlen="<%= courseFieldLimits.FORMAT_AND_MATERIAL_MAX %>" data-counter-id="count-format" oninput="updateCharCount(this)"><%= course ? course.formatAndMaterial : '' %></textarea>
+    <span id="count-format" style="font-size:.78rem;color:var(--muted)"></span>
+  </div>
+  <div class="form-field">
+    <label>How you'll use this at work (optional) <span style="font-weight:400;color:var(--muted)">(text, max <%= courseFieldLimits.PRACTICAL_APPLICATION_MAX %> characters)</span></label>
+    <textarea name="practicalApplication" rows="3" placeholder="e.g. Apply this directly in stakeholder interviews, requirement reviews, and SRS development — leave blank if not yet written" data-maxlen="<%= courseFieldLimits.PRACTICAL_APPLICATION_MAX %>" data-counter-id="count-practical" oninput="updateCharCount(this)"><%= course ? course.practicalApplication : '' %></textarea>
+    <span id="count-practical" style="font-size:.78rem;color:var(--muted)"></span>
+  </div>
+  <div class="form-field">
+    <label>What you'll receive (one per line) <span style="font-weight:400;color:var(--muted)">(text, max <%= courseFieldLimits.WHAT_YOULL_RECEIVE_MAX %> characters total)</span></label>
+    <textarea name="whatYoullReceive" rows="3" placeholder="e.g. Certificate of completion&#10;Course workbook (PDF)&#10;90-day access to recordings" data-maxlen="<%= courseFieldLimits.WHAT_YOULL_RECEIVE_MAX %>" data-counter-id="count-receive" oninput="updateCharCount(this)"><%= course && course.whatYoullReceive ? course.whatYoullReceive.join('\n') : '' %></textarea>
+    <span id="count-receive" style="font-size:.78rem;color:var(--muted)"></span>
+  </div>
+  <div class="form-field">
+    <label>Course outline link <span style="font-weight:400;color:var(--muted)">(URL starting with http:// or https://, max <%= courseFieldLimits.COURSE_OUTLINE_URL_MAX %> characters)</span></label>
+    <input type="url" name="courseOutlineUrl" placeholder="https://... link to a detailed outline document" maxlength="<%= courseFieldLimits.COURSE_OUTLINE_URL_MAX %>" value="<%= course ? course.courseOutlineUrl : '' %>">
+    <% if (fieldError('courseOutlineUrl')) { %><p style="color:#b91c1c;font-size:.82rem;margin-top:4px"><%= fieldError('courseOutlineUrl') %></p><% } %>
+  </div>
 
   <div class="form-field">
     <label>Trainer</label>
@@ -51,6 +126,7 @@
       <% }) %>
     </select>
     <p class="form-hint"><a href="/admin/trainers/new" target="_blank">+ Add a new trainer</a> if they're not listed yet.</p>
+    <% if (fieldError('trainerId')) { %><p style="color:#b91c1c;font-size:.82rem;margin-top:4px"><%= fieldError('trainerId') %></p><% } %>
   </div>
 
   <div class="form-field">
@@ -61,24 +137,33 @@
     <% } %>
   </div>
 
-  <div class="form-field"><label>Course contents (one module per line, format: "Module name: topic 1, topic 2")</label>
-    <textarea name="curriculumRaw" rows="4" placeholder="Requirements Elicitation: Techniques, Stakeholder analysis, Workshops"><%= course && course.curriculum && course.curriculum.length ? course.curriculum.map(m => `${m.module}: ${m.topics.join(', ')}`).join('\n') : '' %></textarea>
+  <div class="form-field">
+    <label>Course contents (one module per line, format: "Module name: topic 1, topic 2") <span style="font-weight:400;color:var(--muted)">(text, max <%= courseFieldLimits.CURRICULUM_MAX %> characters total)</span></label>
+    <textarea name="curriculumRaw" rows="4" placeholder="Requirements Elicitation: Techniques, Stakeholder analysis, Workshops" data-maxlen="<%= courseFieldLimits.CURRICULUM_MAX %>" data-counter-id="count-curriculum" oninput="updateCharCount(this)"><%= course && course.curriculum && course.curriculum.length ? course.curriculum.map(m => `${m.module}: ${m.topics.join(', ')}`).join('\n') : '' %></textarea>
+    <span id="count-curriculum" style="font-size:.78rem;color:var(--muted)"></span>
     <p class="form-hint">Leave blank to keep the existing course contents unchanged.</p>
+    <% if (fieldError('curriculumRaw')) { %><p style="color:#b91c1c;font-size:.82rem;margin-top:4px"><%= fieldError('curriculumRaw') %></p><% } %>
   </div>
 
   <div class="form-row">
-    <div class="form-field"><label>Duration (days) *</label><input type="number" name="durationDays" min="1" required value="<%= course ? course.durationDays : 1 %>"></div>
+    <div class="form-field">
+      <label>Duration (days) * <span style="font-weight:400;color:var(--muted)">(whole number, greater than 0)</span></label>
+      <input type="number" name="durationDays" min="1" step="1" required value="<%= course ? course.durationDays : 1 %>">
+      <% if (fieldError('durationDays')) { %><p style="color:#b91c1c;font-size:.82rem;margin-top:4px"><%= fieldError('durationDays') %></p><% } %>
+    </div>
     <div class="form-field"><label>Currency</label><input type="text" name="currency" value="<%= course ? course.currency : 'USD' %>"></div>
   </div>
 
   <div class="form-row">
     <div class="form-field">
       <label>Level *</label>
+
       <select name="level" required>
         <% ["Beginner","Intermediate","Expert"].forEach(l => { %>
           <option value="<%= l %>" <%= course && course.level === l ? 'selected' : '' %>><%= l %></option>
         <% }) %>
       </select>
+      <% if (fieldError('level')) { %><p style="color:#b91c1c;font-size:.82rem;margin-top:4px"><%= fieldError('level') %></p><% } %>
     </div>
     <div class="form-field"><label>Course image URL</label><input type="text" name="imageUrl" placeholder="/img/courses/example.jpg" value="<%= course ? (course.imageUrl || '') : '' %>"></div>
   </div>
@@ -91,7 +176,11 @@
   </div>
 
   <div class="form-row">
-    <div class="form-field"><label>Price (USD, before discount) *</label><input type="number" step="0.01" name="price" required value="<%= course ? (course.priceCents/100).toFixed(2) : '' %>"></div>
+    <div class="form-field">
+      <label>Price (€, before discount) * <span style="font-weight:400;color:var(--muted)">(number, 0 or greater)</span></label>
+      <input type="number" step="0.01" min="0" name="price" required value="<%= course ? (course.priceCents/100).toFixed(2) : '' %>">
+      <% if (fieldError('price')) { %><p style="color:#b91c1c;font-size:.82rem;margin-top:4px"><%= fieldError('price') %></p><% } %>
+    </div>
 
   </div>
 
@@ -99,6 +188,10 @@
   <div class="checkbox-row" style="margin-bottom:14px"><input type="checkbox" name="published" <%= !course || course.published ? 'checked' : '' %>> <label style="margin:0;font-weight:400">Published (visible on the public site)</label></div>
 
   <h4>Sessions (dates &amp; times)</h4>
+  <p style="font-size:.82rem;color:var(--muted);margin-top:-8px">Start/end date format: YYYY-MM-DD, or the literal text "On Demand". Seats must be a non-negative number, or left blank if not tracked.</p>
+  <% (typeof fieldErrors !== 'undefined' ? fieldErrors : []).filter(e => e.field === 'sessionStartDate' || e.field === 'sessionSeats').forEach(e => { %>
+    <p style="color:#b91c1c;font-size:.82rem;margin:4px 0"><%= e.message %></p>
+  <% }) %>
   <div id="sessions-wrap">
     <% const sessions = (course && course.sessions && course.sessions.length) ? course.sessions : [{startDate:'',endDate:'',timeFrom:'',timeTo:'',mode:'Live Online',seatsLeft:''}]; %>
     <% sessions.forEach(s => { %>

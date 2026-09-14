@@ -115,6 +115,7 @@ app.use((req, res, next) => {
   res.locals.isLoggedInLearner = !!(req.session && req.session.learnerId);
   res.locals.currencySymbol = require("./lib/currency").currencySymbol;
   res.locals.discounts = require("./lib/discounts");
+  res.locals.courseFieldLimits = require("./lib/discounts").loadConfig().courseFieldLimits;
   res.locals.trainingModeShort = require("./lib/training-mode").trainingModeShort;
   res.locals.trainingModeCategory = require("./lib/training-mode").trainingModeCategory;
   res.locals.trainingModeSymbol = (mode) => require("./lib/training-mode").SYMBOLS[require("./lib/training-mode").trainingModeCategory(mode)];

@@ -339,6 +339,110 @@ function saveCarriedCourseFieldsIfPresent(req) {
   syncAdditionalCategories(req.params.courseId, courseBody.additionalCategories);
 }
 
+// Field-level validation for course create/edit — checked before any
+// database write, not caught after the fact. Every free-text field's
+// limit comes from config/business-rules.json's courseFieldLimits, not
+// hardcoded here, matching how every other business rule in this app is
+// kept admin-configurable. Returns an array of { field, message } — empty
+// means the submission is valid. The slug-collision check exists because
+// a real crash was found and reproduced: two titles differing only in
+// punctuation ("Foo" vs "Foo!!!") slugify to the same value, and the
+// second course's insert threw an uncaught SQLite UNIQUE constraint
+// error with no validation catching it first.
+function validateCourseFields(body, existingCourseId) {
+  const limits = discounts.loadConfig().courseFieldLimits;
+  const errors = [];
+
+  const checkRequired = (field, label, value) => {
+    if (!value || !value.trim()) errors.push({ field, message: `${label} is required.` });
+  };
+  const checkMaxLength = (field, label, value, max) => {
+    const len = (value || "").length;
+    if (len > max) errors.push({ field, message: `${label} is ${len} characters — the maximum is ${max}.` });
+  };
+
+  checkRequired("title", "Title", body.title);
+  checkMaxLength("title", "Title", body.title, limits.TITLE_MAX);
+
+  const validCategories = store.readAll("categories").map((c) => c.name);
+  if (!body.category || !body.category.trim()) {
+    errors.push({ field: "category", message: "Category is required." });
+  } else if (!validCategories.includes(body.category)) {
+    errors.push({ field: "category", message: `"${body.category}" isn't a recognized category.` });
+  }
+
+  if (body.level && !["Beginner", "Intermediate", "Expert"].includes(body.level)) {
+    errors.push({ field: "level", message: `Level must be Beginner, Intermediate, or Expert — got "${body.level}".` });
+  }
+
+  checkRequired("summary", "Summary", body.summary);
+  checkMaxLength("summary", "Summary", body.summary, limits.SUMMARY_MAX);
+
+  checkRequired("description", "Description", body.description);
+  checkMaxLength("description", "Description", body.description, limits.DESCRIPTION_MAX);
+
+  checkMaxLength("outcomes", "Learning outcomes", body.outcomes, limits.OUTCOMES_MAX);
+  checkMaxLength("audience", "Audience", body.audience, limits.AUDIENCE_MAX);
+  checkMaxLength("prerequisites", "Prerequisites", body.prerequisites, limits.PREREQUISITES_MAX);
+  checkMaxLength("whatYoullReceive", "What you'll receive", body.whatYoullReceive, limits.WHAT_YOULL_RECEIVE_MAX);
+  checkMaxLength("curriculumRaw", "Curriculum", body.curriculumRaw, limits.CURRICULUM_MAX);
+  checkMaxLength("formatAndMaterial", "Format & material", body.formatAndMaterial, limits.FORMAT_AND_MATERIAL_MAX);
+  checkMaxLength("practicalApplication", "How you'll use this at work", body.practicalApplication, limits.PRACTICAL_APPLICATION_MAX);
+  checkMaxLength("whyTakeThisCourse", "Why take this course", body.whyTakeThisCourse, limits.WHY_TAKE_THIS_COURSE_MAX);
+
+  const durationNum = Number(body.durationDays);
+  if (!body.durationDays || !Number.isFinite(durationNum) || durationNum <= 0 || !Number.isInteger(durationNum)) {
+    errors.push({ field: "durationDays", message: "Duration must be a whole number of days, greater than 0." });
+  }
+
+  const priceNum = Number(body.price);
+  if (body.price === undefined || body.price === "" || !Number.isFinite(priceNum) || priceNum < 0) {
+    errors.push({ field: "price", message: "Price must be a valid number, 0 or greater." });
+  }
+
+  if (body.courseOutlineUrl && body.courseOutlineUrl.trim()) {
+    checkMaxLength("courseOutlineUrl", "Course outline URL", body.courseOutlineUrl, limits.COURSE_OUTLINE_URL_MAX);
+    if (!/^https?:\/\/.+/i.test(body.courseOutlineUrl.trim())) {
+      errors.push({ field: "courseOutlineUrl", message: "Course outline URL must start with http:// or https://." });
+    }
+  }
+
+  if (body.trainerId && body.trainerId.trim()) {
+    const trainerExists = store.findOne("trainers", (t) => t.id === body.trainerId);
+    if (!trainerExists) errors.push({ field: "trainerId", message: "Selected trainer doesn't exist." });
+  }
+
+  // Session rows — each repeated field is either a single string or an
+  // array, exactly like the deliveryModes checkboxes; normalize both to
+  // arrays the same way courseFromForm does, so validation checks the
+  // same shape it will actually be building sessions from.
+  const sessionStarts = Array.isArray(body.sessionStartDate) ? body.sessionStartDate : (body.sessionStartDate ? [body.sessionStartDate] : []);
+  const sessionSeatsRaw = Array.isArray(body.sessionSeats) ? body.sessionSeats : (body.sessionSeats ? [body.sessionSeats] : []);
+  sessionStarts.forEach((s, i) => {
+    if (!s || !s.trim()) return; // an empty "add a new session" row is fine, it's filtered out later
+    if (s.trim().toLowerCase() !== "on demand" && !/^\d{4}-\d{2}-\d{2}$/.test(s.trim())) {
+      errors.push({ field: "sessionStartDate", message: `Session ${i + 1} start date must be YYYY-MM-DD or "On Demand" — got "${s}".` });
+    }
+    const seats = sessionSeatsRaw[i];
+    if (seats && seats.trim() && (!Number.isFinite(Number(seats)) || Number(seats) < 0)) {
+      errors.push({ field: "sessionSeats", message: `Session ${i + 1} seats must be a non-negative number — got "${seats}".` });
+    }
+  });
+
+  // Slug collision — the crash this validation exists to prevent. Checked
+  // against every OTHER course (excluding the one currently being
+  // edited, which naturally already owns this exact slug).
+  if (body.title && body.title.trim()) {
+    const candidateSlug = slugify(body.title, { lower: true, strict: true });
+    const collision = store.findOne("courses", (c) => c.slug === candidateSlug && c.id !== existingCourseId);
+    if (collision) {
+      errors.push({ field: "title", message: `This title produces the same URL slug ("${candidateSlug}") as an existing course ("${collision.title}"). Please choose a more distinct title.` });
+    }
+  }
+
+  return errors;
+}
+
 function courseFromForm(body, existing, uploadedFile) {
   const outcomes = (body.outcomes || "").split("\n").map((s) => s.trim()).filter(Boolean);
   const audience = (body.audience || "").split("\n").map((s) => s.trim()).filter(Boolean);
@@ -459,10 +563,29 @@ router.get("/courses/new", (req, res) => {
 });
 
 router.post("/courses/new", handleBrochureUpload, (req, res) => {
-  const course = courseFromForm(req.body, { id: newId("course") }, req.file);
-  store.insert("courses", course);
-  syncAdditionalCategories(course.id, req.body.additionalCategories);
-  res.redirect("/admin/courses?success=Course+created+successfully");
+  const errors = validateCourseFields(req.body, null);
+  if (errors.length) {
+    return res.status(400).render("admin/course-form", {
+      title: "New course — Baseline Skills", course: req.body, mode: "new",
+      trainers: store.readAll("trainers"), categories: store.readAll("categories"),
+      faqs: [], examProduct: null, materials: [], courseDiscounts: [],
+      fieldErrors: errors, error: `${errors.length} field${errors.length !== 1 ? "s need" : " needs"} attention — see below.`,
+    });
+  }
+  try {
+    const course = courseFromForm(req.body, { id: newId("course") }, req.file);
+    store.insert("courses", course);
+    syncAdditionalCategories(course.id, req.body.additionalCategories);
+    res.redirect("/admin/courses?success=Course+created+successfully");
+  } catch (e) {
+    console.error("[admin] course creation failed:", e.message);
+    res.status(500).render("admin/course-form", {
+      title: "New course — Baseline Skills", course: req.body, mode: "new",
+      trainers: store.readAll("trainers"), categories: store.readAll("categories"),
+      faqs: [], examProduct: null, materials: [], courseDiscounts: [],
+      fieldErrors: [], error: "Something went wrong saving this course. Nothing was saved — please try again, and if this keeps happening, contact support with what you were entering.",
+    });
+  }
 });
 
 // ---- Edit course ----
@@ -487,10 +610,35 @@ router.get("/courses/:id/edit", auth.requireCourseAccess(r => r.params.id), (req
 router.post("/courses/:id/edit", auth.requireCourseAccess(r => r.params.id), handleBrochureUpload, (req, res) => {
   const existing = store.findOne("courses", (c) => c.id === req.params.id);
   if (!existing) return res.status(404).send("Course not found");
-  const updated = courseFromForm(req.body, existing, req.file);
-  store.update("courses", req.params.id, updated);
-  syncAdditionalCategories(req.params.id, req.body.additionalCategories);
-  res.redirect("/admin/courses?success=Course+updated+successfully");
+  const errors = validateCourseFields(req.body, req.params.id);
+  if (errors.length) {
+    return res.status(400).render("admin/course-form", {
+      title: `Edit ${existing.title} — Baseline Skills`, course: { ...existing, ...req.body, id: existing.id }, mode: "edit",
+      trainers: store.readAll("trainers"), categories: store.readAll("categories"),
+      faqs: store.readAll("faqs").filter(f => f.scope === "course" && f.courseId === existing.id).sort((a, b) => a.order - b.order),
+      examProduct: store.findOne("certification_exams", e => e.courseId === existing.id),
+      materials: store.readAll("materials").filter(m => m.courseId === existing.id),
+      courseDiscounts: store.readAll("course_discounts").filter(d => d.courseId === existing.id),
+      fieldErrors: errors, error: `${errors.length} field${errors.length !== 1 ? "s need" : " needs"} attention — see below.`,
+    });
+  }
+  try {
+    const updated = courseFromForm(req.body, existing, req.file);
+    store.update("courses", req.params.id, updated);
+    syncAdditionalCategories(req.params.id, req.body.additionalCategories);
+    res.redirect("/admin/courses?success=Course+updated+successfully");
+  } catch (e) {
+    console.error("[admin] course update failed:", e.message);
+    res.status(500).render("admin/course-form", {
+      title: `Edit ${existing.title} — Baseline Skills`, course: { ...existing, ...req.body, id: existing.id }, mode: "edit",
+      trainers: store.readAll("trainers"), categories: store.readAll("categories"),
+      faqs: store.readAll("faqs").filter(f => f.scope === "course" && f.courseId === existing.id).sort((a, b) => a.order - b.order),
+      examProduct: store.findOne("certification_exams", e => e.courseId === existing.id),
+      materials: store.readAll("materials").filter(m => m.courseId === existing.id),
+      courseDiscounts: store.readAll("course_discounts").filter(d => d.courseId === existing.id),
+      fieldErrors: [], error: "Something went wrong saving this course. Nothing was changed — please try again, and if this keeps happening, contact support with what you were entering.",
+    });
+  }
 });
 
 router.post("/courses/:id/delete", auth.requireCourseAccess(r => r.params.id), (req, res) => {
