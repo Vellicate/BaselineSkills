@@ -297,12 +297,46 @@ router.get("/courses", (req, res) => {
 // plain textarea without tracking individual row diffs. The course's own
 // primary `category` column is untouched by this; those are kept
 // deliberately separate (see course_categories table comment).
-function syncAdditionalCategories(courseId, rawTextarea) {
+// Accepts whatever shape a <select multiple> actually submits — nothing
+// selected omits the field entirely (undefined), exactly one selection
+// comes through as a plain string, more than one as an array. Normalizes
+// all three to an array before use; no more newline-splitting now that
+// this isn't a free-text textarea.
+function syncAdditionalCategories(courseId, submitted) {
   store.readAll("course_categories").filter((cc) => cc.courseId === courseId).forEach((cc) => store.remove("course_categories", cc.id));
-  const categories = (rawTextarea || "").split("\n").map((s) => s.trim()).filter(Boolean);
-  categories.forEach((category) => {
+  const categories = submitted == null ? [] : (Array.isArray(submitted) ? submitted : [submitted]);
+  categories.filter(Boolean).forEach((category) => {
     store.insert("course_categories", { id: newId("cc"), courseId, category });
   });
+}
+
+// The course-details form and the FAQ/exam-product/materials forms below
+// it on the same admin page are separate <form> elements — HTML doesn't
+// allow nesting one form inside another. A client-side script (see
+// course-form.ejs) copies the course form's current field values into
+// whichever of those secondary forms gets submitted, so any course-detail
+// edits typed in but not yet saved travel along with it rather than being
+// silently dropped (which looked like the edits had been "reverted" when
+// really they were just never sent to the server at all). This is the
+// server-side half: if those carried-along course fields are present,
+// save the course first, before the route's own specific action runs.
+// Detects "were the fields carried along" via req.body.title, since the
+// course form's title field is always present and always non-empty
+// (required) whenever this happens.
+function saveCarriedCourseFieldsIfPresent(req) {
+  if (!req.body || !req.body.course_title) return;
+  const existing = store.findOne("courses", (c) => c.id === req.params.courseId);
+  if (!existing) return;
+  // Strip the "course_" prefix (see the comment in course-form.ejs on why
+  // it's there) to rebuild a plain course-fields object — courseFromForm
+  // has no idea these came from a differently-shaped request body.
+  const courseBody = {};
+  Object.keys(req.body).forEach((key) => {
+    if (key.startsWith("course_")) courseBody[key.slice("course_".length)] = req.body[key];
+  });
+  const updated = courseFromForm(courseBody, existing, null); // null: never treat a FAQ/exam/material upload as a brochure replacement
+  store.update("courses", req.params.courseId, updated);
+  syncAdditionalCategories(req.params.courseId, courseBody.additionalCategories);
 }
 
 function courseFromForm(body, existing, uploadedFile) {
@@ -389,9 +423,11 @@ function handleBrochureUpload(req, res, next) {
       course,
       mode: isEdit ? "edit" : "new",
       trainers: store.readAll("trainers"),
+      categories: store.readAll("categories"),
       faqs: isEdit && course ? store.readAll("faqs").filter(f => f.scope === "course" && f.courseId === course.id).sort((a, b) => a.order - b.order) : [],
       examProduct: isEdit && course ? store.findOne("certification_exams", e => e.courseId === course.id) : null,
       materials: isEdit && course ? store.readAll("materials").filter(m => m.courseId === course.id) : [],
+      courseDiscounts: isEdit && course ? store.readAll("course_discounts").filter(d => d.courseId === course.id) : [],
       error: err.message === "Brochure must be a PDF file" ? err.message : `Brochure upload failed — please try a PDF under ${adminCfg.BROCHURE_MAX_FILE_SIZE_MB}MB.`,
     });
   });
@@ -443,6 +479,7 @@ router.get("/courses/:id/edit", auth.requireCourseAccess(r => r.params.id), (req
     faqs: store.readAll("faqs").filter(f => f.scope === "course" && f.courseId === course.id).sort((a, b) => a.order - b.order),
     examProduct: store.findOne("certification_exams", e => e.courseId === course.id),
     materials: store.readAll("materials").filter(m => m.courseId === course.id),
+    courseDiscounts: store.readAll("course_discounts").filter(d => d.courseId === course.id),
     ...getAlerts(req)
   });
 });
@@ -468,7 +505,87 @@ router.post("/courses/:id/toggle-published", auth.requireCourseAccess(r => r.par
 });
 
 // ==================== Course FAQs ====================
+// ==================== Coupon Codes ====================
+router.get("/coupons", (req, res) => {
+  const coupons = store.readAll("coupon_codes").sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+  const courses = store.readAll("courses");
+  const couponsWithCourseName = coupons.map((c) => ({
+    ...c,
+    courseName: c.courseId ? (courses.find((crs) => crs.id === c.courseId) || {}).title || "Unknown course" : "All courses",
+  }));
+  res.render("admin/coupons-list", {
+    title: "Coupon Codes — Baseline Skills",
+    coupons: couponsWithCourseName, courses,
+    ...getAlerts(req),
+  });
+});
+
+router.post("/coupons/new", auth.requireSuperAdmin, (req, res) => {
+  const { code, percent, courseId, startDate, endDate } = req.body;
+  if (!code || !code.trim()) return res.redirect("/admin/coupons?error=A+coupon+code+is+required");
+  const percentNum = Number(percent);
+  if (!Number.isFinite(percentNum) || percentNum <= 0 || percentNum > 100) {
+    return res.redirect("/admin/coupons?error=Coupon+percent+must+be+between+1+and+100");
+  }
+  if (startDate && endDate && startDate > endDate) {
+    return res.redirect("/admin/coupons?error=Coupon+start+date+must+be+before+its+end+date");
+  }
+  const normalizedCode = code.trim().toUpperCase();
+  const existing = store.findOne("coupon_codes", (c) => c.code.toUpperCase() === normalizedCode);
+  if (existing) return res.redirect("/admin/coupons?error=That+coupon+code+already+exists");
+  store.insert("coupon_codes", {
+    id: newId("coupon"), code: normalizedCode, percent: percentNum,
+    courseId: courseId || null,
+    startDate: startDate || null, endDate: endDate || null,
+    active: 1, createdAt: new Date().toISOString(),
+  });
+  res.redirect("/admin/coupons?success=Coupon+code+created");
+});
+
+router.post("/coupons/:id/toggle-active", auth.requireSuperAdmin, (req, res) => {
+  const coupon = store.findOne("coupon_codes", (c) => c.id === req.params.id);
+  if (!coupon) return res.status(404).send("Coupon not found");
+  store.update("coupon_codes", req.params.id, { active: coupon.active ? 0 : 1 });
+  res.redirect("/admin/coupons?success=Coupon+updated");
+});
+
+router.post("/coupons/:id/delete", auth.requireSuperAdmin, (req, res) => {
+  store.remove("coupon_codes", req.params.id);
+  res.redirect("/admin/coupons?success=Coupon+deleted");
+});
+
+// ==================== Course Discounts ====================
+router.post("/courses/:courseId/discounts/new", auth.requireCourseAccess(r => r.params.courseId), (req, res) => {
+  saveCarriedCourseFieldsIfPresent(req);
+  const { label, percent, startDate, endDate } = req.body;
+  const percentNum = Number(percent);
+  if (!Number.isFinite(percentNum) || percentNum <= 0 || percentNum > 100) {
+    return res.redirect(`/admin/courses/${req.params.courseId}/edit?error=Discount+percent+must+be+between+1+and+100`);
+  }
+  if (startDate && endDate && startDate > endDate) {
+    return res.redirect(`/admin/courses/${req.params.courseId}/edit?error=Discount+start+date+must+be+before+its+end+date`);
+  }
+  store.insert("course_discounts", {
+    id: newId("cdisc"), courseId: req.params.courseId,
+    label: label || "", percent: percentNum,
+    startDate: startDate || null, endDate: endDate || null,
+    createdAt: new Date().toISOString(),
+  });
+  res.redirect(`/admin/courses/${req.params.courseId}/edit?success=Discount+added`);
+});
+
+router.post("/course-discounts/:id/delete", (req, res, next) => {
+  const discount = store.findOne("course_discounts", d => d.id === req.params.id);
+  if (!discount || !discount.courseId) return res.status(404).send("Discount not found");
+  return auth.requireCourseAccess(() => discount.courseId)(req, res, next);
+}, (req, res) => {
+  const discount = store.findOne("course_discounts", d => d.id === req.params.id);
+  store.remove("course_discounts", req.params.id);
+  res.redirect(`/admin/courses/${discount.courseId}/edit?success=Discount+removed`);
+});
+
 router.post("/courses/:courseId/faqs/new", auth.requireCourseAccess(r => r.params.courseId), (req, res) => {
+  saveCarriedCourseFieldsIfPresent(req);
   const { question, answer } = req.body;
   if (!question || !answer) return res.redirect(`/admin/courses/${req.params.courseId}/edit`);
   const existingCount = store.readAll("faqs").filter(f => f.courseId === req.params.courseId).length;
@@ -515,6 +632,7 @@ router.post("/faqs/:id/move-down", requireFaqCourseAccess, moveFaq("down"));
 
 // ==================== Certification Exam Products ====================
 router.post("/courses/:courseId/certification-exams/new", auth.requireCourseAccess(r => r.params.courseId), (req, res) => {
+  saveCarriedCourseFieldsIfPresent(req);
   const { certificationName, certificationBody, price, examProvider, description, eligibility } = req.body;
   if (!certificationName || !certificationBody || !price) return res.redirect(`/admin/courses/${req.params.courseId}/edit`);
   const priceCents = Math.round(Number(price) * 100);
@@ -543,6 +661,7 @@ router.post("/certification-exams/:id/delete", (req, res, next) => {
 
 // ==================== Course Materials ====================
 router.post("/courses/:courseId/materials/new", auth.requireCourseAccess(r => r.params.courseId), materialUpload.single("file"), (req, res) => {
+  saveCarriedCourseFieldsIfPresent(req);
   if (!req.file) return res.redirect(`/admin/courses/${req.params.courseId}/edit?error=No+file+selected`);
   store.insert("materials", {
     id: newId("material"), courseId: req.params.courseId,

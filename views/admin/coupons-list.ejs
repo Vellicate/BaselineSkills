@@ -1,0 +1,56 @@
+<%- include('partials/head') %>
+
+<div style="margin-bottom:20px">
+  <h1 style="font-size:1.6rem;margin:0">Coupon Codes</h1>
+  <p style="color:var(--muted);font-size:.9rem;margin:4px 0 0">Create a code and optionally link it to one specific course — leave the course blank to make it valid sitewide. A coupon only applies if it's active and within its own start/end dates.</p>
+</div>
+
+<% if (typeof error !== 'undefined' && error) { %>
+  <div class="alert alert-error" style="margin-bottom:16px"><%= error %></div>
+<% } %>
+<% if (typeof success !== 'undefined' && success) { %>
+  <div class="alert alert-success" style="margin-bottom:16px"><%= success %></div>
+<% } %>
+
+<form method="POST" action="/admin/coupons/new" class="card" style="margin-bottom:24px;padding:20px">
+  <div class="form-row">
+    <div class="form-field"><label>Code</label><input type="text" name="code" placeholder="e.g. SUMMER2026" required></div>
+    <div class="form-field"><label>Percent off *</label><input type="number" name="percent" min="1" max="100" required></div>
+  </div>
+  <div class="form-row">
+    <div class="form-field">
+      <label>Course (optional — blank applies to all courses)</label>
+      <select name="courseId">
+        <option value="">All courses</option>
+        <% courses.forEach(c => { %><option value="<%= c.id %>"><%= c.title %></option><% }) %>
+      </select>
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-field"><label>Start date (blank = immediately)</label><input type="date" name="startDate"></div>
+    <div class="form-field"><label>End date (blank = never expires)</label><input type="date" name="endDate"></div>
+  </div>
+  <button type="submit" class="btn btn-gold">+ Create Coupon</button>
+</form>
+
+<table class="admin-table">
+  <thead><tr><th>Code</th><th>Discount</th><th>Course</th><th>Window</th><th>Status</th><th>Actions</th></tr></thead>
+  <tbody>
+    <% coupons.forEach(c => { %>
+    <tr>
+      <td><strong><%= c.code %></strong></td>
+      <td><%= c.percent %>%</td>
+      <td><%= c.courseName %></td>
+      <td style="font-size:.85rem;color:var(--muted)"><%= c.startDate || 'immediately' %> → <%= c.endDate || 'never' %></td>
+      <td><span style="color:<%= c.active ? 'green' : 'var(--muted)' %>"><%= c.active ? 'Active' : 'Disabled' %></span></td>
+      <td class="admin-actions">
+        <form method="POST" action="/admin/coupons/<%= c.id %>/toggle-active" style="display:inline"><button class="btn btn-outline btn-sm" type="submit"><%= c.active ? 'Disable' : 'Enable' %></button></form>
+        <form method="POST" action="/admin/coupons/<%= c.id %>/delete" style="display:inline" onsubmit="return confirm('Delete this coupon code?')"><button class="btn btn-outline btn-sm" type="submit" style="color:#b91c1c;border-color:#fecaca">Delete</button></form>
+      </td>
+    </tr>
+    <% }) %>
+    <% if (coupons.length===0) { %><tr><td colspan="6" style="color:var(--muted)">No coupon codes yet — create one above.</td></tr><% } %>
+  </tbody>
+</table>
+
+<%- include('partials/foot') %>

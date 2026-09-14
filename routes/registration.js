@@ -46,15 +46,18 @@ router.get("/courses/:slug/register", (req, res) => {
   // the link. Documented as a deliberate scope reduction, not an oversight.
   if (req.query.ref) req.session.refCode = req.query.ref;
   const sessionStartDate = req.query.session || (course.sessions[0] && course.sessions[0].startDate) || "";
+  const couponCode = req.query.coupon || "";
+  const couponValidation = couponCode ? discounts.validateCouponCode(couponCode, course.id, sessionStartDate) : null;
   const discountInfo = discounts.earlyBirdForSession(sessionStartDate);
   const examProduct = store.findOne("certification_exams", (e) => e.courseId === course.id);
-  const examDiscountPercent = discounts.effectiveDiscountPercent(course, sessionStartDate);
+  const examDiscountPercent = discounts.effectiveDiscountPercent(course, sessionStartDate, couponValidation && couponValidation.valid ? couponCode : null);
   const examFinalPriceCents = examProduct ? Math.round(examProduct.priceCents * (1 - examDiscountPercent / 100)) : null;
   res.render("register", {
     title: `Register — ${course.title}`, course,
-    finalPrice: discounts.finalPriceCentsForSession(course, sessionStartDate),
+    finalPrice: discounts.finalPriceCentsForSession(course, sessionStartDate, couponValidation && couponValidation.valid ? couponCode : null),
     discountInfo, selectedSessionStartDate: sessionStartDate,
     examProduct, examFinalPriceCents,
+    couponCode, couponValidation,
   });
 });
 
@@ -63,12 +66,26 @@ router.post("/courses/:slug/register", regRateLimiter, async (req, res) => {
   const course = store.findOne("courses", (c) => c.slug === req.params.slug && c.published);
   if (!course) return res.status(404).render("404", { title: "Course not found" });
 
-  const { name, email, phone, address, company, role, sessionStartDate, deliveryMode, notes, addExam } = req.body;
+  const { name, email, phone, address, company, role, sessionStartDate, deliveryMode, notes, addExam, couponCode } = req.body;
   const resolvedSessionStartDate = sessionStartDate || (course.sessions[0] && course.sessions[0].startDate) || "";
+  const couponValidation = couponCode ? discounts.validateCouponCode(couponCode, course.id, resolvedSessionStartDate) : null;
+  const validCoupon = couponValidation && couponValidation.valid ? couponCode : null;
+  if (couponCode && !validCoupon) {
+    const discountInfo = discounts.earlyBirdForSession(resolvedSessionStartDate);
+    const examProduct = store.findOne("certification_exams", (e) => e.courseId === course.id);
+    return res.status(400).render("register", {
+      title: `Register — ${course.title}`, course,
+      finalPrice: discounts.finalPriceCentsForSession(course, resolvedSessionStartDate),
+      discountInfo, selectedSessionStartDate: resolvedSessionStartDate,
+      examProduct, examFinalPriceCents: examProduct ? Math.round(examProduct.priceCents * (1 - discounts.effectiveDiscountPercent(course, resolvedSessionStartDate) / 100)) : null,
+      couponCode, couponValidation,
+      error: couponValidation.reason,
+    });
+  }
   const discountInfo = discounts.earlyBirdForSession(resolvedSessionStartDate);
-  const finalPrice = discounts.finalPriceCentsForSession(course, resolvedSessionStartDate);
+  const finalPrice = discounts.finalPriceCentsForSession(course, resolvedSessionStartDate, validCoupon);
   const examProduct = store.findOne("certification_exams", (e) => e.courseId === course.id);
-  const examDiscountPercent = discounts.effectiveDiscountPercent(course, resolvedSessionStartDate);
+  const examDiscountPercent = discounts.effectiveDiscountPercent(course, resolvedSessionStartDate, validCoupon);
   const examFinalPriceCents = examProduct ? Math.round(examProduct.priceCents * (1 - examDiscountPercent / 100)) : null;
   const examSelected = !!addExam && !!examProduct;
 

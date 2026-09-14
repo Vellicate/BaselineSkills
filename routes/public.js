@@ -113,8 +113,8 @@ function courseCardViewModel(course) {
     else availabilityLabel = "Available";
   }
 
-  const discountPercent = nextSession ? discounts.effectiveDiscountPercent(course, nextSession.startDate) : (course.discountPercent || 0);
-  const finalPriceCents = nextSession ? discounts.finalPriceCentsForSession(course, nextSession.startDate) : Math.round(course.priceCents * (1 - (course.discountPercent || 0) / 100));
+  const discountPercent = discounts.effectiveDiscountPercent(course, nextSession ? nextSession.startDate : null);
+  const finalPriceCents = discounts.finalPriceCentsForSession(course, nextSession ? nextSession.startDate : null);
 
   return {
     certifyingBodyLabel: certifyingBodyLabel(course),

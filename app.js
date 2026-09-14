@@ -114,6 +114,7 @@ app.use((req, res, next) => {
   res.locals.isAdmin = !!(req.session && req.session.adminId);
   res.locals.isLoggedInLearner = !!(req.session && req.session.learnerId);
   res.locals.currencySymbol = require("./lib/currency").currencySymbol;
+  res.locals.discounts = require("./lib/discounts");
   res.locals.trainingModeShort = require("./lib/training-mode").trainingModeShort;
   res.locals.trainingModeCategory = require("./lib/training-mode").trainingModeCategory;
   res.locals.trainingModeSymbol = (mode) => require("./lib/training-mode").SYMBOLS[require("./lib/training-mode").trainingModeCategory(mode)];
@@ -150,7 +151,12 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Baseline Skills running at http://localhost:${PORT}`);
-  console.log(`Admin panel: http://localhost:${PORT}/admin/login`);
+// Awaited before the server starts accepting requests, so nobody can hit
+// a certificate/badge download mid-regeneration — see the comment on
+// backfillCertificates() in lib/certificates.js for why this exists.
+require("./lib/certificates").backfillCertificates().finally(() => {
+  app.listen(PORT, () => {
+    console.log(`Baseline Skills running at http://localhost:${PORT}`);
+    console.log(`Admin panel: http://localhost:${PORT}/admin/login`);
+  });
 });

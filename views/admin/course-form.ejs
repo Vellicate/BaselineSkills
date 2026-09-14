@@ -6,7 +6,7 @@
   <div class="alert alert-error" style="margin-bottom:16px"><%= error %></div>
 <% } %>
 
-<form method="POST" action="<%= mode === 'new' ? '/admin/courses/new' : `/admin/courses/${course.id}/edit` %>" enctype="multipart/form-data" class="card" style="max-width:760px">
+<form method="POST" id="course-form" action="<%= mode === 'new' ? '/admin/courses/new' : `/admin/courses/${course.id}/edit` %>" enctype="multipart/form-data" class="card" style="max-width:760px">
   <div class="form-row">
     <div class="form-field"><label>Title *</label><input type="text" name="title" required value="<%= course ? course.title : '' %>"></div>
     <div class="form-field">
@@ -20,8 +20,13 @@
   </div>
 
   <div class="form-field">
-    <label>Additional categories (one per line, optional)</label>
-    <textarea name="additionalCategories" rows="2" placeholder="e.g. AI — for a course that's primarily Requirements Engineering but also belongs under AI"><%= course && course.additionalCategories ? course.additionalCategories.join('\n') : '' %></textarea>
+    <label>Additional categories (optional — hold Ctrl/Cmd to select multiple)</label>
+    <select name="additionalCategories" multiple size="5">
+      <% categories.forEach(cat => { %>
+        <option value="<%= cat.name %>" <%= course && course.additionalCategories && course.additionalCategories.includes(cat.name) ? 'selected' : '' %>><%= cat.name %></option>
+      <% }) %>
+    </select>
+    <p style="font-size:.8rem;color:var(--muted);margin-top:4px">For a course that's primarily one category but also belongs under another — e.g. AI4RE is primarily Requirements Engineering but also belongs under AI.</p>
   </div>
 
   <div class="form-field"><label>Short summary (shown on cards) *</label><input type="text" name="summary" required value="<%= course ? course.summary : '' %>"></div>
@@ -80,14 +85,14 @@
 
   <div class="form-field">
     <label>Delivery modes</label>
-    <% ["Live Online","Classroom","Corporate On-site","Private Cohort"].forEach(m => { %>
+    <% ["Live Online","Classroom","Corporate On-site","Private Cohort","Recorded","Hybrid"].forEach(m => { %>
       <div class="checkbox-row"><input type="checkbox" name="deliveryModes" value="<%= m %>" <%= course && course.deliveryModes && course.deliveryModes.includes(m) ? 'checked' : '' %>> <label style="margin:0;font-weight:400"><%= m %></label></div>
     <% }) %>
   </div>
 
   <div class="form-row">
     <div class="form-field"><label>Price (USD, before discount) *</label><input type="number" step="0.01" name="price" required value="<%= course ? (course.priceCents/100).toFixed(2) : '' %>"></div>
-    <div class="form-field"><label>Discount (%)</label><input type="number" name="discountPercent" min="0" max="100" value="<%= course ? (course.discountPercent||0) : 0 %>"></div>
+
   </div>
 
   <div class="checkbox-row" style="margin-bottom:14px"><input type="checkbox" name="certification" <%= course && course.certification ? 'checked' : '' %>> <label style="margin:0;font-weight:400">Leads to a certification</label></div>
@@ -131,10 +136,91 @@
       </div>
     </div>
   <% }) %>
-  <form method="POST" action="/admin/courses/<%= course.id %>/faqs/new" style="margin-top:16px">
+  <form method="POST" action="/admin/courses/<%= course.id %>/faqs/new" style="margin-top:16px" onsubmit="carryCourseFieldsInto(this)">
     <div class="form-field"><label>Question</label><input type="text" name="question" required></div>
     <div class="form-field"><label>Answer</label><textarea name="answer" rows="2" required></textarea></div>
     <button type="submit" class="btn btn-navy">Add FAQ</button>
+  </form>
+</div>
+<% } %>
+
+<script>
+// The course-details form above and the FAQ/exam/material forms below it
+// are separate <form> elements (HTML can't nest one form inside another),
+// so submitting one never sent the other's fields — meaning any course
+// detail edits typed in but not saved via "Save course" looked like they'd
+// been silently reverted the moment "Add FAQ" (or Add Exam Product /
+// Upload Material) was clicked, when really they were just never
+// submitted at all. This copies the course form's current field values
+// into the secondary form as hidden inputs right before it submits, so
+// whichever button is clicked, any pending course edits travel with it.
+// File inputs are skipped — a brochure upload only makes sense via
+// "Save course" itself, and courseFromForm() already preserves the
+// existing brochure when no new file is submitted.
+function carryCourseFieldsInto(targetForm) {
+  const courseForm = document.getElementById('course-form');
+  if (!courseForm) return;
+  Array.from(courseForm.elements).forEach((el) => {
+    if (!el.name || el.type === 'file' || el.type === 'submit' || el.type === 'button') return;
+    if (el.type === 'checkbox' && !el.checked) return;
+    // A <select multiple> (like Additional Categories) only exposes its
+    // FIRST selected value via .value — copying just that would silently
+    // drop every other selection. Its real set of selected values lives
+    // in .selectedOptions instead.
+    if (el.tagName === 'SELECT' && el.multiple) {
+      Array.from(el.selectedOptions).forEach((opt) => {
+        const hidden = document.createElement('input');
+        hidden.type = 'hidden';
+        hidden.name = 'course_' + el.name;
+        hidden.value = opt.value;
+        targetForm.appendChild(hidden);
+      });
+      return;
+    }
+    const hidden = document.createElement('input');
+    hidden.type = 'hidden';
+    // Prefixed, not the field's own name — the target form (FAQ / exam
+    // product / materials) has its own fields that can share a name with
+    // a course field (both have "title" and "description", for example).
+    // An earlier version of this copied fields under their original
+    // names and a real test caught it: a material's own title was
+    // silently overwritten by the course's title. The prefix guarantees
+    // these can never collide with the target form's own inputs.
+    hidden.name = 'course_' + el.name;
+    hidden.value = el.value;
+    targetForm.appendChild(hidden);
+  });
+}
+</script>
+
+<% if (course && course.id) { %>
+<div class="card" style="margin-top:32px">
+  <h3>Discounts for this course</h3>
+  <p style="color:var(--muted);font-size:.85rem">Multiple discounts can be active at once — the highest one that's currently applicable is what learners see. A blank start date means "applicable immediately"; a blank end date means "doesn't expire until the session itself starts."</p>
+  <% (courseDiscounts || []).forEach(d => { %>
+    <% const applicableNow = discounts.isDiscountApplicable(d, null); %>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)">
+      <div>
+        <strong><%= d.label || 'Discount' %></strong> — <%= d.percent %>%
+        <span style="color:var(--muted);font-size:.85rem;margin-left:8px">
+          <%= d.startDate || 'immediately' %> → <%= d.endDate || 'until session start' %>
+        </span>
+        <span style="font-size:.8rem;color:<%= applicableNow ? 'green' : 'var(--muted)' %>;margin-left:8px"><%= applicableNow ? 'Currently active' : 'Not currently active' %></span>
+      </div>
+      <form method="POST" action="/admin/course-discounts/<%= d.id %>/delete" onsubmit="return confirm('Delete this discount?')"><button type="submit" class="btn btn-outline btn-sm">Delete</button></form>
+    </div>
+  <% }) %>
+  <% if (!(courseDiscounts || []).length) { %><p style="color:var(--muted);font-size:.9rem">No discounts yet.</p><% } %>
+  <form method="POST" action="/admin/courses/<%= course.id %>/discounts/new" style="margin-top:16px" onsubmit="carryCourseFieldsInto(this)">
+    <div class="form-row">
+      <div class="form-field"><label>Label</label><input type="text" name="label" placeholder="e.g. Summer Sale"></div>
+      <div class="form-field"><label>Percent *</label><input type="number" name="percent" min="0" max="100" required></div>
+    </div>
+    <div class="form-row">
+      <div class="form-field"><label>Start date (blank = immediately)</label><input type="date" name="startDate"></div>
+      <div class="form-field"><label>End date (blank = until session start)</label><input type="date" name="endDate"></div>
+    </div>
+    <button type="submit" class="btn btn-navy">Add Discount</button>
   </form>
 </div>
 <% } %>
@@ -147,13 +233,13 @@
     <p style="color:var(--muted);font-size:.9rem"><%= examProduct.description %></p>
     <form method="POST" action="/admin/certification-exams/<%= examProduct.id %>/delete" onsubmit="return confirm('Remove this exam product?')"><button type="submit" class="btn btn-outline btn-sm">Remove</button></form>
   <% } else { %>
-  <form method="POST" action="/admin/courses/<%= course.id %>/certification-exams/new">
+  <form method="POST" action="/admin/courses/<%= course.id %>/certification-exams/new" onsubmit="carryCourseFieldsInto(this)">
     <div class="form-row">
       <div class="form-field"><label>Certification name</label><input type="text" name="certificationName" required placeholder="e.g. CPRE Foundation Level"></div>
       <div class="form-field"><label>Certification body</label><input type="text" name="certificationBody" required placeholder="e.g. IREB"></div>
     </div>
     <div class="form-row">
-      <div class="form-field"><label>Exam price ($)</label><input type="number" step="0.01" name="price" required></div>
+      <div class="form-field"><label>Exam price (€)</label><input type="number" step="0.01" name="price" required></div>
       <div class="form-field"><label>Exam provider</label><input type="text" name="examProvider" placeholder="e.g. iSQI"></div>
     </div>
     <div class="form-field"><label>Description</label><textarea name="description" rows="2"></textarea></div>
@@ -173,7 +259,7 @@
       <form method="POST" action="/admin/materials/<%= m.id %>/delete" onsubmit="return confirm('Delete this material?')"><button type="submit" class="btn btn-outline btn-sm">Delete</button></form>
     </div>
   <% }) %>
-  <form method="POST" action="/admin/courses/<%= course.id %>/materials/new" enctype="multipart/form-data" style="margin-top:16px">
+  <form method="POST" action="/admin/courses/<%= course.id %>/materials/new" enctype="multipart/form-data" style="margin-top:16px" onsubmit="carryCourseFieldsInto(this)">
     <div class="form-field"><label>Title</label><input type="text" name="title" required></div>
     <div class="form-field"><label>Description</label><input type="text" name="description"></div>
     <div class="form-field"><label>File</label><input type="file" name="file" required></div>

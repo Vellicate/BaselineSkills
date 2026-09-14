@@ -42,6 +42,18 @@
         </div>
         <div class="form-field"><label>Notes (optional)</label><textarea name="notes" rows="3"></textarea></div>
 
+        <div class="form-field">
+          <label>Coupon code (optional)</label>
+          <input type="text" name="couponCode" value="<%= typeof couponCode !== 'undefined' ? couponCode : '' %>" placeholder="e.g. SUMMER2026">
+          <% if (typeof couponValidation !== 'undefined' && couponValidation) { %>
+            <% if (couponValidation.valid) { %>
+              <p style="color:#16847B;font-size:.85rem;margin-top:4px">Coupon applied — <%= couponValidation.percent %>% off.</p>
+            <% } else { %>
+              <p style="color:#b91c1c;font-size:.85rem;margin-top:4px"><%= couponValidation.reason %></p>
+            <% } %>
+          <% } %>
+        </div>
+
         <% if (examProduct) { %>
         <div class="form-field" style="border:1px solid var(--line);border-radius:8px;padding:14px;margin-top:10px">
           <label style="display:flex;align-items:start;gap:10px;cursor:pointer">
