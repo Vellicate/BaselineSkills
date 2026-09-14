@@ -223,7 +223,17 @@ router.get("/", (req, res) => {
     industries: store.getSetting("stat_industries_served", "10+"),
   };
 
-  res.render("home", { title: "Baseline Skills — Build Skills. Establish Excellence.", metaDescription: "Accredited IREB CPRE, IIBA business analysis, and systems engineering training and certification. Live online and corporate cohorts, taught by practitioners.", byCategory, upcoming, featuredCourse, featuredPricing, siteStats });
+  // Same search bar as /courses, replicated just above the cohorts
+  // section — it submits straight to /courses (GET, no JS) rather than
+  // duplicating that page's filtering logic here, so the two can never
+  // drift out of sync with each other.
+  const searchLevels = ["All", "Beginner", "Intermediate", "Expert"];
+  const searchFormats = ["All", "Live Online", "Classroom", "Recorded", "Hybrid"];
+  const searchAllBodies = store.readAll("standards_bodies");
+  const searchCertBodies = ["All", ...searchAllBodies.map((b) => ({ slug: b.slug, name: b.name }))]
+    .filter((v, i, arr) => v === "All" || arr.findIndex((x) => x.slug === v.slug) === i);
+
+  res.render("home", { title: "Baseline Skills — Build Skills. Establish Excellence.", metaDescription: "Accredited IREB CPRE, IIBA business analysis, and systems engineering training and certification. Live online and corporate cohorts, taught by practitioners.", byCategory, upcoming, featuredCourse, featuredPricing, siteStats, searchLevels, searchFormats, searchCertBodies });
 });
 
 router.get("/courses", (req, res) => {

@@ -180,6 +180,43 @@
 </section>
 
 <!-- Upcoming Programs & Live Batches Section -->
+<section class="section" style="padding-top:0;padding-bottom:0">
+  <div class="container">
+    <form method="GET" action="/courses" class="card course-filter-bar" style="margin-bottom:32px;padding:20px">
+      <div class="form-field filter-field-search">
+        <label>Search</label>
+        <input type="text" name="q" placeholder="Search by course name...">
+      </div>
+      <div class="form-field filter-field-select">
+        <label>Level</label>
+        <select name="level">
+          <% searchLevels.forEach(l => { %><option value="<%= l %>"><%= l %></option><% }) %>
+        </select>
+      </div>
+      <div class="form-field filter-field-select">
+        <label>Format</label>
+        <select name="format">
+          <% searchFormats.forEach(f => { %><option value="<%= f %>"><%= f %></option><% }) %>
+        </select>
+      </div>
+      <div class="form-field filter-field-select">
+        <label>Certification Body</label>
+        <select name="certBody">
+          <% searchCertBodies.forEach(b => { %>
+            <% const val = b === 'All' ? 'All' : b.slug; const label = b === 'All' ? 'All' : b.name; %>
+            <option value="<%= val %>"><%= label %></option>
+          <% }) %>
+        </select>
+      </div>
+      <div class="form-field filter-field-price">
+        <label>Max price (€)</label>
+        <input type="number" name="maxPrice" placeholder="Any">
+      </div>
+      <button type="submit" class="btn btn-navy">Search Courses</button>
+    </form>
+  </div>
+</section>
+
 <section class="section batches-table-section" id="upcoming-batches">
   <div class="container">
     <div class="section-hdr">
