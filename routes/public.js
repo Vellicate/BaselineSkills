@@ -98,9 +98,15 @@ function certifyingBodyLabel(course) {
 function courseCardViewModel(course) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const nextSession = (course.sessions || [])
+  // An unpublished course always shows "No Schedule" — regardless of what
+  // session data actually exists underneath — since it isn't open for
+  // enrollment yet. Forcing nextSession to null here means every template
+  // that uses this view-model (course cards, the homepage cohorts table,
+  // the detail page) gets this behavior automatically and consistently,
+  // rather than each one needing its own published check.
+  const nextSession = course.published ? ((course.sessions || [])
     .filter((s) => s.startDate !== "On Demand" && new Date(s.startDate) >= today)
-    .sort((a, b) => new Date(a.startDate) - new Date(b.startDate))[0] || null;
+    .sort((a, b) => new Date(a.startDate) - new Date(b.startDate))[0] || null) : null;
 
   const reviews = store.readAll("reviews").filter((r) => r.courseId === course.id);
   const avgRating = reviews.length ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length : null;
@@ -142,7 +148,7 @@ router.get("/sitemap.xml", (req, res) => {
   const base = "https://baselineskills.com";
   const today = new Date().toISOString().slice(0, 10);
   const staticPages = ["/", "/courses", "/about", "/contact", "/corporate-training", "/resources", "/blog", "/become-a-trainer", "/become-an-affiliate"].map((path) => ({ path, lastmod: today }));
-  const courses = publishedCourses().map((c) => ({ path: `/courses/${c.slug}`, lastmod: (c.updatedAt || c.createdAt || today).slice(0, 10) }));
+  const courses = store.readAll("courses").map((c) => ({ path: `/courses/${c.slug}`, lastmod: (c.updatedAt || c.createdAt || today).slice(0, 10) }));
   const blogs = store.readAll("blogs").filter((b) => b.published).map((b) => ({ path: `/blog/${b.slug}`, lastmod: (b.updatedAt || b.createdAt || today).slice(0, 10) }));
   const resources = store.readAll("resources").filter((r) => r.body).map((r) => ({ path: `/resources/${r.slug}`, lastmod: (r.updatedAt || r.createdAt || today).slice(0, 10) }));
   const certifications = store.readAll("standards_bodies").map((b) => ({ path: `/certifications/${b.slug}`, lastmod: today }));
@@ -158,20 +164,35 @@ router.get("/sitemap.xml", (req, res) => {
 });
 
 router.get("/", (req, res) => {
-  const courses = publishedCourses();
+  const courses = store.readAll("courses");
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+  // One row per published course, not a global top-4 list of sessions —
+  // the previous version flattened every session across every course,
+  // sorted by date, and sliced to 4, which meant a course with several
+  // near-term sessions could crowd out courses that had none in the top
+  // slots at all. Reuses courseCardViewModel — the same view-model
+  // /courses builds each card from — so this table's pricing, discount,
+  // and "next session" logic can never drift out of sync with that page.
+  // Cohorts table only — filtered to published courses specifically,
+  // unlike byCategory below which intentionally includes unpublished ones.
+  // The unfiltered `courses` variable itself is left alone since it feeds
+  // byCategory too.
   const upcoming = courses
-    .flatMap((c) => (c.sessions || []).map((s) => ({ ...s, course: c })))
-    .filter((s) => s.startDate !== "On Demand" && new Date(s.startDate) >= today)
-    .sort((a, b) => new Date(a.startDate) - new Date(b.startDate))
-    .slice(0, 4);
+    .filter((c) => c.published)
+    .map((c) => ({ course: c, cardData: courseCardViewModel(c) }))
+    .sort((a, b) => {
+      if (a.cardData.nextSession && b.cardData.nextSession) return new Date(a.cardData.nextSession.startDate) - new Date(b.cardData.nextSession.startDate);
+      if (a.cardData.nextSession) return -1; // courses with a real upcoming session sort before ones without
+      if (b.cardData.nextSession) return 1;
+      return 0;
+    });
 
   const categories = store.readAll("categories").map((c) => c.name);
   const byCategory = {};
   categories.forEach((cat) => {
     byCategory[cat] = courses.filter((c) => allCategoriesForCourse(c).includes(cat)).slice(0, 5)
-      .map((c) => ({ ...c, certifyingBodyLabel: certifyingBodyLabel(c) }));
+      .map((c) => ({ ...c, certifyingBodyLabel: certifyingBodyLabel(c), cardData: courseCardViewModel(c) }));
   });
 
   // The homepage's featured-course card used to be entirely hardcoded static
@@ -206,7 +227,7 @@ router.get("/", (req, res) => {
 });
 
 router.get("/courses", (req, res) => {
-  const courses = publishedCourses();
+  const courses = store.readAll("courses");
   const category = req.query.category || "All";
   const level = req.query.level || "All";
   const format = req.query.format || "All";
@@ -268,7 +289,7 @@ router.get("/trainers/:id", (req, res) => {
 });
 
 router.get("/courses/:slug", (req, res) => {
-  const course = store.findOne("courses", (c) => c.slug === req.params.slug && c.published);
+  const course = store.findOne("courses", (c) => c.slug === req.params.slug);
   if (!course) return res.status(404).render("404", { title: "Course not found" });
   if (req.query.ref) req.session.refCode = req.query.ref;
 
@@ -312,7 +333,7 @@ router.get("/courses/:slug", (req, res) => {
 // capture the requester's email as a lead — the file itself lives at an
 // unguessable URL (see lib/brochures.js), not behind real access control.
 router.post("/courses/:slug/brochure", brochureRateLimiter, async (req, res) => {
-  const course = store.findOne("courses", (c) => c.slug === req.params.slug && c.published);
+  const course = store.findOne("courses", (c) => c.slug === req.params.slug);
   if (!course) return res.status(404).json({ error: "Course not found" });
   const { email } = req.body;
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -342,6 +363,46 @@ router.post("/courses/:slug/brochure", brochureRateLimiter, async (req, res) => 
     company: "", teamSize: "", role: "", courseInterest: course.title, deliveryMode: "",
     message: `Requested the brochure for "${course.title}".`,
     createdAt: new Date().toISOString(),
+  });
+
+  res.json({ ok: true });
+});
+
+// Captures interest in a course that isn't published yet — the
+// "I am interested" flow that replaces registration entirely while a
+// course has no confirmed price or schedule. Reuses the same inquiries
+// table and rate limiter as the brochure request above, just a distinct
+// type value, so it shows up in the existing admin Inquiries view
+// without a new page.
+router.post("/courses/:slug/interest", brochureRateLimiter, async (req, res) => {
+  const course = store.findOne("courses", (c) => c.slug === req.params.slug);
+  if (!course) return res.status(404).json({ error: "Course not found" });
+  const { name, email, phone, company, teamSize, deliveryMode, message } = req.body;
+  if (!name || !name.trim()) return res.status(400).json({ error: "Name is required." });
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return res.status(400).json({ error: "A valid email address is required." });
+  }
+
+  store.insert("inquiries", {
+    id: newId("inq"),
+    type: "course-interest",
+    name: name.trim(), email,
+    phone: (phone || "").trim(), company: (company || "").trim(),
+    teamSize: (teamSize || "").trim(), role: "",
+    courseInterest: course.title, deliveryMode: deliveryMode || "",
+    message: (message || "").trim(),
+    createdAt: new Date().toISOString(),
+  });
+
+  await sendMail({
+    to: process.env.ADMIN_EMAIL || "admin@baselineskills.example",
+    subject: `New interest in an unpublished course — ${course.title.replace(/[\r\n]/g, "")}`,
+    html: `<p><strong>${escapeHtml(name)}</strong> (${escapeHtml(email)}) is interested in <strong>${escapeHtml(course.title)}</strong>, which isn't published yet.</p>
+           <p>Phone: ${escapeHtml(phone) || "not provided"}</p>
+           <p>Company: ${escapeHtml(company) || "not provided"}</p>
+           <p>Team size: ${escapeHtml(teamSize) || "not provided"}</p>
+           <p>Preferred delivery mode: ${escapeHtml(deliveryMode) || "no preference"}</p>
+           <p>Message: ${escapeHtml(message) || "none"}</p>`,
   });
 
   res.json({ ok: true });

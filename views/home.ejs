@@ -134,20 +134,23 @@
               <h4 class="mini-course-title"><%= c.title %></h4>
               <p class="mini-course-summary"><%= c.summary %></p>
 
-              <% const cardMode = (c.sessions && c.sessions.length) ? c.sessions[0].mode : 'Live Online'; %>
+              <% const cardMode = c.cardData.nextSession ? c.cardData.nextSession.mode : ((c.sessions && c.sessions.length) ? c.sessions[0].mode : 'Live Online'); %>
               <p style="font-size:.78rem;color:var(--muted);margin:-4px 0 10px" aria-label="Training mode: <%= trainingModeCategory(cardMode) %>">
                 <span aria-hidden="true"><%= trainingModeSymbol(cardMode) %></span>
                 <strong><%= trainingModeCategory(cardMode) %>:</strong> <%= trainingModeShort(cardMode) %>
               </p>
 
+              <% if (!c.published) { %>
+                <p style="font-size:.8rem;color:var(--muted);margin:6px 0">No Schedule</p>
+              <% } else { %>
               <div class="mini-price-row">
                 <div class="price-val-wrap">
-                  <% if(c.discountPercent){ %>
-                    <span class="price-was" style="text-decoration:line-through;opacity:.55;font-size:.8em;margin-right:4px"><%= currencySymbol(c.currency) %><%= (c.priceCents/100).toFixed(0) %></span>
+                  <% if(c.cardData.pricing.discountPercent > 0){ %>
+                    <span class="price-was" style="text-decoration:line-through;opacity:.55;font-size:.8em;margin-right:4px"><%= currencySymbol(c.currency) %><%= (c.cardData.pricing.originalPriceCents/100).toFixed(0) %></span>
                   <% } %>
-                  <span class="price-current"><%= currencySymbol(c.currency) %><%= ((c.priceCents*(1-(c.discountPercent||0)/100))/100).toFixed(0) %></span>
-                  <% if(c.discountPercent){ %>
-                    <span class="price-discount-pill"><%= c.discountPercent %>% OFF</span>
+                  <span class="price-current"><%= currencySymbol(c.currency) %><%= (c.cardData.pricing.finalPriceCents/100).toFixed(0) %></span>
+                  <% if(c.cardData.pricing.discountPercent > 0){ %>
+                    <span class="price-discount-pill"><%= c.cardData.pricing.discountPercent %>% OFF</span>
                   <% } %>
                 </div>
                 <div class="seats-status-pill">
@@ -155,6 +158,7 @@
                   <span>Seats Available</span>
                 </div>
               </div>
+              <% } %>
 
               <!-- Interactive Links & Batches Elements -->
               <div class="course-mini-ctas">
@@ -202,39 +206,48 @@
             </tr>
           </thead>
           <tbody>
-            <% upcoming.forEach(s => { %>
+            <% upcoming.forEach(u => { %>
+            <% const s = u.cardData.nextSession; %>
             <tr>
               <td>
                 <div class="table-course-info">
-                  <strong><%= s.course.title %></strong>
-                  <span class="table-cat-sub"><%= s.course.category %></span>
+                  <strong><%= u.course.title %></strong>
+                  <span class="table-cat-sub"><%= u.course.category %></span>
                 </div>
               </td>
-              <td><span class="pill pill-mode"><%= trainingModeCategory(s.mode) %></span></td>
+              <td><% if (s) { %><span class="pill pill-mode"><%= trainingModeCategory(s.mode) %></span><% } else { %>—<% } %></td>
               <td>
                 <div class="table-date-cell">
-                  <span class="date-icon">📅</span>
-                  <span><%= s.startDate %></span>
+                  <% if (s) { %>
+                    <span class="date-icon">📅</span>
+                    <span><%= s.startDate %></span>
+                  <% } else { %>
+                    <span style="color:var(--muted)">No Schedule</span>
+                  <% } %>
                 </div>
               </td>
-              <td><strong><%= s.course.durationDays %> Day<%= s.course.durationDays>1?'s':'' %></strong></td>
-              <td><%= s.language || 'English' %></td>
+              <td><strong><%= u.course.durationDays %> Day<%= u.course.durationDays>1?'s':'' %></strong></td>
+              <td><%= (s && s.language) || 'English' %></td>
               <td>
-                <% const hasDiscount = (s.course.discountPercent || 0) > 0; %>
-                <% const finalP = (s.course.priceCents*(1-(s.course.discountPercent||0)/100))/100; %>
-                <% if (hasDiscount) { %>
-                  <div class="price-was" style="text-decoration:line-through;opacity:.6;font-size:.85em"><%= currencySymbol(s.course.currency) %><%= (s.course.priceCents/100).toFixed(0) %></div>
-                  <div class="price-now" style="font-weight:700"><%= currencySymbol(s.course.currency) %><%= finalP.toFixed(0) %></div>
-                  <div style="font-size:.75rem;color:#16847B;font-weight:600"><%= s.course.discountPercent %>% OFF</div>
+                <% if (!u.course.published) { %>
+                  <span style="color:var(--muted);font-size:.85rem">—</span>
+                <% } else if (u.cardData.pricing.discountPercent > 0) { %>
+                  <div class="price-was" style="text-decoration:line-through;opacity:.6;font-size:.85em"><%= currencySymbol(u.course.currency) %><%= (u.cardData.pricing.originalPriceCents/100).toFixed(0) %></div>
+                  <div class="price-now" style="font-weight:700"><%= currencySymbol(u.course.currency) %><%= (u.cardData.pricing.finalPriceCents/100).toFixed(0) %></div>
+                  <div style="font-size:.75rem;color:#16847B;font-weight:600"><%= u.cardData.pricing.discountPercent %>% OFF</div>
                 <% } else { %>
                   <div style="font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Published Price</div>
-                  <div style="font-weight:700"><%= currencySymbol(s.course.currency) %><%= finalP.toFixed(0) %></div>
+                  <div style="font-weight:700"><%= currencySymbol(u.course.currency) %><%= (u.cardData.pricing.finalPriceCents/100).toFixed(0) %></div>
                 <% } %>
               </td>
               <td>
                 <div class="table-action-btns">
-                  <a href="/courses/<%= s.course.slug %>/register" class="btn btn-navy btn-sm">Register</a>
-                  <a href="/courses/<%= s.course.slug %>" class="btn btn-outline btn-sm">Details</a>
+                  <% if (u.course.published) { %>
+                    <a href="/courses/<%= u.course.slug %>/register" class="btn btn-navy btn-sm">Register</a>
+                  <% } else { %>
+                    <a href="/courses/<%= u.course.slug %>#sessions" class="btn btn-navy btn-sm">I am interested</a>
+                  <% } %>
+                  <a href="/courses/<%= u.course.slug %>" class="btn btn-outline btn-sm">Details</a>
                 </div>
               </td>
             </tr>
