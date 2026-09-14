@@ -349,25 +349,40 @@ function saveCarriedCourseFieldsIfPresent(req) {
 // punctuation ("Foo" vs "Foo!!!") slugify to the same value, and the
 // second course's insert threw an uncaught SQLite UNIQUE constraint
 // error with no validation catching it first.
-function validateCourseFields(body, existingCourseId) {
+function validateCourseFields(body, existingCourseId, existing) {
   const limits = discounts.loadConfig().courseFieldLimits;
   const errors = [];
 
   const checkRequired = (field, label, value) => {
     if (!value || !value.trim()) errors.push({ field, message: `${label} is required.` });
   };
-  const checkMaxLength = (field, label, value, max) => {
+  // Skips the length check entirely when the submitted value is identical
+  // to what's already stored — these limits were introduced after courses
+  // already existed, so an existing field longer than today's limit must
+  // remain saveable as long as it isn't the thing being changed. existingValue
+  // is the field reconstructed the same way the form textarea populates it
+  // (array fields joined with "\n"), so the comparison is apples-to-apples.
+  const checkMaxLength = (field, label, value, max, existingValue) => {
+    if (existingValue !== undefined && (value || "").trim() === (existingValue || "").trim()) return;
     const len = (value || "").length;
     if (len > max) errors.push({ field, message: `${label} is ${len} characters — the maximum is ${max}.` });
   };
 
   checkRequired("title", "Title", body.title);
-  checkMaxLength("title", "Title", body.title, limits.TITLE_MAX);
+  checkMaxLength("title", "Title", body.title, limits.TITLE_MAX, existing && existing.title);
 
+  // A category (or trainer, below) can be renamed or deleted by an admin
+  // after courses already reference it. If that value is left completely
+  // unchanged on this submission, rejecting it here would make the course
+  // permanently un-editable for ANY future change, not just this field —
+  // a real trap, not just a validation nicety. Only a submission that
+  // actually changes this field to something new gets validated against
+  // the current list; leaving it as-is always passes.
   const validCategories = store.readAll("categories").map((c) => c.name);
+  const categoryUnchanged = existing && body.category === existing.category;
   if (!body.category || !body.category.trim()) {
     errors.push({ field: "category", message: "Category is required." });
-  } else if (!validCategories.includes(body.category)) {
+  } else if (!categoryUnchanged && !validCategories.includes(body.category)) {
     errors.push({ field: "category", message: `"${body.category}" isn't a recognized category.` });
   }
 
@@ -376,19 +391,19 @@ function validateCourseFields(body, existingCourseId) {
   }
 
   checkRequired("summary", "Summary", body.summary);
-  checkMaxLength("summary", "Summary", body.summary, limits.SUMMARY_MAX);
+  checkMaxLength("summary", "Summary", body.summary, limits.SUMMARY_MAX, existing && existing.summary);
 
   checkRequired("description", "Description", body.description);
-  checkMaxLength("description", "Description", body.description, limits.DESCRIPTION_MAX);
+  checkMaxLength("description", "Description", body.description, limits.DESCRIPTION_MAX, existing && existing.description);
 
-  checkMaxLength("outcomes", "Learning outcomes", body.outcomes, limits.OUTCOMES_MAX);
-  checkMaxLength("audience", "Audience", body.audience, limits.AUDIENCE_MAX);
-  checkMaxLength("prerequisites", "Prerequisites", body.prerequisites, limits.PREREQUISITES_MAX);
-  checkMaxLength("whatYoullReceive", "What you'll receive", body.whatYoullReceive, limits.WHAT_YOULL_RECEIVE_MAX);
-  checkMaxLength("curriculumRaw", "Curriculum", body.curriculumRaw, limits.CURRICULUM_MAX);
-  checkMaxLength("formatAndMaterial", "Format & material", body.formatAndMaterial, limits.FORMAT_AND_MATERIAL_MAX);
-  checkMaxLength("practicalApplication", "How you'll use this at work", body.practicalApplication, limits.PRACTICAL_APPLICATION_MAX);
-  checkMaxLength("whyTakeThisCourse", "Why take this course", body.whyTakeThisCourse, limits.WHY_TAKE_THIS_COURSE_MAX);
+  checkMaxLength("outcomes", "Learning outcomes", body.outcomes, limits.OUTCOMES_MAX, existing && (existing.outcomes || []).join("\n"));
+  checkMaxLength("audience", "Audience", body.audience, limits.AUDIENCE_MAX, existing && (existing.audience || []).join("\n"));
+  checkMaxLength("prerequisites", "Prerequisites", body.prerequisites, limits.PREREQUISITES_MAX, existing && (existing.prerequisites || []).join("\n"));
+  checkMaxLength("whatYoullReceive", "What you'll receive", body.whatYoullReceive, limits.WHAT_YOULL_RECEIVE_MAX, existing && (existing.whatYoullReceive || []).join("\n"));
+  checkMaxLength("curriculumRaw", "Curriculum", body.curriculumRaw, limits.CURRICULUM_MAX, existing && (existing.curriculum || []).map((m) => `${m.module}: ${m.topics.join(", ")}`).join("\n"));
+  checkMaxLength("formatAndMaterial", "Format & material", body.formatAndMaterial, limits.FORMAT_AND_MATERIAL_MAX, existing && existing.formatAndMaterial);
+  checkMaxLength("practicalApplication", "How you'll use this at work", body.practicalApplication, limits.PRACTICAL_APPLICATION_MAX, existing && existing.practicalApplication);
+  checkMaxLength("whyTakeThisCourse", "Why take this course", body.whyTakeThisCourse, limits.WHY_TAKE_THIS_COURSE_MAX, existing && existing.whyTakeThisCourse);
 
   const durationNum = Number(body.durationDays);
   if (!body.durationDays || !Number.isFinite(durationNum) || durationNum <= 0 || !Number.isInteger(durationNum)) {
@@ -401,13 +416,16 @@ function validateCourseFields(body, existingCourseId) {
   }
 
   if (body.courseOutlineUrl && body.courseOutlineUrl.trim()) {
-    checkMaxLength("courseOutlineUrl", "Course outline URL", body.courseOutlineUrl, limits.COURSE_OUTLINE_URL_MAX);
+    checkMaxLength("courseOutlineUrl", "Course outline URL", body.courseOutlineUrl, limits.COURSE_OUTLINE_URL_MAX, existing && existing.courseOutlineUrl);
     if (!/^https?:\/\/.+/i.test(body.courseOutlineUrl.trim())) {
       errors.push({ field: "courseOutlineUrl", message: "Course outline URL must start with http:// or https://." });
     }
   }
 
-  if (body.trainerId && body.trainerId.trim()) {
+  // Same reasoning as category above — an unchanged trainer selection
+  // always passes, even if that trainer has since been removed.
+  const trainerUnchanged = existing && (body.trainerId || "") === (existing.trainerId || "");
+  if (!trainerUnchanged && body.trainerId && body.trainerId.trim()) {
     const trainerExists = store.findOne("trainers", (t) => t.id === body.trainerId);
     if (!trainerExists) errors.push({ field: "trainerId", message: "Selected trainer doesn't exist." });
   }
@@ -418,16 +436,27 @@ function validateCourseFields(body, existingCourseId) {
   // same shape it will actually be building sessions from.
   const sessionStarts = Array.isArray(body.sessionStartDate) ? body.sessionStartDate : (body.sessionStartDate ? [body.sessionStartDate] : []);
   const sessionSeatsRaw = Array.isArray(body.sessionSeats) ? body.sessionSeats : (body.sessionSeats ? [body.sessionSeats] : []);
-  sessionStarts.forEach((s, i) => {
-    if (!s || !s.trim()) return; // an empty "add a new session" row is fine, it's filtered out later
-    if (s.trim().toLowerCase() !== "on demand" && !/^\d{4}-\d{2}-\d{2}$/.test(s.trim())) {
-      errors.push({ field: "sessionStartDate", message: `Session ${i + 1} start date must be YYYY-MM-DD or "On Demand" — got "${s}".` });
-    }
-    const seats = sessionSeatsRaw[i];
-    if (seats && seats.trim() && (!Number.isFinite(Number(seats)) || Number(seats) < 0)) {
-      errors.push({ field: "sessionSeats", message: `Session ${i + 1} seats must be a non-negative number — got "${seats}".` });
-    }
-  });
+  // Same reasoning as category/trainer above — if the full set of session
+  // start dates being submitted is identical to what the course already
+  // has stored, none of them are actually being changed, so a format this
+  // validation wouldn't otherwise accept (entered before this check
+  // existed) shouldn't block saving an unrelated edit elsewhere on the form.
+  const existingStartDates = existing ? (existing.sessions || []).map((s) => s.startDate).sort() : null;
+  const submittedStartDatesSorted = sessionStarts.filter((s) => s && s.trim()).map((s) => s.trim()).sort();
+  const sessionsUnchanged = existingStartDates && existingStartDates.length === submittedStartDatesSorted.length
+    && existingStartDates.every((d, i) => d === submittedStartDatesSorted[i]);
+  if (!sessionsUnchanged) {
+    sessionStarts.forEach((s, i) => {
+      if (!s || !s.trim()) return; // an empty "add a new session" row is fine, it's filtered out later
+      if (s.trim().toLowerCase() !== "on demand" && !/^\d{4}-\d{2}-\d{2}$/.test(s.trim())) {
+        errors.push({ field: "sessionStartDate", message: `Session ${i + 1} start date must be YYYY-MM-DD or "On Demand" — got "${s}".` });
+      }
+      const seats = sessionSeatsRaw[i];
+      if (seats && seats.trim() && (!Number.isFinite(Number(seats)) || Number(seats) < 0)) {
+        errors.push({ field: "sessionSeats", message: `Session ${i + 1} seats must be a non-negative number — got "${seats}".` });
+      }
+    });
+  }
 
   // Slug collision — the crash this validation exists to prevent. Checked
   // against every OTHER course (excluding the one currently being
@@ -578,7 +607,7 @@ router.post("/courses/new", handleBrochureUpload, (req, res) => {
     syncAdditionalCategories(course.id, req.body.additionalCategories);
     res.redirect("/admin/courses?success=Course+created+successfully");
   } catch (e) {
-    console.error("[admin] course creation failed:", e.message);
+    console.error("[admin] course creation failed:", e.message, "\n", e.stack);
     res.status(500).render("admin/course-form", {
       title: "New course — Baseline Skills", course: req.body, mode: "new",
       trainers: store.readAll("trainers"), categories: store.readAll("categories"),
@@ -610,7 +639,7 @@ router.get("/courses/:id/edit", auth.requireCourseAccess(r => r.params.id), (req
 router.post("/courses/:id/edit", auth.requireCourseAccess(r => r.params.id), handleBrochureUpload, (req, res) => {
   const existing = store.findOne("courses", (c) => c.id === req.params.id);
   if (!existing) return res.status(404).send("Course not found");
-  const errors = validateCourseFields(req.body, req.params.id);
+  const errors = validateCourseFields(req.body, req.params.id, existing);
   if (errors.length) {
     return res.status(400).render("admin/course-form", {
       title: `Edit ${existing.title} — Baseline Skills`, course: { ...existing, ...req.body, id: existing.id }, mode: "edit",
@@ -628,7 +657,7 @@ router.post("/courses/:id/edit", auth.requireCourseAccess(r => r.params.id), han
     syncAdditionalCategories(req.params.id, req.body.additionalCategories);
     res.redirect("/admin/courses?success=Course+updated+successfully");
   } catch (e) {
-    console.error("[admin] course update failed:", e.message);
+    console.error(`[admin] course update failed for ${req.params.id}:`, e.message, "\n", e.stack);
     res.status(500).render("admin/course-form", {
       title: `Edit ${existing.title} — Baseline Skills`, course: { ...existing, ...req.body, id: existing.id }, mode: "edit",
       trainers: store.readAll("trainers"), categories: store.readAll("categories"),
