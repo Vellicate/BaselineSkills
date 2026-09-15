@@ -637,7 +637,7 @@ router.post("/courses/new", handleBrochureUpload, (req, res) => {
       title: "New course — Baseline Skills", course: courseForRedisplay(req.body, null), mode: "new",
       trainers: store.readAll("trainers"), categories: store.readAll("categories"),
       faqs: [], examProduct: null, materials: [], courseDiscounts: [],
-      fieldErrors: [], error: "Something went wrong saving this course. Nothing was saved — please try again, and if this keeps happening, contact support with what you were entering.",
+      fieldErrors: [], error: `Something went wrong saving this course. Nothing was saved — please try again, and if this keeps happening, contact support with what you were entering. (Technical detail: ${e.message})`,
     });
   }
 });
@@ -690,7 +690,7 @@ router.post("/courses/:id/edit", auth.requireCourseAccess(r => r.params.id), han
       examProduct: store.findOne("certification_exams", e => e.courseId === existing.id),
       materials: store.readAll("materials").filter(m => m.courseId === existing.id),
       courseDiscounts: store.readAll("course_discounts").filter(d => d.courseId === existing.id),
-      fieldErrors: [], error: "Something went wrong saving this course. Nothing was changed — please try again, and if this keeps happening, contact support with what you were entering.",
+      fieldErrors: [], error: `Something went wrong saving this course. Nothing was changed — please try again, and if this keeps happening, contact support with what you were entering. (Technical detail: ${e.message})`,
     });
   }
 });
