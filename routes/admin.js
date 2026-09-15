@@ -519,6 +519,7 @@ function courseFromForm(body, existing, uploadedFile) {
     : (existing ? existing.curriculum || [] : []);
 
   const sessionStarts = Array.isArray(body.sessionStartDate) ? body.sessionStartDate : [body.sessionStartDate].filter(Boolean);
+  const sessionIds = Array.isArray(body.sessionId) ? body.sessionId : (body.sessionId !== undefined ? [body.sessionId] : []);
   const sessionEnds = Array.isArray(body.sessionEndDate) ? body.sessionEndDate : [body.sessionEndDate].filter(Boolean);
   const sessionTimeFroms = Array.isArray(body.sessionTimeFrom) ? body.sessionTimeFrom : [body.sessionTimeFrom].filter(Boolean);
   const sessionTimeTos = Array.isArray(body.sessionTimeTo) ? body.sessionTimeTo : [body.sessionTimeTo].filter(Boolean);
@@ -526,6 +527,7 @@ function courseFromForm(body, existing, uploadedFile) {
   const sessionSeats = Array.isArray(body.sessionSeats) ? body.sessionSeats : [body.sessionSeats].filter(Boolean);
   const sessions = sessionStarts
     .map((startDate, i) => ({
+      id: sessionIds[i] || undefined, // present = update that existing row; absent = a newly added session row, insert
       startDate,
       endDate: sessionEnds[i] || "",
       timeFrom: sessionTimeFroms[i] || "",

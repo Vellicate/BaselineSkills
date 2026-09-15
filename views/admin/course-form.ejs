@@ -196,6 +196,7 @@ document.addEventListener('DOMContentLoaded', () => {
     <% const sessions = (course && course.sessions && course.sessions.length) ? course.sessions : [{startDate:'',endDate:'',timeFrom:'',timeTo:'',mode:'Live Online',seatsLeft:''}]; %>
     <% sessions.forEach(s => { %>
       <div class="form-row session-row" style="grid-template-columns:1fr 1fr 90px 90px 1fr 80px auto;align-items:end">
+        <input type="hidden" name="sessionId" value="<%= s.id || '' %>">
         <div class="form-field"><label>Start date</label><input type="text" name="sessionStartDate" placeholder="2026-09-11 or 'On Demand'" value="<%= s.startDate %>"></div>
         <div class="form-field"><label>End date</label><input type="text" name="sessionEndDate" placeholder="2026-09-14" value="<%= s.endDate || '' %>"></div>
         <div class="form-field"><label>Time from</label><input type="time" name="sessionTimeFrom" value="<%= s.timeFrom || '' %>"></div>
@@ -371,6 +372,7 @@ function addSessionRow(){
   row.style.gridTemplateColumns = '1fr 1fr 90px 90px 1fr 80px auto';
   row.style.alignItems = 'end';
   row.innerHTML = `
+    <input type="hidden" name="sessionId" value="">
     <div class="form-field"><label>Start date</label><input type="text" name="sessionStartDate" placeholder="2026-09-11 or 'On Demand'"></div>
     <div class="form-field"><label>End date</label><input type="text" name="sessionEndDate" placeholder="2026-09-14"></div>
     <div class="form-field"><label>Time from</label><input type="time" name="sessionTimeFrom"></div>
