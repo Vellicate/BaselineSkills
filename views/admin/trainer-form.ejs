@@ -6,11 +6,29 @@
   <div class="alert alert-error" style="margin-bottom:16px"><%= error %></div>
 <% } %>
 
-<form method="POST" action="<%= mode === 'new' ? '/admin/trainers/new' : `/admin/trainers/${trainer.id}/edit` %>" class="card" style="max-width:640px">
+<form method="POST" action="<%= mode === 'new' ? '/admin/trainers/new' : `/admin/trainers/${trainer.id}/edit` %>" enctype="multipart/form-data" class="card" style="max-width:640px">
   <div class="form-field"><label>Full name *</label><input type="text" name="name" required value="<%= trainer ? trainer.name : '' %>"></div>
   <div class="form-field"><label>Title / role</label><input type="text" name="title" placeholder="e.g. Senior RE Consultant, ASPICE Assessor" value="<%= trainer ? trainer.title : '' %>"></div>
   <div class="form-field"><label>Profile link *</label><input type="url" name="profileUrl" required placeholder="https://www.linkedin.com/in/..." value="<%= trainer ? trainer.profileUrl : '' %>"></div>
-  <div class="form-field"><label>Short bio</label><textarea name="bio" rows="4"><%= trainer ? trainer.bio : '' %></textarea></div>
+
+  <div class="form-field">
+    <label>Photo</label>
+    <input type="file" name="photo" accept="image/jpeg,image/png,image/webp">
+    <% if (trainer && trainer.photoPath) { %>
+      <p class="form-hint">
+        <img src="<%= trainer.photoPath %>" alt="" style="width:60px;height:60px;border-radius:50%;object-fit:cover;vertical-align:middle;margin-right:8px">
+        Current photo — upload a new file to replace it, or leave blank to keep it.
+      </p>
+    <% } %>
+  </div>
+
+  <div class="form-field"><label>Short bio</label><textarea name="bio" rows="6"><%= trainer ? trainer.bio : '' %></textarea></div>
+
+  <div class="form-field">
+    <label>Work experience (one per line, format: "Company — Role, Years")</label>
+    <textarea name="workExperienceRaw" rows="6" placeholder="Baseline Skills — Founder, 2009 – Present&#10;Sasken Communication Technologies — VP, 2003 – 2009"><%= trainer && trainer.workExperience ? trainer.workExperience.join('\n') : '' %></textarea>
+    <p class="form-hint">Shown as a timeline on the trainer's public profile, most recent first — enter it in that order.</p>
+  </div>
 
   <div style="margin-top:20px">
     <button type="submit" class="btn btn-navy btn-lg">Save trainer</button>

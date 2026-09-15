@@ -60,7 +60,7 @@
             <input type="checkbox" name="addExam" value="1" style="margin-top:4px">
             <span>
               <strong>Add the <%= examProduct.certificationName %> certification exam</strong> (<%= examProduct.certificationBody %>) — <%= currencySymbol(course.currency) %><%= (examFinalPriceCents/100).toFixed(2) %>
-              <br><span style="color:var(--muted);font-size:.85rem"><%= examProduct.description %></span>
+              <br><span style="color:var(--muted);font-size:.85rem;white-space:pre-line"><%= examProduct.description %></span>
             </span>
           </label>
         </div>

@@ -1,25 +1,67 @@
 <%- include('partials/header') %>
 
-<section class="section-tight" style="background:#fff;border-bottom:1px solid var(--line)">
-  <div class="container" style="display:flex;gap:24px;align-items:center;flex-wrap:wrap">
-    <% if (trainer.photoPath) { %><img src="<%= trainer.photoPath %>" alt="<%= trainer.name %>" style="width:96px;height:96px;border-radius:50%;object-fit:cover"><% } %>
+<section class="section-tight" style="background:linear-gradient(135deg,#0F5C56,#083834);color:#fff">
+  <div class="container" style="display:flex;gap:28px;align-items:center;flex-wrap:wrap">
+    <% if (trainer.photoPath) { %>
+      <img src="<%= trainer.photoPath %>" alt="<%= trainer.name %>" style="width:140px;height:140px;border-radius:50%;object-fit:cover;border:4px solid rgba(255,255,255,.25);box-shadow:0 8px 24px rgba(0,0,0,.25)">
+    <% } else { %>
+      <div style="width:140px;height:140px;border-radius:50%;background:rgba(255,255,255,.15);border:4px solid rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-size:2.6rem;font-weight:700;color:#fff">
+        <%= trainer.name.split(' ').map(n => n[0]).slice(0,2).join('').toUpperCase() %>
+      </div>
+    <% } %>
     <div>
-      <span class="eyebrow">Instructor</span>
-      <h1 style="font-size:2rem;margin:6px 0 0"><%= trainer.name %></h1>
-      <% if (trainer.title) { %><p class="lead" style="margin-top:4px"><%= trainer.title %></p><% } %>
-      <% if (trainer.profileUrl) { %><a href="<%= trainer.profileUrl %>" target="_blank" rel="noopener" class="btn btn-outline btn-sm" style="margin-top:10px">Connect on LinkedIn</a><% } %>
+      <span class="eyebrow" style="color:rgba(255,255,255,.75)">Instructor</span>
+      <h1 style="font-size:2.1rem;margin:6px 0 0;color:#fff"><%= trainer.name %></h1>
+      <% if (trainer.title) { %><p class="lead" style="margin-top:4px;color:rgba(255,255,255,.85)"><%= trainer.title %></p><% } %>
+      <% if (trainer.profileUrl) { %><a href="<%= trainer.profileUrl %>" target="_blank" rel="noopener" class="btn btn-gold btn-sm" style="margin-top:12px">Connect on LinkedIn</a><% } %>
     </div>
   </div>
 </section>
 
 <section class="section">
-  <div class="container">
-    <% if (trainer.bio) { %>
-      <h2>About</h2>
-      <p class="lead" style="max-width:720px"><%= trainer.bio %></p>
-    <% } %>
+  <div class="container" style="display:grid;grid-template-columns:1.6fr 1fr;gap:40px">
+    <div>
+      <% if (trainer.bio) { %>
+        <h2 style="margin-top:0">About</h2>
+        <div class="lead" style="white-space:pre-line;font-size:1.02rem;line-height:1.7"><%= trainer.bio %></div>
+      <% } %>
+    </div>
 
-    <h2 style="margin-top:32px">Courses taught by <%= trainer.name %></h2>
+    <% if (trainer.workExperience && trainer.workExperience.length) { %>
+    <div>
+      <h2 style="margin-top:0;font-size:1.3rem">Work Experience</h2>
+      <ul style="list-style:none;padding:0;margin:0;border-left:2px solid var(--line)">
+        <% trainer.workExperience.forEach(entry => { %>
+          <%
+            // Expected shape: "Company — Role, Years" (em dash or hyphen
+            // separates company from role+years; the last comma-separated
+            // segment is treated as the years if it looks like one).
+            const dashSplit = entry.split(/\s[—–-]\s/);
+            const company = dashSplit[0] || entry;
+            const rest = dashSplit.slice(1).join(' — ');
+            const restParts = rest.split(',');
+            const years = restParts.length > 1 ? restParts[restParts.length - 1].trim() : '';
+            const role = restParts.length > 1 ? restParts.slice(0, -1).join(',').trim() : rest;
+          %>
+          <li style="position:relative;padding:0 0 20px 20px">
+            <span style="position:absolute;left:-6px;top:4px;width:10px;height:10px;border-radius:50%;background:var(--gold,#D98E04)"></span>
+            <strong style="font-size:.95rem"><%= company %></strong>
+            <% if (role) { %><div style="font-size:.88rem;color:var(--text)"><%= role %></div><% } %>
+            <% if (years) { %><div style="font-size:.8rem;color:var(--muted)"><%= years %></div><% } %>
+          </li>
+        <% }) %>
+      </ul>
+    </div>
+    <% } %>
+  </div>
+
+  <style>
+    @media (max-width: 800px) {
+      .container > [style*="grid-template-columns:1.6fr 1fr"] { grid-template-columns: 1fr !important; }
+    }
+  </style>
+
+    <h2 style="margin-top:40px">Courses taught by <%= trainer.name %></h2>
     <% if (courses.length === 0) { %>
       <p class="lead">No published courses listed for this instructor yet.</p>
     <% } else { %>

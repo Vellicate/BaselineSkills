@@ -13,6 +13,8 @@ const slugify = require("slugify");
 const createRateLimiter = require("../lib/rate-limiter");
 const multer = require("multer");
 const { BROCHURE_DIR } = require("../lib/brochures");
+const { TRAINER_PHOTO_DIR } = require("../lib/trainer-photos");
+const { COURSE_OUTLINE_DIR } = require("../lib/course-outlines");
 const { RESOURCE_DOWNLOAD_DIR } = require("../lib/resource-downloads");
 const { MATERIAL_DIR } = require("../lib/materials");
 
@@ -24,18 +26,39 @@ const materialUpload = multer({
   limits: { fileSize: adminCfg.MATERIAL_MAX_FILE_SIZE_MB * 1024 * 1024 },
 });
 
-const brochureUpload = multer({
+// Handles the course form's two independent PDF uploads (brochure and
+// course outline) in a single multer pass — multer can only consume a
+// multipart request body once, so two file fields on the same form need
+// one combined .fields() call rather than two separate .single() calls
+// chained as middleware. Both route to their own directory (via
+// file.fieldname) and validate as PDF the same way brochures always have.
+const courseFileUpload = multer({
   storage: multer.diskStorage({
-    destination: (req, file, cb) => cb(null, BROCHURE_DIR),
-    filename: (req, file, cb) => cb(null, `${newId("brochure")}.pdf`),
+    destination: (req, file, cb) => cb(null, file.fieldname === "courseOutline" ? COURSE_OUTLINE_DIR : BROCHURE_DIR),
+    filename: (req, file, cb) => cb(null, `${newId(file.fieldname === "courseOutline" ? "outline" : "brochure")}.pdf`),
   }),
   fileFilter: (req, file, cb) => {
     if (file.mimetype !== "application/pdf") {
-      return cb(new Error("Brochure must be a PDF file"));
+      return cb(new Error(file.fieldname === "courseOutline" ? "Course outline must be a PDF file" : "Brochure must be a PDF file"));
     }
     cb(null, true);
   },
   limits: { fileSize: adminCfg.BROCHURE_MAX_FILE_SIZE_MB * 1024 * 1024 },
+});
+
+const TRAINER_PHOTO_ALLOWED_MIMES = { "image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp" };
+const trainerPhotoUpload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => cb(null, TRAINER_PHOTO_DIR),
+    filename: (req, file, cb) => cb(null, `${newId("trainerphoto")}${TRAINER_PHOTO_ALLOWED_MIMES[file.mimetype] || ""}`),
+  }),
+  fileFilter: (req, file, cb) => {
+    if (!TRAINER_PHOTO_ALLOWED_MIMES[file.mimetype]) {
+      return cb(new Error("Trainer photo must be a JPEG, PNG, or WebP image"));
+    }
+    cb(null, true);
+  },
+  limits: { fileSize: adminCfg.TRAINER_PHOTO_MAX_FILE_SIZE_MB * 1024 * 1024 },
 });
 
 const RESOURCE_DOWNLOAD_ALLOWED_MIMES = {
@@ -495,7 +518,13 @@ function courseForRedisplay(body, existing) {
   }
 }
 
-function courseFromForm(body, existing, uploadedFile) {
+function courseFromForm(body, existing, uploadedFiles) {
+  // uploadedFiles is req.files from multer's .fields() — {brochure:[file], courseOutline:[file]},
+  // each key present only if that file was actually uploaded — or null/undefined
+  // from callers (the FAQ/exam/materials carry-through, and courseForRedisplay)
+  // that never handle file uploads at all, meaning "leave both exactly as they were."
+  const brochureFile = uploadedFiles && uploadedFiles.brochure ? uploadedFiles.brochure[0] : null;
+  const courseOutlineFile = uploadedFiles && uploadedFiles.courseOutline ? uploadedFiles.courseOutline[0] : null;
   const outcomes = (body.outcomes || "").split("\n").map((s) => s.trim()).filter(Boolean);
   const audience = (body.audience || "").split("\n").map((s) => s.trim()).filter(Boolean);
   const prerequisites = (body.prerequisites || "").split("\n").map((s) => s.trim()).filter(Boolean);
@@ -565,17 +594,19 @@ function courseFromForm(body, existing, uploadedFile) {
     formatAndMaterial: body.formatAndMaterial || "",
     practicalApplication: body.practicalApplication || "",
     whatYoullReceive,
-    brochureFilename: uploadedFile ? uploadedFile.filename : (existing ? existing.brochureFilename : ""),
+    brochureFilename: brochureFile ? brochureFile.filename : (existing ? existing.brochureFilename : ""),
+    courseOutlineFilename: courseOutlineFile ? courseOutlineFile.filename : (existing ? existing.courseOutlineFilename : ""),
     createdAt: (existing && existing.createdAt) ? existing.createdAt : new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
 }
 
-function handleBrochureUpload(req, res, next) {
-  brochureUpload.single("brochure")(req, res, (err) => {
+function handleCourseFileUploads(req, res, next) {
+  courseFileUpload.fields([{ name: "brochure", maxCount: 1 }, { name: "courseOutline", maxCount: 1 }])(req, res, (err) => {
     if (!err) return next();
     const isEdit = req.params.id != null;
     const course = isEdit ? store.findOne("courses", (c) => c.id === req.params.id) : null;
+    const knownMessages = ["Brochure must be a PDF file", "Course outline must be a PDF file"];
     res.status(400).render("admin/course-form", {
       title: isEdit ? `Edit ${course ? course.title : ""} — Baseline Skills` : "New course — Baseline Skills",
       course,
@@ -586,11 +617,24 @@ function handleBrochureUpload(req, res, next) {
       examProduct: isEdit && course ? store.findOne("certification_exams", e => e.courseId === course.id) : null,
       materials: isEdit && course ? store.readAll("materials").filter(m => m.courseId === course.id) : [],
       courseDiscounts: isEdit && course ? store.readAll("course_discounts").filter(d => d.courseId === course.id) : [],
-      error: err.message === "Brochure must be a PDF file" ? err.message : `Brochure upload failed — please try a PDF under ${adminCfg.BROCHURE_MAX_FILE_SIZE_MB}MB.`,
+      error: knownMessages.includes(err.message) ? err.message : `File upload failed — please try a PDF under ${adminCfg.BROCHURE_MAX_FILE_SIZE_MB}MB.`,
     });
   });
 }
 
+function handleTrainerPhotoUpload(req, res, next) {
+  trainerPhotoUpload.single("photo")(req, res, (err) => {
+    if (!err) return next();
+    const isEdit = req.params.id != null;
+    const trainer = isEdit ? store.findOne("trainers", (t) => t.id === req.params.id) : null;
+    res.status(400).render("admin/trainer-form", {
+      title: isEdit ? `Edit ${trainer ? trainer.name : ""} — Baseline Skills` : "New trainer — Baseline Skills",
+      trainer: isEdit ? { ...trainer, ...req.body } : req.body,
+      mode: isEdit ? "edit" : "new",
+      error: err.message === "Trainer photo must be a JPEG, PNG, or WebP image" ? err.message : `Photo upload failed — please try a JPEG, PNG, or WebP image under ${adminCfg.TRAINER_PHOTO_MAX_FILE_SIZE_MB}MB.`,
+    });
+  });
+}
 function handleResourceDownloadUpload(req, res, next) {
   resourceDownloadUpload.single("downloadFile")(req, res, (err) => {
     if (!err) return next();
@@ -616,7 +660,7 @@ router.get("/courses/new", (req, res) => {
   });
 });
 
-router.post("/courses/new", handleBrochureUpload, (req, res) => {
+router.post("/courses/new", handleCourseFileUploads, (req, res) => {
   const errors = validateCourseFields(req.body, null);
   if (errors.length) {
     return res.status(400).render("admin/course-form", {
@@ -627,7 +671,7 @@ router.post("/courses/new", handleBrochureUpload, (req, res) => {
     });
   }
   try {
-    const course = courseFromForm(req.body, { id: newId("course") }, req.file);
+    const course = courseFromForm(req.body, { id: newId("course") }, req.files);
     store.insert("courses", course);
     syncAdditionalCategories(course.id, req.body.additionalCategories);
     res.redirect("/admin/courses?success=Course+created+successfully");
@@ -661,7 +705,7 @@ router.get("/courses/:id/edit", auth.requireCourseAccess(r => r.params.id), (req
   });
 });
 
-router.post("/courses/:id/edit", auth.requireCourseAccess(r => r.params.id), handleBrochureUpload, (req, res) => {
+router.post("/courses/:id/edit", auth.requireCourseAccess(r => r.params.id), handleCourseFileUploads, (req, res) => {
   const existing = store.findOne("courses", (c) => c.id === req.params.id);
   if (!existing) return res.status(404).send("Course not found");
   const errors = validateCourseFields(req.body, req.params.id, existing);
@@ -677,7 +721,7 @@ router.post("/courses/:id/edit", auth.requireCourseAccess(r => r.params.id), han
     });
   }
   try {
-    const updated = courseFromForm(req.body, existing, req.file);
+    const updated = courseFromForm(req.body, existing, req.files);
     store.update("courses", req.params.id, updated);
     syncAdditionalCategories(req.params.id, req.body.additionalCategories);
     res.redirect("/admin/courses?success=Course+updated+successfully");
@@ -760,6 +804,14 @@ router.post("/coupons/:id/delete", auth.requireSuperAdmin, (req, res) => {
 router.post("/courses/:courseId/discounts/new", auth.requireCourseAccess(r => r.params.courseId), (req, res) => {
   saveCarriedCourseFieldsIfPresent(req);
   const { label, percent, startDate, endDate } = req.body;
+  // Discounts are entirely optional — a blank percent means the admin
+  // isn't adding one right now (the field is no longer required client-side
+  // either, for the same reason). Course-level changes carried along via
+  // saveCarriedCourseFieldsIfPresent above still get saved either way;
+  // only creating the discount row itself is skipped.
+  if (!percent || !percent.trim()) {
+    return res.redirect(`/admin/courses/${req.params.courseId}/edit?success=Course+saved`);
+  }
   const percentNum = Number(percent);
   if (!Number.isFinite(percentNum) || percentNum <= 0 || percentNum > 100) {
     return res.redirect(`/admin/courses/${req.params.courseId}/edit?error=Discount+percent+must+be+between+1+and+100`);
@@ -1168,16 +1220,19 @@ router.get("/trainers/new", auth.requireSuperAdmin, (req, res) => {
   });
 });
 
-router.post("/trainers/new", auth.requireSuperAdmin, (req, res) => {
-  const { name, title, bio, profileUrl } = req.body;
+router.post("/trainers/new", auth.requireSuperAdmin, handleTrainerPhotoUpload, (req, res) => {
+  const { name, title, bio, profileUrl, workExperienceRaw } = req.body;
   if (!name || !profileUrl) {
     return res.status(400).render("admin/trainer-form", {
       title: "New trainer — Baseline Skills", trainer: req.body, mode: "new",
       error: "Name and profile link are required.",
     });
   }
+  const workExperience = (workExperienceRaw || "").split("\n").map((s) => s.trim()).filter(Boolean);
   store.insert("trainers", {
     id: newId("trainer"), name, title: title || "", bio: bio || "", profileUrl,
+    photoPath: req.file ? `/trainer-photo/${req.file.filename}` : "",
+    workExperience,
     createdAt: new Date().toISOString(),
   });
   res.redirect("/admin/trainers?success=Trainer+added");
@@ -1195,18 +1250,23 @@ router.get("/trainers/:id/edit", (req, res) => {
   });
 });
 
-router.post("/trainers/:id/edit", (req, res) => {
+router.post("/trainers/:id/edit", handleTrainerPhotoUpload, (req, res) => {
   const existing = store.findOne("trainers", (t) => t.id === req.params.id);
   if (!existing) return res.status(404).send("Trainer not found");
   if (!trainerIsVisibleTo(req, existing.id)) return res.status(403).send("You don't have access to this trainer.");
-  const { name, title, bio, profileUrl } = req.body;
+  const { name, title, bio, profileUrl, workExperienceRaw } = req.body;
   if (!name || !profileUrl) {
     return res.status(400).render("admin/trainer-form", {
       title: `Edit ${existing.name} — Baseline Skills`, trainer: { ...existing, ...req.body }, mode: "edit",
       error: "Name and profile link are required.",
     });
   }
-  store.update("trainers", req.params.id, { name, title: title || "", bio: bio || "", profileUrl });
+  const workExperience = (workExperienceRaw || "").split("\n").map((s) => s.trim()).filter(Boolean);
+  store.update("trainers", req.params.id, {
+    name, title: title || "", bio: bio || "", profileUrl,
+    photoPath: req.file ? `/trainer-photo/${req.file.filename}` : existing.photoPath,
+    workExperience,
+  });
   res.redirect("/admin/trainers?success=Trainer+updated");
 });
 

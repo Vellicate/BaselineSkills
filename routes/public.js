@@ -33,6 +33,8 @@ router.use((req, res, next) => {
 });
 
 const { BROCHURE_DIR } = require("../lib/brochures");
+const { TRAINER_PHOTO_DIR } = require("../lib/trainer-photos");
+const { COURSE_OUTLINE_DIR } = require("../lib/course-outlines");
 const { RESOURCE_DOWNLOAD_DIR } = require("../lib/resource-downloads");
 const publicCfg = discounts.loadConfig().security;
 
@@ -336,7 +338,7 @@ router.get("/courses/:slug", (req, res) => {
 
   const mapping = store.findOne("course_standards_mapping", (m) => m.courseId === course.id);
   const certificationBody = mapping ? store.findOne("standards_bodies", (b) => b.id === mapping.standardsBodyId) : null;
-  res.render("course-detail", { title: `${course.title} — Baseline Skills`, metaDescription: course.summary, course, related, trainer, faqs, reviews, avgRating, ratingDistribution, canReview, materials, hasAccessToMaterials, certificationBody });
+  res.render("course-detail", { title: `${course.title} — Baseline Skills`, metaDescription: course.summary, course, related, trainer, faqs, reviews, avgRating, ratingDistribution, canReview, materials, hasAccessToMaterials, certificationBody, cardData: courseCardViewModel(course) });
 });
 
 // Emails a link to the brochure rather than downloading it directly, so we
@@ -428,6 +430,31 @@ router.get("/brochure/:filename", (req, res) => {
   const filePath = path.join(BROCHURE_DIR, filename);
   res.sendFile(filePath, (err) => {
     if (err && !res.headersSent) res.status(404).send("Brochure not found");
+  });
+});
+
+// Same unauthenticated-but-unguessable-filename approach as the brochure
+// route above — a trainer photo is meant to be publicly visible anyway
+// (it's shown right on the public trainer profile page), so there's no
+// actual gating being bypassed here.
+router.get("/trainer-photo/:filename", (req, res) => {
+  const filename = path.basename(req.params.filename);
+  if (!/^[a-z0-9_.-]+\.(jpg|jpeg|png|webp)$/i.test(filename)) return res.status(400).send("Invalid file name");
+  const filePath = path.join(TRAINER_PHOTO_DIR, filename);
+  res.sendFile(filePath, (err) => {
+    if (err && !res.headersSent) res.status(404).send("Photo not found");
+  });
+});
+
+// Same unguessable-filename approach as the brochure route — a course
+// outline is meant to be publicly downloadable from the course page
+// itself, so nothing here is bypassing any actual access control.
+router.get("/course-outline/:filename", (req, res) => {
+  const filename = path.basename(req.params.filename);
+  if (!/^[a-z0-9_.-]+\.pdf$/i.test(filename)) return res.status(400).send("Invalid file name");
+  const filePath = path.join(COURSE_OUTLINE_DIR, filename);
+  res.sendFile(filePath, (err) => {
+    if (err && !res.headersSent) res.status(404).send("Course outline not found");
   });
 });
 

@@ -63,7 +63,7 @@
       <% } else { %>
         <button type="button" class="btn btn-gold btn-lg" onclick="document.getElementById('interest-modal').style.display='flex'">I am interested</button>
       <% } %>
-      <% if (course.courseOutlineUrl) { %><a href="<%= course.courseOutlineUrl %>" target="_blank" rel="noopener" class="btn btn-outline btn-lg" style="border-color:rgba(255,255,255,.4);color:#fff">View Course Outline</a><% } %>
+      <% if (course.courseOutlineFilename || course.courseOutlineUrl) { %><a href="<%= course.courseOutlineFilename ? '/course-outline/'+course.courseOutlineFilename : course.courseOutlineUrl %>" target="_blank" rel="noopener" class="btn btn-outline btn-lg" style="border-color:rgba(255,255,255,.4);color:#fff">View Course Outline</a><% } %>
       <% if (course.brochureFilename) { %><button type="button" class="btn btn-outline btn-lg" style="border-color:rgba(255,255,255,.4);color:#fff" onclick="document.getElementById('brochure-modal').style.display='flex'">Download Brochure</button><% } %>
     </div>
   </div>
@@ -171,7 +171,7 @@
         <% materials.forEach(m => { %>
           <div class="card">
             <h4><%= m.title %></h4>
-            <% if (m.description) { %><p style="font-size:.85rem;color:var(--muted)"><%= m.description %></p><% } %>
+            <% if (m.description) { %><p style="font-size:.85rem;color:var(--muted);white-space:pre-line"><%= m.description %></p><% } %>
             <a href="/courses/<%= course.slug %>/materials/<%= m.id %>/download" class="btn btn-outline btn-sm">Download</a>
           </div>
         <% }) %>
@@ -183,11 +183,18 @@
 
     <% if (trainer) { %>
     <h2 style="margin-top:36px">Your Trainer</h2>
-    <div class="card" style="max-width:420px">
-      <h4 style="margin:0"><%= trainer.name %></h4>
-      <% if (trainer.title) { %><p style="color:var(--muted);font-size:.9rem;margin:4px 0 10px"><%= trainer.title %></p><% } %>
-      <% if (trainer.bio) { %><p style="font-size:.9rem"><%= trainer.bio %></p><% } %>
-      <a href="/trainers/<%= trainer.id %>" class="btn btn-outline btn-sm">View Full Profile</a>
+    <div class="card" style="max-width:420px;display:flex;gap:14px;align-items:flex-start">
+      <% if (trainer.photoPath) { %>
+        <img src="<%= trainer.photoPath %>" alt="<%= trainer.name %>" style="width:56px;height:56px;border-radius:50%;object-fit:cover;flex-shrink:0">
+      <% } else { %>
+        <div style="width:56px;height:56px;border-radius:50%;background:var(--navy,#0F5C56);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0"><%= trainer.name.split(' ').map(n => n[0]).slice(0,2).join('').toUpperCase() %></div>
+      <% } %>
+      <div>
+        <h4 style="margin:0"><%= trainer.name %></h4>
+        <% if (trainer.title) { %><p style="color:var(--muted);font-size:.9rem;margin:4px 0 10px"><%= trainer.title %></p><% } %>
+        <% if (trainer.bio) { %><p style="font-size:.9rem;white-space:pre-line"><%= trainer.bio.slice(0, 220) %><%= trainer.bio.length > 220 ? '…' : '' %></p><% } %>
+        <a href="/trainers/<%= trainer.id %>" class="btn btn-outline btn-sm">View Full Profile</a>
+      </div>
     </div>
     <% } %>
 
@@ -208,7 +215,7 @@
     <% reviews.slice(0, 5).forEach(r => { %>
       <div class="card" style="margin-bottom:10px">
         <p style="font-weight:600">⭐ <%= r.rating %>/5</p>
-        <% if (r.comment) { %><p style="color:var(--muted);font-size:.9rem"><%= r.comment %></p><% } %>
+        <% if (r.comment) { %><p style="color:var(--muted);font-size:.9rem;white-space:pre-line"><%= r.comment %></p><% } %>
       </div>
     <% }) %>
     <% } else { %>
@@ -238,7 +245,7 @@
       <% faqs.forEach((f, i) => { %>
         <details class="card" style="margin-bottom:10px;cursor:pointer">
           <summary style="font-weight:600;list-style:none"><%= f.question %></summary>
-          <p style="margin-top:10px;color:var(--muted)"><%= f.answer %></p>
+          <p style="margin-top:10px;color:var(--muted);white-space:pre-line"><%= f.answer %></p>
         </details>
       <% }) %>
     </div>
@@ -262,13 +269,13 @@
     <div class="sticky-card" id="sessions">
       <% if (course.published) { %>
         <div class="price-row">
-          <div class="price-now"><%= currencySymbol(course.currency) %><%= ((course.priceCents*(1-(course.discountPercent||0)/100))/100).toFixed(0) %></div>
-          <% if(course.discountPercent){ %>
-            <div class="price-was"><%= currencySymbol(course.currency) %><%= (course.priceCents/100).toFixed(0) %></div>
-            <div class="price-savings" style="color:#16847B;font-size:.85rem;font-weight:600">You save <%= currencySymbol(course.currency) %><%= (course.priceCents*(course.discountPercent/100)/100).toFixed(0) %></div>
+          <div class="price-now"><%= currencySymbol(course.currency) %><%= (cardData.pricing.finalPriceCents/100).toFixed(0) %></div>
+          <% if(cardData.pricing.discountPercent > 0){ %>
+            <div class="price-was"><%= currencySymbol(course.currency) %><%= (cardData.pricing.originalPriceCents/100).toFixed(0) %></div>
+            <div class="price-savings" style="color:#16847B;font-size:.85rem;font-weight:600">You save <%= currencySymbol(course.currency) %><%= ((cardData.pricing.originalPriceCents-cardData.pricing.finalPriceCents)/100).toFixed(0) %></div>
           <% } %>
         </div>
-        <% if(course.discountPercent){ %><span class="discount-badge"><%= course.discountPercent %>% OFF</span><% } %>
+        <% if(cardData.pricing.discountPercent > 0){ %><span class="discount-badge"><%= cardData.pricing.discountPercent %>% OFF</span><% } %>
         <p class="form-hint" style="margin-top:10px">per person &middot; <%= course.currency %></p>
         <a href="/courses/<%= course.slug %>/register" class="btn btn-gold btn-block" style="margin-top:14px">Register Now</a>
       <% } else { %>
@@ -284,17 +291,63 @@
       <% if (!course.published) { %>
         <p style="color:var(--muted);font-size:.9rem">No Schedule</p>
       <% } else { %>
+      <div class="form-field" style="margin-bottom:10px">
+        <label style="font-size:.82rem">Show times in</label>
+        <select id="session-tz-select" onchange="applySessionTimezone(this.value)">
+          <option value="Etc/GMT-2" selected>Central European Summer Time (CEST)</option>
+          <option value="Etc/GMT">Greenwich Mean Time (GMT)</option>
+          <option value="Europe/London">UK Time (London)</option>
+          <option value="America/New_York">Eastern Time (US)</option>
+          <option value="America/Chicago">Central Time (US)</option>
+          <option value="America/Los_Angeles">Pacific Time (US)</option>
+          <option value="Asia/Kolkata">India Standard Time (IST)</option>
+          <option value="Asia/Dubai">Gulf Standard Time (Dubai)</option>
+          <option value="Asia/Singapore">Singapore Time</option>
+          <option value="Asia/Tokyo">Japan Standard Time</option>
+          <option value="Australia/Sydney">Australian Eastern Time (Sydney)</option>
+        </select>
+      </div>
       <ul class="session-list">
         <% course.sessions.forEach(s => { %>
           <li>
             <span>
               <%= s.startDate %><%= s.endDate ? ' – ' + s.endDate : '' %> &middot; <%= s.mode %>
-              <% if (s.timeFrom || s.timeTo) { %><br><span style="font-size:.8rem;color:var(--muted)"><%= s.timeFrom || '?' %>–<%= s.timeTo || '?' %></span><% } %>
+              <% if (s.timeFrom || s.timeTo) { %><br><span class="session-time-display" style="font-size:.8rem;color:var(--muted)" data-date="<%= s.startDate %>" data-time-from="<%= s.timeFrom || '' %>" data-time-to="<%= s.timeTo || '' %>"><%= s.timeFrom || '?' %>–<%= s.timeTo || '?' %></span><% } %>
             </span>
             <span><%= s.seatsLeft!=null ? s.seatsLeft+' seats left' : 'On request' %></span>
           </li>
         <% }) %>
       </ul>
+      <script>
+        // Session times are stored in CEST (a fixed UTC+2 offset — the
+        // "summer" variant specifically, not the DST-aware Europe/Berlin
+        // zone, per how these were entered). Building an explicit
+        // +02:00-offset timestamp for the stored date+time gives the
+        // correct absolute moment regardless of the visitor's own
+        // browser timezone; Intl.DateTimeFormat then renders that same
+        // moment correctly in whichever target zone they pick, DST and
+        // all, without this code needing to know DST rules itself.
+        function applySessionTimezone(target) {
+          document.querySelectorAll('.session-time-display').forEach((el) => {
+            const date = el.dataset.date;
+            const from = el.dataset.timeFrom;
+            const to = el.dataset.timeTo;
+            if (!date || (!from && !to)) return;
+            const fmt = (t) => {
+              if (!t) return '?';
+              // Stored times are always CEST (fixed UTC+2) — building the
+              // source timestamp with that offset every time, regardless
+              // of which target is selected, gives the correct absolute
+              // moment; only the target passed to Intl.DateTimeFormat
+              // changes which zone that moment gets displayed in.
+              const d = new Date(`${date}T${t}:00+02:00`);
+              if (isNaN(d.getTime())) return t;
+              return new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: target }).format(d);
+            };
+            el.textContent = `${fmt(from)}–${fmt(to)}`;
+          });
+        }
+      </script>
       <% } %>
     </div>
   </div>

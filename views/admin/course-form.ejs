@@ -112,9 +112,18 @@ document.addEventListener('DOMContentLoaded', () => {
     <span id="count-receive" style="font-size:.78rem;color:var(--muted)"></span>
   </div>
   <div class="form-field">
-    <label>Course outline link <span style="font-weight:400;color:var(--muted)">(URL starting with http:// or https://, max <%= courseFieldLimits.COURSE_OUTLINE_URL_MAX %> characters)</span></label>
+    <label>Course outline link <span style="font-weight:400;color:var(--muted)">(URL starting with http:// or https://, max <%= courseFieldLimits.COURSE_OUTLINE_URL_MAX %> characters — optional if you upload a PDF below instead)</span></label>
     <input type="url" name="courseOutlineUrl" placeholder="https://... link to a detailed outline document" maxlength="<%= courseFieldLimits.COURSE_OUTLINE_URL_MAX %>" value="<%= course ? course.courseOutlineUrl : '' %>">
     <% if (fieldError('courseOutlineUrl')) { %><p style="color:#b91c1c;font-size:.82rem;margin-top:4px"><%= fieldError('courseOutlineUrl') %></p><% } %>
+  </div>
+
+  <div class="form-field">
+    <label>Or upload a course outline PDF directly</label>
+    <input type="file" name="courseOutline" accept="application/pdf">
+    <% if (course && course.courseOutlineFilename) { %>
+      <p class="form-hint">Current outline: <a href="/course-outline/<%= course.courseOutlineFilename %>" target="_blank">view PDF</a> — upload a new file to replace it, or leave blank to keep it.</p>
+    <% } %>
+    <p class="form-hint">If both a link and an uploaded file are set, the uploaded PDF is what learners see.</p>
   </div>
 
   <div class="form-field">
@@ -219,7 +228,7 @@ document.addEventListener('DOMContentLoaded', () => {
     <div style="display:flex;justify-content:space-between;align-items:start;padding:10px 0;border-bottom:1px solid var(--line)">
       <div>
         <strong><%= f.question %></strong>
-        <p style="color:var(--muted);font-size:.9rem;margin:4px 0 0"><%= f.answer %></p>
+        <p style="color:var(--muted);font-size:.9rem;margin:4px 0 0;white-space:pre-line"><%= f.answer %></p>
         <span style="font-size:.8rem;color:<%= f.published ? 'green' : 'var(--muted)' %>"><%= f.published ? 'Published' : 'Unpublished' %></span>
       </div>
       <div style="display:flex;gap:6px;flex-shrink:0">
@@ -289,8 +298,8 @@ function carryCourseFieldsInto(targetForm) {
 
 <% if (course && course.id) { %>
 <div class="card" style="margin-top:32px">
-  <h3>Discounts for this course</h3>
-  <p style="color:var(--muted);font-size:.85rem">Multiple discounts can be active at once — the highest one that's currently applicable is what learners see. A blank start date means "applicable immediately"; a blank end date means "doesn't expire until the session itself starts."</p>
+  <h3>Discounts for this course (optional)</h3>
+  <p style="color:var(--muted);font-size:.85rem">A course needs no discount at all — this section is entirely separate from saving the course above; leave it alone if you don't want to add one. Multiple discounts can be active at once — the highest one that's currently applicable is what learners see. A blank start date means "applicable immediately"; a blank end date means "doesn't expire until the session itself starts."</p>
   <% (courseDiscounts || []).forEach(d => { %>
     <% const applicableNow = discounts.isDiscountApplicable(d, null); %>
     <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)">
@@ -304,11 +313,11 @@ function carryCourseFieldsInto(targetForm) {
       <form method="POST" action="/admin/course-discounts/<%= d.id %>/delete" onsubmit="return confirm('Delete this discount?')"><button type="submit" class="btn btn-outline btn-sm">Delete</button></form>
     </div>
   <% }) %>
-  <% if (!(courseDiscounts || []).length) { %><p style="color:var(--muted);font-size:.9rem">No discounts yet.</p><% } %>
+  <% if (!(courseDiscounts || []).length) { %><p style="color:var(--muted);font-size:.9rem">No discounts yet — and none are needed unless you want to run a promotion.</p><% } %>
   <form method="POST" action="/admin/courses/<%= course.id %>/discounts/new" style="margin-top:16px" onsubmit="carryCourseFieldsInto(this)">
     <div class="form-row">
       <div class="form-field"><label>Label</label><input type="text" name="label" placeholder="e.g. Summer Sale"></div>
-      <div class="form-field"><label>Percent *</label><input type="number" name="percent" min="0" max="100" required></div>
+      <div class="form-field"><label>Percent (leave blank unless adding a discount)</label><input type="number" name="percent" min="0" max="100"></div>
     </div>
     <div class="form-row">
       <div class="form-field"><label>Start date (blank = immediately)</label><input type="date" name="startDate"></div>
