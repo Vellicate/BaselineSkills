@@ -97,6 +97,24 @@ function certifyingBodyLabel(course) {
 // so this logic exists once, not duplicated across every template that
 // renders a course card. Only real, existing data drives every field; this
 // never invents a rating, a review count, or a seat number.
+// Combines a course's manually-entered legacy rating (learners from
+// before this platform existed — no individual review records for
+// them, just a known average and count someone enters once) with real,
+// platform-submitted reviews, as a proper weighted average rather than
+// simply averaging the two averages together (which would incorrectly
+// give a legacy baseline of 200 learners the same weight as 2 real
+// reviews). The star-by-star breakdown shown elsewhere intentionally
+// stays reviews-only — there's no per-star granularity in a single
+// legacy average+count, and fabricating one would misrepresent it.
+function combinedCourseRating(course, reviews) {
+  const legacyCount = course.legacyRatingCount || 0;
+  const legacyAverage = course.legacyRatingAverage || 0;
+  const reviewSum = reviews.reduce((sum, r) => sum + r.rating, 0);
+  const combinedCount = legacyCount + reviews.length;
+  const avgRating = combinedCount > 0 ? (legacyAverage * legacyCount + reviewSum) / combinedCount : null;
+  return { avgRating, reviewCount: combinedCount };
+}
+
 function courseCardViewModel(course) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -111,7 +129,7 @@ function courseCardViewModel(course) {
     .sort((a, b) => new Date(a.startDate) - new Date(b.startDate))[0] || null) : null;
 
   const reviews = store.readAll("reviews").filter((r) => r.courseId === course.id);
-  const avgRating = reviews.length ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length : null;
+  const { avgRating, reviewCount } = combinedCourseRating(course, reviews);
 
   let availabilityLabel = null;
   if (nextSession && nextSession.seatsLeft != null) {
@@ -127,7 +145,7 @@ function courseCardViewModel(course) {
   return {
     certifyingBodyLabel: certifyingBodyLabel(course),
     nextSession,
-    reviewCount: reviews.length,
+    reviewCount,
     avgRating,
     availabilityLabel,
     pricing: { originalPriceCents: course.priceCents, finalPriceCents, discountPercent },
@@ -318,7 +336,7 @@ router.get("/courses/:slug", (req, res) => {
   const trainer = course.trainerId ? store.findOne("trainers", (t) => t.id === course.trainerId) : null;
   const faqs = store.readAll("faqs").filter((f) => f.scope === "course" && f.courseId === course.id && f.published).sort((a, b) => a.order - b.order);
   const reviews = store.readAll("reviews").filter((r) => r.courseId === course.id);
-  const avgRating = reviews.length ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length) : null;
+  const { avgRating, reviewCount } = combinedCourseRating(course, reviews);
   const ratingDistribution = [5, 4, 3, 2, 1].map((star) => ({ star, count: reviews.filter((r) => r.rating === star).length }));
 
   let canReview = false;
@@ -338,7 +356,7 @@ router.get("/courses/:slug", (req, res) => {
 
   const mapping = store.findOne("course_standards_mapping", (m) => m.courseId === course.id);
   const certificationBody = mapping ? store.findOne("standards_bodies", (b) => b.id === mapping.standardsBodyId) : null;
-  res.render("course-detail", { title: `${course.title} — Baseline Skills`, metaDescription: course.summary, course, related, trainer, faqs, reviews, avgRating, ratingDistribution, canReview, materials, hasAccessToMaterials, certificationBody, cardData: courseCardViewModel(course) });
+  res.render("course-detail", { title: `${course.title} — Baseline Skills`, metaDescription: course.summary, course, related, trainer, faqs, reviews, avgRating, reviewCount, ratingDistribution, canReview, materials, hasAccessToMaterials, certificationBody, cardData: courseCardViewModel(course) });
 });
 
 // Emails a link to the brochure rather than downloading it directly, so we

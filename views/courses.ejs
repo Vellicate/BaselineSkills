@@ -81,7 +81,7 @@
           <span class="domain-sub-kicker"><%= c.category %><% if (c.level) { %> · <%= c.level %><% } %></span>
           <h3 class="mini-course-title" style="font-size:1.18rem;margin-top:4px"><%= c.title %></h3>
           <% if (cd.avgRating != null) { %>
-            <p style="margin:2px 0 6px;font-size:.85rem;color:#B8860B" aria-label="Rated <%= cd.avgRating.toFixed(1) %> out of 5 from <%= cd.reviewCount %> review<%= cd.reviewCount !== 1 ? 's' : '' %>">
+            <p style="margin:2px 0 6px;font-size:.85rem;color:#B8860B" aria-label="Rated <%= cd.avgRating.toFixed(1) %> out of 5 from <%= cd.reviewCount %> learner<%= cd.reviewCount !== 1 ? 's' : '' %>">
               <span aria-hidden="true">⭐</span> <%= cd.avgRating.toFixed(1) %> (<%= cd.reviewCount %>)
             </p>
           <% } %>

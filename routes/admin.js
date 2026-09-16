@@ -438,12 +438,26 @@ function validateCourseFields(body, existingCourseId, existing) {
     errors.push({ field: "price", message: "Price must be a valid number, 0 or greater." });
   }
 
+  if (body.legacyRatingAverage && body.legacyRatingAverage.trim()) {
+    const legacyAvgNum = Number(body.legacyRatingAverage);
+    if (!Number.isFinite(legacyAvgNum) || legacyAvgNum < 0 || legacyAvgNum > 5) {
+      errors.push({ field: "legacyRatingAverage", message: "Legacy average rating must be a number between 0 and 5." });
+    }
+  }
+  if (body.legacyRatingCount && body.legacyRatingCount.trim()) {
+    const legacyCountNum = Number(body.legacyRatingCount);
+    if (!Number.isFinite(legacyCountNum) || legacyCountNum < 0 || !Number.isInteger(legacyCountNum)) {
+      errors.push({ field: "legacyRatingCount", message: "Legacy learner count must be a whole number, 0 or greater." });
+    }
+  }
+
   if (body.courseOutlineUrl && body.courseOutlineUrl.trim()) {
     checkMaxLength("courseOutlineUrl", "Course outline URL", body.courseOutlineUrl, limits.COURSE_OUTLINE_URL_MAX, existing && existing.courseOutlineUrl);
     if (!/^https?:\/\/.+/i.test(body.courseOutlineUrl.trim())) {
       errors.push({ field: "courseOutlineUrl", message: "Course outline URL must start with http:// or https://." });
     }
   }
+  checkMaxLength("courseOutlineContent", "Course outline content", body.courseOutlineContent, limits.COURSE_OUTLINE_CONTENT_MAX, existing && existing.courseOutlineContent);
 
   // Same reasoning as category above — an unchanged trainer selection
   // always passes, even if that trainer has since been removed.
@@ -596,6 +610,9 @@ function courseFromForm(body, existing, uploadedFiles) {
     whatYoullReceive,
     brochureFilename: brochureFile ? brochureFile.filename : (existing ? existing.brochureFilename : ""),
     courseOutlineFilename: courseOutlineFile ? courseOutlineFile.filename : (existing ? existing.courseOutlineFilename : ""),
+    courseOutlineContent: body.courseOutlineContent || "",
+    legacyRatingAverage: body.legacyRatingAverage && body.legacyRatingAverage.trim() ? Number(body.legacyRatingAverage) : null,
+    legacyRatingCount: body.legacyRatingCount && body.legacyRatingCount.trim() ? Number(body.legacyRatingCount) : 0,
     createdAt: (existing && existing.createdAt) ? existing.createdAt : new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };

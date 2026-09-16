@@ -12,7 +12,7 @@
     "courseMode": s.mode,
     "startDate": s.startDate,
   })),
-  ...(reviews.length ? { "aggregateRating": { "@type": "AggregateRating", "ratingValue": avgRating.toFixed(1), "reviewCount": reviews.length } } : {}),
+  ...(reviewCount ? { "aggregateRating": { "@type": "AggregateRating", "ratingValue": avgRating.toFixed(1), "reviewCount": reviewCount } } : {}),
 }) %>
 </script>
 
@@ -104,6 +104,25 @@
       <p style="white-space:pre-line;color:var(--text)"><%= course.practicalApplication %></p>
     <% } else { %>
       <p class="lead">We're still writing up specific workplace examples for this course — check back soon, or ask your trainer during the course itself.</p>
+    <% } %>
+
+    <% if (course.courseOutlineContent) { %>
+    <h2 style="margin-top:36px">Course Outline</h2>
+    <div class="course-outline-content"><%- course.courseOutlineContent %></div>
+    <style>
+      /* Quill (the admin editor this content was authored in) represents a
+         nested sub-bullet as a flat <li> with a ql-indent-N class, not a
+         true nested <ul>/<ol> — these rules are its own indentation
+         convention, needed here since this public page doesn't otherwise
+         load any of Quill's CSS. */
+      .course-outline-content h1, .course-outline-content h2, .course-outline-content h3 { margin: 20px 0 10px }
+      .course-outline-content ul, .course-outline-content ol { padding-left: 1.4em; margin: 8px 0 }
+      .course-outline-content li { margin-bottom: 4px }
+      .course-outline-content .ql-indent-1 { margin-left: 3em }
+      .course-outline-content .ql-indent-2 { margin-left: 6em }
+      .course-outline-content .ql-indent-3 { margin-left: 9em }
+      .course-outline-content .ql-indent-4 { margin-left: 12em }
+    </style>
     <% } %>
 
     <% if (course.curriculum && course.curriculum.length) { %>
@@ -198,10 +217,11 @@
     </div>
     <% } %>
 
-    <% if (reviews.length) { %>
+    <% if (reviewCount) { %>
     <h2 style="margin-top:36px" id="reviews">Learner Experiences</h2>
+    <% if (reviewCount >= 5) { %>
+    <p style="font-weight:600">⭐ <%= avgRating.toFixed(1) %> / 5 <span style="font-weight:400;color:var(--muted);font-size:.9rem">(<%= reviewCount %> learners)</span></p>
     <% if (reviews.length >= 5) { %>
-    <p style="font-weight:600">⭐ <%= avgRating.toFixed(1) %> / 5 <span style="font-weight:400;color:var(--muted);font-size:.9rem">(<%= reviews.length %> reviews)</span></p>
     <div style="margin-bottom:16px">
       <% ratingDistribution.forEach(d => { %>
         <div style="display:flex;align-items:center;gap:8px;font-size:.85rem;color:var(--muted)">
@@ -211,6 +231,7 @@
         </div>
       <% }) %>
     </div>
+    <% } %>
     <% } %>
     <% reviews.slice(0, 5).forEach(r => { %>
       <div class="card" style="margin-bottom:10px">
