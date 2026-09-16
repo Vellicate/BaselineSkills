@@ -40,9 +40,9 @@ app.use((req, res, next) => {
   // injection, framing, and plugin/object embedding.
   res.setHeader("Content-Security-Policy", [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' https://cdn.paddle.com https://www.paypal.com",
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-    "font-src 'self' https://fonts.gstatic.com",
+    "script-src 'self' 'unsafe-inline' https://cdn.paddle.com https://www.paypal.com https://cdnjs.cloudflare.com",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com",
+    "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com",
     "img-src 'self' data: https:",
     "connect-src 'self' https://cdn.paddle.com https://www.paypal.com",
     "frame-src https://www.paypal.com",
