@@ -121,6 +121,31 @@ router.post("/courses/:slug/register", regRateLimiter, async (req, res) => {
     });
   }
 
+  // Seat-availability check, done as the very last validation before any
+  // record is written — an atomic UPDATE ... WHERE seatsLeft > 0 rather
+  // than a separate read-then-write, so two learners racing for the last
+  // seat can't both pass a check that reads stale data (the same class of
+  // bug the certificate-numbering race condition testing elsewhere in this
+  // codebase was written to catch). A session with seatsLeft left NULL is
+  // treated as unlimited capacity and skips this entirely, rather than
+  // failing closed on data that was never meant to be capacity-tracked.
+  const sessionRow = resolvedSessionStartDate
+    ? course.sessions.find((s) => s.startDate === resolvedSessionStartDate)
+    : null;
+  if (sessionRow && sessionRow.seatsLeft !== null && sessionRow.seatsLeft !== undefined) {
+    const seatResult = store.raw
+      .prepare(`UPDATE sessions SET seatsLeft = seatsLeft - 1 WHERE id = ? AND seatsLeft > 0`)
+      .run(sessionRow.id);
+    if (seatResult.changes === 0) {
+      return res.status(400).render("register", {
+        title: `Register — ${course.title}`, course, finalPrice, discountInfo, selectedSessionStartDate: resolvedSessionStartDate,
+        examProduct, examFinalPriceCents,
+        error: "This session is sold out. Please register for another session.",
+        form: req.body,
+      });
+    }
+  }
+
   // Anonymous registration auto-creates a real learner profile (Master
   // Prompt Section 12) rather than leaving learnerId null until Phase 2's
   // signup flow is used separately — an anonymous visitor should never be

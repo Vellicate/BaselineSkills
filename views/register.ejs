@@ -30,7 +30,7 @@
           <div class="form-field">
             <label>Preferred session</label>
             <select name="sessionStartDate" onchange="window.location.href='/courses/<%= course.slug %>/register?session='+encodeURIComponent(this.value)">
-              <% course.sessions.forEach(s => { %><option value="<%= s.startDate %>" <%= s.startDate === selectedSessionStartDate ? 'selected' : '' %>><%= s.startDate %> — <%= s.mode %></option><% }) %>
+              <% course.sessions.forEach(s => { const soldOut = s.seatsLeft !== null && s.seatsLeft !== undefined && s.seatsLeft <= 0; %><option value="<%= s.startDate %>" <%= s.startDate === selectedSessionStartDate ? 'selected' : '' %>><%= s.startDate %> — <%= s.mode %><%= soldOut ? ' (Sold out)' : '' %></option><% }) %>
             </select>
           </div>
           <div class="form-field">
