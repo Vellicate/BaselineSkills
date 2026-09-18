@@ -9,6 +9,9 @@ const { newId } = require("../lib/id");
 const { ROE_UPLOAD_DIR } = require("../lib/onboarding");
 const createRateLimiter = require("../lib/rate-limiter");
 const discounts = require("../lib/discounts");
+const crypto = require("crypto");
+const { sendMail } = require("../lib/mailer");
+const { generateCaptcha, verifyCaptcha } = require("../lib/captcha");
 
 router.use(security.requireSameOrigin);
 
@@ -18,6 +21,85 @@ router.use((req, res, next) => { res.locals.passwordMinLength = onboardingCfg.PA
 
 const trainerLoginAttempts = security.createLoginAttemptTracker({ windowMs: onboardingCfg.LOGIN_LOCKOUT_WINDOW_MINUTES * 60 * 1000, maxAttempts: onboardingCfg.LOGIN_MAX_ATTEMPTS });
 const affiliateLoginAttempts = security.createLoginAttemptTracker({ windowMs: onboardingCfg.LOGIN_LOCKOUT_WINDOW_MINUTES * 60 * 1000, maxAttempts: onboardingCfg.LOGIN_MAX_ATTEMPTS });
+
+const onboardingAuthRateLimiter = createRateLimiter({
+  windowMs: onboardingCfg.SIGNUP_RATE_LIMIT_WINDOW_MINUTES * 60 * 1000,
+  max: onboardingCfg.SIGNUP_RATE_LIMIT_MAX,
+  keyPrefix: "onboarding_auth",
+  message: `Too many attempts. Please wait ${onboardingCfg.SIGNUP_RATE_LIMIT_WINDOW_MINUTES} minutes.`,
+});
+
+// Forgot/set-password for trainers and affiliates, mirroring the learner
+// flow in routes/auth.js exactly (same token strength, same 1-hour expiry,
+// same single-use-then-cleared token, same uniform response regardless of
+// whether the email matches anything — no account enumeration either way).
+// Factored into one function rather than copy-pasted twice, since a
+// security-sensitive flow duplicated by hand is exactly how the two
+// copies quietly drift apart over time.
+function registerPasswordReset({ table, forgotPath, setPath, loginPath, portalLabel }) {
+  router.get(forgotPath, (req, res) => {
+    const captcha = generateCaptcha(req.session);
+    res.render("forgot-password", { title: "Forgot Password — Baseline Skills", error: null, sent: false, captchaQuestion: captcha.question, action: forgotPath, loginUrl: loginPath });
+  });
+
+  router.post(forgotPath, onboardingAuthRateLimiter, async (req, res) => {
+    const { email, captchaAnswer } = req.body;
+    if (!verifyCaptcha(req.session, captchaAnswer)) {
+      const captcha = generateCaptcha(req.session);
+      return res.status(400).render("forgot-password", { title: "Forgot Password — Baseline Skills", error: "That answer wasn't correct — please try again.", sent: false, captchaQuestion: captcha.question, action: forgotPath, loginUrl: loginPath });
+    }
+    const record = email ? store.findOne(table, (r) => r.email && r.email.toLowerCase() === String(email).toLowerCase()) : null;
+    // Deliberately same response whether or not a matching, approved
+    // account exists — including for a pending/rejected applicant, who
+    // shouldn't be able to tell their application status from this page.
+    if (record && record.passwordHash) {
+      const token = crypto.randomBytes(32).toString("hex");
+      store.update(table, record.id, {
+        passwordResetToken: token,
+        passwordResetExpires: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+      });
+      const resetUrl = `${req.protocol}://${req.get("host")}${setPath}?token=${token}`;
+      await sendMail({
+        to: record.email,
+        subject: "Reset your Baseline Skills password",
+        html: `<p>We received a request to reset your ${portalLabel} password.</p>
+               <p><a href="${resetUrl}">Click here to set a new password</a>. This link expires in 1 hour.</p>
+               <p>If you didn't request this, you can safely ignore this email — your password hasn't been changed.</p>`,
+      });
+    }
+    res.render("forgot-password", { title: "Forgot Password — Baseline Skills", error: null, sent: true, captchaQuestion: null, action: forgotPath, loginUrl: loginPath });
+  });
+
+  router.get(setPath, (req, res) => {
+    const record = store.findOne(table, (r) => r.passwordResetToken === req.query.token);
+    if (!record || new Date(record.passwordResetExpires) < new Date()) {
+      return res.status(400).render("set-password", { title: "Set your password — Baseline Skills", error: "This link is invalid or has expired. Please contact us for a new one.", token: null, action: setPath });
+    }
+    res.render("set-password", { title: "Set your password — Baseline Skills", error: null, token: req.query.token, action: setPath });
+  });
+
+  router.post(setPath, onboardingAuthRateLimiter, (req, res) => {
+    const { token, password } = req.body;
+    const record = store.findOne(table, (r) => r.passwordResetToken === token);
+    if (!record || new Date(record.passwordResetExpires) < new Date()) {
+      return res.status(400).render("set-password", { title: "Set your password — Baseline Skills", error: "This link is invalid or has expired. Please contact us for a new one.", token: null, action: setPath });
+    }
+    if (!password || password.length < onboardingCfg.PASSWORD_MIN_LENGTH) {
+      return res.status(400).render("set-password", { title: "Set your password — Baseline Skills", error: `Password must be at least ${onboardingCfg.PASSWORD_MIN_LENGTH} characters.`, token, action: setPath });
+    }
+    store.update(table, record.id, {
+      passwordHash: auth.hashPassword(password),
+      passwordResetToken: null, passwordResetExpires: null,
+    });
+    // Redirect to login rather than auto-establishing a session — login
+    // already re-checks verificationStatus/status, which a reset token
+    // alone doesn't guarantee is still "approved" for every edge case.
+    res.redirect(`${loginPath}?success=${encodeURIComponent("Password set. Please log in.")}`);
+  });
+}
+
+registerPasswordReset({ table: "instructors", forgotPath: "/trainer/forgot-password", setPath: "/trainer/set-password", loginPath: "/trainer/login", portalLabel: "trainer" });
+registerPasswordReset({ table: "affiliates", forgotPath: "/affiliate/forgot-password", setPath: "/affiliate/set-password", loginPath: "/affiliate/login", portalLabel: "affiliate" });
 
 const applicationRateLimiter = createRateLimiter({
   windowMs: onboardingCfg.ONBOARDING_APPLICATION_RATE_LIMIT_WINDOW_MINUTES * 60 * 1000, max: onboardingCfg.ONBOARDING_APPLICATION_RATE_LIMIT_MAX, keyPrefix: "onboarding_apply",
@@ -103,7 +185,7 @@ router.post("/become-a-trainer/apply", applicationRateLimiter, handleRoeUpload("
 
 router.get("/trainer/login", (req, res) => {
   if (req.session.instructorId) return res.redirect("/trainer/dashboard");
-  res.render("trainer-login", { title: "Trainer login — Baseline Skills", error: null });
+  res.render("trainer-login", { title: "Trainer login — Baseline Skills", error: null, success: req.query.success || null });
 });
 
 router.post("/trainer/login", (req, res) => {
@@ -199,7 +281,7 @@ router.post("/become-an-affiliate/apply", applicationRateLimiter, handleRoeUploa
 
 router.get("/affiliate/login", (req, res) => {
   if (req.session.affiliateId) return res.redirect("/affiliate/dashboard");
-  res.render("affiliate-login", { title: "Affiliate login — Baseline Skills", error: null });
+  res.render("affiliate-login", { title: "Affiliate login — Baseline Skills", error: null, success: req.query.success || null });
 });
 
 router.post("/affiliate/login", (req, res) => {

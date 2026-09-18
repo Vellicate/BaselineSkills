@@ -1,0 +1,29 @@
+<%- include('partials/head') %>
+
+<h1 style="font-size:1.6rem">My Account</h1>
+<p style="color:var(--muted);max-width:640px">Change the password for the admin account you're currently signed in as.</p>
+
+<% if (typeof success !== 'undefined' && success) { %>
+  <div class="alert alert-success" style="margin-bottom:16px"><%= success %></div>
+<% } %>
+<% if (typeof error !== 'undefined' && error) { %>
+  <div class="alert alert-error" style="margin-bottom:16px"><%= error %></div>
+<% } %>
+
+<form method="POST" action="/admin/account/change-password" class="card" style="max-width:420px">
+  <div class="form-field">
+    <label>Current password</label>
+    <input type="password" name="currentPassword" required autocomplete="current-password">
+  </div>
+  <div class="form-field">
+    <label>New password</label>
+    <input type="password" name="newPassword" required autocomplete="new-password" minlength="8">
+  </div>
+  <div class="form-field">
+    <label>Confirm new password</label>
+    <input type="password" name="confirmPassword" required autocomplete="new-password" minlength="8">
+  </div>
+  <button type="submit" class="btn btn-navy">Update Password</button>
+</form>
+
+<%- include('partials/foot') %>

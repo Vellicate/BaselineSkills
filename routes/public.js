@@ -832,8 +832,13 @@ router.get("/courses/:slug/materials/:materialId/download", auth.requireLearner,
 router.get("/verify/:id", (req, res) => {
   const certificate = store.findOne("certificates", (c) => c.id === req.params.id);
   if (!certificate) return res.status(404).render("verify", { title: "Certificate not found — Baseline Skills", certificate: null, learner: null, course: null });
-  const learner = store.findOne("learners", (l) => l.id === certificate.learnerId);
+  const learnerRecord = store.findOne("learners", (l) => l.id === certificate.learnerId);
   const course = store.findOne("courses", (c) => c.id === certificate.courseId);
+  // This page is public and unauthenticated by design (see comment above) —
+  // only ever pass the one field it's meant to show, not the full learner
+  // record (which includes email, phone, and passwordHash), so a future
+  // template change can't accidentally leak PII on a page anyone can load.
+  const learner = { name: learnerRecord.name };
   res.render("verify", { title: `Verified: ${learner.name} — Baseline Skills`, noindex: true, certificate, learner, course });
 });
 

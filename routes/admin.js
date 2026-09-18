@@ -172,6 +172,80 @@ router.use(verifyOrigin); // enforce CSRF origin protection for admin POST reque
 router.use("/blogs", auth.requireSuperAdmin);
 router.use("/resources", auth.requireSuperAdmin);
 
+// ---- My Account (password change) ----
+// Deliberately available to every admin via requireAdmin above, not
+// requireSuperAdmin like /settings — a course_admin needs to be able to
+// change their own password just as much as a super_admin does. Reuses
+// the same lockout tracker shape as login (failures only, per-IP) since
+// this is the same class of risk: repeated wrong-password guesses against
+// an account, just from an already-authenticated session rather than the
+// public login form.
+const changePasswordAttempts = security.createLoginAttemptTracker({
+  windowMs: adminCfg.LOGIN_LOCKOUT_WINDOW_MINUTES * 60 * 1000,
+  maxAttempts: adminCfg.LOGIN_MAX_ATTEMPTS,
+});
+
+router.get("/account", (req, res) => {
+  res.render("admin/account", { title: "My Account — Baseline Skills", ...getAlerts(req) });
+});
+
+router.post("/account/change-password", (req, res) => {
+  const attemptStatus = changePasswordAttempts.check(req);
+  if (attemptStatus.blocked) {
+    res.set("Retry-After", attemptStatus.retryAfterSeconds);
+    return res.status(429).render("admin/account", {
+      title: "My Account — Baseline Skills",
+      error: "Too many failed attempts. Please wait 15 minutes and try again.",
+    });
+  }
+
+  const { currentPassword, newPassword, confirmPassword } = req.body;
+  const admin = store.findOne("admins", (a) => a.id === req.session.adminId);
+
+  // Shouldn't be reachable — requireAdmin already confirmed a session exists
+  // — but the admin row itself could have been deleted since the session
+  // was created, so this is checked rather than assumed.
+  if (!admin) {
+    return res.status(401).render("admin/account", {
+      title: "My Account — Baseline Skills",
+      error: "Your session is no longer valid. Please log in again.",
+    });
+  }
+
+  if (!auth.verifyPassword(currentPassword || "", admin.passwordHash)) {
+    changePasswordAttempts.recordFailure(req);
+    return res.status(400).render("admin/account", {
+      title: "My Account — Baseline Skills",
+      error: "Current password is incorrect.",
+    });
+  }
+
+  if (!newPassword || newPassword.length < adminCfg.PASSWORD_MIN_LENGTH) {
+    return res.status(400).render("admin/account", {
+      title: "My Account — Baseline Skills",
+      error: `New password must be at least ${adminCfg.PASSWORD_MIN_LENGTH} characters.`,
+    });
+  }
+
+  if (newPassword !== confirmPassword) {
+    return res.status(400).render("admin/account", {
+      title: "My Account — Baseline Skills",
+      error: "New password and confirmation don't match.",
+    });
+  }
+
+  if (newPassword === currentPassword) {
+    return res.status(400).render("admin/account", {
+      title: "My Account — Baseline Skills",
+      error: "New password must be different from your current password.",
+    });
+  }
+
+  changePasswordAttempts.recordSuccess(req);
+  store.update("admins", admin.id, { passwordHash: auth.hashPassword(newPassword) });
+  res.redirect("/admin/account?success=Password+updated.");
+});
+
 
 // ---- Enhanced Dashboard & Visual Analytics ----
 router.get("/", (req, res) => {
@@ -307,7 +381,9 @@ router.get("/export/:type", (req, res) => {
 
 // ---- Course list ----
 router.get("/courses", (req, res) => {
-  const courses = store.readAll("courses");
+  const visibleCourseIds = auth.visibleCourseIdsFor(req);
+  let courses = store.readAll("courses");
+  if (visibleCourseIds !== null) courses = courses.filter((c) => visibleCourseIds.includes(c.id));
   res.render("admin/courses-list", { 
     title: "Manage courses — Baseline Skills", 
     courses,

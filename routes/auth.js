@@ -53,13 +53,13 @@ router.post("/signup", authRateLimiter, (req, res) => {
   req.session.regenerate((err) => {
     if (err) return res.status(500).render("signup", { title: "Create your account — Baseline Skills", error: "Session error — please try again." });
     req.session.learnerId = learner.id;
-    res.redirect(req.query.next || "/account");
+    res.redirect(security.safeNextPath(req.query.next));
   });
 });
 
 router.get("/login", (req, res) => {
   if (req.session.learnerId) return res.redirect("/account");
-  res.render("login", { title: "Log in — Baseline Skills", error: null, next: req.query.next || "" });
+  res.render("login", { title: "Log in — Baseline Skills", error: null, next: security.safeNextPath(req.query.next, "") });
 });
 
 const loginAttempts = security.createLoginAttemptTracker({
@@ -73,7 +73,7 @@ router.post("/login", (req, res) => {
   const attemptStatus = loginAttempts.check(req);
   if (attemptStatus.blocked) {
     res.set("Retry-After", attemptStatus.retryAfterSeconds);
-    return res.status(429).render("login", { title: "Log in — Baseline Skills", error: "Too many failed login attempts. Please wait 15 minutes and try again.", next: req.body.next || "" });
+    return res.status(429).render("login", { title: "Log in — Baseline Skills", error: "Too many failed login attempts. Please wait 15 minutes and try again.", next: security.safeNextPath(req.body.next, "") });
   }
 
   const { email, password } = req.body;
@@ -81,14 +81,14 @@ router.post("/login", (req, res) => {
 
   if (!learner || !auth.verifyPassword(password, learner.passwordHash)) {
     loginAttempts.recordFailure(req);
-    return res.status(400).render("login", { title: "Log in — Baseline Skills", error: "Incorrect email or password.", next: req.body.next || "" });
+    return res.status(400).render("login", { title: "Log in — Baseline Skills", error: "Incorrect email or password.", next: security.safeNextPath(req.body.next, "") });
   }
 
   loginAttempts.recordSuccess(req);
   req.session.regenerate((err) => {
     if (err) return res.status(500).render("login", { title: "Log in — Baseline Skills", error: "Session error — please try again.", next: "" });
     req.session.learnerId = learner.id;
-    res.redirect(req.body.next || "/account");
+    res.redirect(security.safeNextPath(req.body.next));
   });
 });
 
