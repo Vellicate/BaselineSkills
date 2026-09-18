@@ -6,7 +6,7 @@
   "@type": "Course",
   "name": course.title,
   "description": course.summary,
-  "provider": { "@type": "Organization", "name": "Baseline Skills", "sameAs": "https://baselineskills.com" },
+  "provider": { "@type": "Organization", "name": "Baseline Skills", "sameAs": "https://www.baselineskills.com" },
   "hasCourseInstance": course.sessions.map(s => ({
     "@type": "CourseInstance",
     "courseMode": s.mode,
@@ -35,8 +35,8 @@
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
   "itemListElement": [
-    { "@type": "ListItem", "position": 1, "name": "Courses", "item": "https://baselineskills.com/courses" },
-    { "@type": "ListItem", "position": 2, "name": course.title, "item": `https://baselineskills.com/courses/${course.slug}` },
+    { "@type": "ListItem", "position": 1, "name": "Courses", "item": "https://www.baselineskills.com/courses" },
+    { "@type": "ListItem", "position": 2, "name": course.title, "item": `https://www.baselineskills.com/courses/${course.slug}` },
   ],
 }) %>
 </script>

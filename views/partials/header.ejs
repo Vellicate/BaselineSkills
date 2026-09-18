@@ -5,16 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title><%= title %></title>
 <meta name="description" content="<%= typeof metaDescription !== 'undefined' && metaDescription ? metaDescription : 'Baseline Skills — accredited requirements engineering, business analysis, and systems engineering training and certification, taught by practitioners.' %>">
-<link rel="canonical" href="https://baselineskills.com<%= typeof currentPath !== 'undefined' ? currentPath : '' %>">
+<link rel="canonical" href="https://www.baselineskills.com<%= typeof currentPath !== 'undefined' ? currentPath : '' %>">
 <% if (typeof noindex !== 'undefined' && noindex) { %><meta name="robots" content="noindex, nofollow"><% } %>
 <%
   const ogDescription = typeof metaDescription !== 'undefined' && metaDescription ? metaDescription : 'Baseline Skills — accredited requirements engineering, business analysis, and systems engineering training and certification, taught by practitioners.';
-  const ogImage = (typeof course !== 'undefined' && course && course.imageUrl) ? course.imageUrl : 'https://baselineskills.com/img/og-image.png';
+  const ogImage = (typeof course !== 'undefined' && course && course.imageUrl) ? course.imageUrl : 'https://www.baselineskills.com/img/og-image.png';
 %>
 <meta property="og:type" content="website">
 <meta property="og:title" content="<%= title %>">
 <meta property="og:description" content="<%= ogDescription %>">
-<meta property="og:url" content="https://baselineskills.com<%= typeof currentPath !== 'undefined' ? currentPath : '' %>">
+<meta property="og:url" content="https://www.baselineskills.com<%= typeof currentPath !== 'undefined' ? currentPath : '' %>">
 <meta property="og:image" content="<%= ogImage %>">
 <meta property="og:site_name" content="Baseline Skills">
 <meta name="twitter:card" content="summary_large_image">
@@ -26,8 +26,8 @@
   "@context": "https://schema.org",
   "@type": "Organization",
   "name": "Baseline Skills",
-  "url": "https://baselineskills.com",
-  "logo": "https://baselineskills.com/img/favicon.png",
+  "url": "https://www.baselineskills.com",
+  "logo": "https://www.baselineskills.com/img/favicon.png",
   "description": "Accredited training and certification marketplace for requirements engineering, business analysis, and systems engineering practitioners."
 }
 </script>

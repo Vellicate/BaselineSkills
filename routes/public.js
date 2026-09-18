@@ -165,7 +165,7 @@ router.get("/set-language/:lang", (req, res) => {
 });
 
 router.get("/sitemap.xml", (req, res) => {
-  const base = "https://baselineskills.com";
+  const base = "https://www.baselineskills.com";
   const today = new Date().toISOString().slice(0, 10);
   const staticPages = ["/", "/courses", "/about", "/contact", "/corporate-training", "/resources", "/blog", "/become-a-trainer", "/become-an-affiliate"].map((path) => ({ path, lastmod: today }));
   const courses = store.readAll("courses").map((c) => ({ path: `/courses/${c.slug}`, lastmod: (c.updatedAt || c.createdAt || today).slice(0, 10) }));
@@ -380,7 +380,7 @@ router.post("/courses/:slug/brochure", brochureRateLimiter, async (req, res) => 
     subject: `Your brochure: ${course.title.replace(/[\r\n]/g, "")}`,
     html: `<p>Thanks for your interest in <strong>${escapeHtml(course.title)}</strong>.</p>
            <p>Download your brochure here: <a href="${downloadUrl}">${downloadUrl}</a></p>
-           <p>Questions? Just reply to this email or visit <a href="https://baselineskills.com/contact">our contact page</a>.</p>`,
+           <p>Questions? Just reply to this email or visit <a href="https://www.baselineskills.com/contact">our contact page</a>.</p>`,
   });
 
   // Log it alongside other inquiries so it shows up in the existing admin
@@ -662,7 +662,7 @@ router.post("/resources/:slug/download", resourceDownloadRateLimiter, async (req
     subject: `Your download: ${resource.title.replace(/[\r\n]/g, "")}`,
     html: `<p>Thanks for your interest in <strong>${escapeHtml(resource.title)}</strong>.</p>
            <p>Download it here: <a href="${downloadUrl}">${downloadUrl}</a></p>
-           <p>Questions? Just reply to this email or visit <a href="https://baselineskills.com/contact">our contact page</a>.</p>`,
+           <p>Questions? Just reply to this email or visit <a href="https://www.baselineskills.com/contact">our contact page</a>.</p>`,
   });
 
   // Logged alongside other inquiries, same as brochure requests — visible

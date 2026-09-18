@@ -498,6 +498,34 @@
       </details>
     </div>
     <p style="text-align:center;margin-top:24px;color:var(--muted)">Still have a question? <a href="/contact">Contact us</a>.</p>
+    <script type="application/ld+json">
+    <%- JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Which course is right for me?",
+          "acceptedAnswer": { "@type": "Answer", "text": "If you're new to requirements engineering, CPRE Foundation is the clearest starting point. If your work is broader, begin with the path finder and we'll recommend a level." }
+        },
+        {
+          "@type": "Question",
+          "name": "Can I learn around a full-time job?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Yes. Upcoming cohort pages show the complete schedule, session length and time zone before you register." }
+        },
+        {
+          "@type": "Question",
+          "name": "Do I need experience to start?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Most foundation courses are designed for motivated beginners and working professionals. Each course page explains the recommended background." }
+        },
+        {
+          "@type": "Question",
+          "name": "What training delivery modes are available?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Live: learn with a practitioner in real time, asking questions and practising with examples. Recorded: learn at your own pace with recorded lessons and supporting materials. Hybrid: combine self-paced learning with live sessions." }
+        }
+      ]
+    }) %>
+    </script>
   </div>
 </section>
 

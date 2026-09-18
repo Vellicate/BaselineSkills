@@ -14,7 +14,7 @@
   "@context": "https://schema.org",
   "@type": "ItemList",
   "itemListElement": courses.map((c, i) => ({
-    "@type": "ListItem", "position": i + 1, "name": c.title, "url": `https://baselineskills.com/courses/${c.slug}`,
+    "@type": "ListItem", "position": i + 1, "name": c.title, "url": `https://www.baselineskills.com/courses/${c.slug}`,
   })),
 }) %>
 </script>
@@ -24,8 +24,8 @@
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
   "itemListElement": [
-    { "@type": "ListItem", "position": 1, "name": "Courses", "item": "https://baselineskills.com/courses" },
-    { "@type": "ListItem", "position": 2, "name": body.name, "item": `https://baselineskills.com/certifications/${body.slug}` },
+    { "@type": "ListItem", "position": 1, "name": "Courses", "item": "https://www.baselineskills.com/courses" },
+    { "@type": "ListItem", "position": 2, "name": body.name, "item": `https://www.baselineskills.com/certifications/${body.slug}` },
   ],
 }) %>
 </script>

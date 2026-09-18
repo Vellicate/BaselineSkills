@@ -329,7 +329,7 @@ async function finalizeRegistration(registrationId, opts = {}) {
   if (reg.learnerId) {
     const learner = store.findOne("learners", (l) => l.id === reg.learnerId);
     if (learner && !learner.passwordHash && learner.passwordResetToken) {
-      const setPasswordUrl = `${process.env.APP_BASE_URL || "https://baselineskills.com"}/set-password?token=${learner.passwordResetToken}`;
+      const setPasswordUrl = `${process.env.APP_BASE_URL || "https://www.baselineskills.com"}/set-password?token=${learner.passwordResetToken}`;
       setPasswordNote = `<p>We've set up an account for you so you can track this registration — <a href="${setPasswordUrl}">set a password</a> to log in any time.</p>`;
     }
   }

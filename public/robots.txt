@@ -7,4 +7,4 @@ Disallow: /affiliate/dashboard
 Disallow: /register/checkout
 Disallow: /webhooks
 
-Sitemap: https://baselineskills.com/sitemap.xml
+Sitemap: https://www.baselineskills.com/sitemap.xml
