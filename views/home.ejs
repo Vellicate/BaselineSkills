@@ -368,10 +368,46 @@
     </div>
   </div>
   <div class="logo-slider-track" role="list" aria-label="Organizations professionals have learned with us from">
-    <% const orgs = ["Mercedes-Benz","Continental Automotive","Aumovio","Bosch","Mahindra & Mahindra","Renault-Nissan Technology and Business Center","Tata Technologies","Blue Binaries","Garrett Motion","Rolls-Royce","Accenture","Capgemini","Cognizant","CSC","L&T Infotech","Talentica","HSBC","RBS","Bank of America","JLT","First American","Cisco","Vodafone","Deloitte","D. E. Shaw","Siemens Healthineers","Cerner","AstraZeneca","Eurofins","Shell"]; %>
+    <% const orgs = [
+      { name: "Mercedes-Benz", file: "mercedes-benz.png" },
+      { name: "Continental Automotive", file: "continental-automotive.png" },
+      { name: "Aumovio", file: "aumovio.png" },
+      { name: "Bosch", file: "bosch.png" },
+      { name: "Mahindra & Mahindra", file: "mahindra-and-mahindra.png" },
+      { name: "Renault-Nissan Technology and Business Center", file: "renault-nissan-technology-and-business-center.png" },
+      { name: "Tata Technologies", file: "tata-technologies.png" },
+      { name: "Blue Binaries", file: "blue-binaries.png" },
+      { name: "Garrett Motion", file: "garrett-motion.png" },
+      { name: "Rolls-Royce", file: "rolls-royce.png" },
+      { name: "Accenture", file: "accenture.png" },
+      { name: "Capgemini", file: "capgemini.png" },
+      { name: "Cognizant", file: "cognizant.png" },
+      { name: "CSC", file: "csc.png" },
+      { name: "L&T Infotech", file: "l-t-infotech.png" },
+      { name: "HSBC", file: "hsbc.png" },
+      { name: "RBS", file: "rbs.png" },
+      { name: "Bank of America", file: "bank-of-america.png" },
+      { name: "JLT", file: "jlt.png" },
+      { name: "First American", file: "first-american.png" },
+      { name: "Cisco", file: "cisco.png" },
+      { name: "Vodafone", file: "vodafone.png" },
+      { name: "Deloitte", file: "deloitte.png" },
+      { name: "D. E. Shaw", file: "de-shaw.png" },
+      { name: "Siemens Healthineers", file: "siemens-healthineers.png" },
+      { name: "Cerner", file: "cerner.png" },
+      { name: "AstraZeneca", file: "astra-zeneca.png" },
+      { name: "Eurofins", file: "eurofins.png" },
+      { name: "Shell", file: "shell.png" },
+      { name: "Siemens", file: "siemens.png" },
+      { name: "Zeiss", file: "zeiss.png" },
+      { name: "Giesecke+Devrient", file: "gi-de.png" },
+      { name: "Marsh McLennan", file: "marsh-mclennan.png" }
+    ]; %>
     <div class="logo-slider-inner">
       <% [...orgs, ...orgs].forEach(org => { %>
-        <span class="logo-slider-item" role="listitem"><%= org %></span>
+        <span class="logo-slider-item" role="listitem">
+          <img src="/img/customer-logos/<%= org.file %>" alt="<%= org.name %>" loading="lazy" />
+        </span>
       <% }) %>
     </div>
   </div>
