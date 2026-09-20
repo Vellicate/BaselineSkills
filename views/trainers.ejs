@@ -1,0 +1,37 @@
+<%- include('partials/header') %>
+
+<section class="section-tight" style="background:linear-gradient(135deg,#0F5C56,#083834);color:#fff">
+  <div class="container" style="max-width:760px">
+    <span class="eyebrow" style="color:rgba(255,255,255,.75)">Practitioner-led</span>
+    <h1 style="color:#fff;margin:8px 0 12px">Learn from people who have done the work.</h1>
+    <p class="lead" style="color:rgba(255,255,255,.85)">Baseline Skills courses are designed and delivered by experienced practitioners&mdash;not just presenters. Learn the methods, judgement and practical techniques that come from real projects and real professional environments.</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <% if (trainers.length === 0) { %>
+      <p class="lead" style="text-align:center;color:var(--muted)">Practitioner profiles are being updated. Check back soon.</p>
+    <% } else { %>
+      <div class="why-grid" style="grid-template-columns:repeat(auto-fill,minmax(260px,1fr))">
+        <% trainers.forEach(t => { %>
+          <a href="/trainers/<%= t.id %>" class="why-item" style="text-decoration:none;color:inherit;display:block">
+            <% if (t.photoPath) { %>
+              <img src="<%= t.photoPath %>" alt="<%= t.name %>" style="width:64px;height:64px;border-radius:50%;object-fit:cover;margin-bottom:12px">
+            <% } else { %>
+              <div style="width:64px;height:64px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;margin-bottom:12px">
+                <%= t.name.split(' ').map(n => n[0]).slice(0,2).join('').toUpperCase() %>
+              </div>
+            <% } %>
+            <h4 style="margin:0 0 4px"><%= t.name %></h4>
+            <% if (t.title) { %><p style="margin:0 0 8px;color:var(--navy-soft);font-size:.85rem;font-weight:600"><%= t.title %></p><% } %>
+            <% if (t.bio) { %><p style="margin:0;font-size:.85rem"><%= t.bio.slice(0, 140) %><%= t.bio.length > 140 ? '&hellip;' : '' %></p><% } %>
+            <p style="margin:10px 0 0;font-size:.78rem;color:var(--muted)"><%= t.courseCount %> course<%= t.courseCount === 1 ? '' : 's' %></p>
+          </a>
+        <% }) %>
+      </div>
+    <% } %>
+  </div>
+</section>
+
+<%- include('partials/footer') %>

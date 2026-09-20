@@ -62,22 +62,6 @@ app.use((req, res, next) => {
 });
 
 app.use(express.static(path.join(__dirname, "public")));
-app.use(bodyParser.urlencoded({ extended: true }));
-// Excludes /webhooks/* — those routes need the raw, unparsed request body
-// to verify Paddle's HMAC signature and satisfy PayPal's verification API,
-// both of which require the exact bytes as sent, not a re-serialized JSON
-// object. Each webhook route applies its own express.raw() middleware
-// instead. Without this exclusion, this global parser consumes the body
-// first, and the route-specific raw parser gets nothing left to capture —
-// req.body ends up as an already-parsed object, and "${req.body}" in the
-// signature computation silently becomes the string "[object Object]"
-// instead of the real payload. This is why Paddle webhook signature
-// verification has never actually succeeded, on any payload, until this
-// was caught by testing a fully signed webhook end-to-end rather than
-// stopping once the request reached the handler at all.
-app.use(bodyParser.json({
-  type: (req) => !req.path.startsWith("/webhooks/") && req.is("json"),
-}));
 
 // If this app runs behind a reverse proxy/load balancer (Netlify, Heroku,
 // nginx, etc.), uncomment the line below so req.ip and req.secure reflect
@@ -110,6 +94,17 @@ app.use(
 );
 
 // Make a few things available to every view without passing them explicitly each time.
+// Deliberately placed before the body parsers below, not after — found
+// during testing that a malformed JSON body makes bodyParser.json() call
+// next(err), which skips every remaining *normal* middleware (including
+// this one) and jumps straight to the error handler at the bottom of this
+// file. That error handler renders views/500.ejs, which includes the site
+// header, which calls t(...) — undefined if this middleware never ran,
+// crashing the error page itself and leaking a raw stack trace to the
+// visitor instead of the intended generic message. Session only needs to
+// run before this (res.locals.lang reads req.session), not after the body
+// parsers, so moving both of these earlier fixes the root cause rather
+// than patching around it in the error handler.
 app.use((req, res, next) => {
   res.locals.isAdmin = !!(req.session && req.session.adminId);
   res.locals.isLoggedInLearner = !!(req.session && req.session.learnerId);
@@ -124,6 +119,23 @@ app.use((req, res, next) => {
   res.locals.currentPath = req.path;
   next();
 });
+
+app.use(bodyParser.urlencoded({ extended: true }));
+// Excludes /webhooks/* — those routes need the raw, unparsed request body
+// to verify Paddle's HMAC signature and satisfy PayPal's verification API,
+// both of which require the exact bytes as sent, not a re-serialized JSON
+// object. Each webhook route applies its own express.raw() middleware
+// instead. Without this exclusion, this global parser consumes the body
+// first, and the route-specific raw parser gets nothing left to capture —
+// req.body ends up as an already-parsed object, and "${req.body}" in the
+// signature computation silently becomes the string "[object Object]"
+// instead of the real payload. This is why Paddle webhook signature
+// verification has never actually succeeded, on any payload, until this
+// was caught by testing a fully signed webhook end-to-end rather than
+// stopping once the request reached the handler at all.
+app.use(bodyParser.json({
+  type: (req) => !req.path.startsWith("/webhooks/") && req.is("json"),
+}));
 
 app.use("/", require("./routes/public"));
 app.use("/", require("./routes/registration"));

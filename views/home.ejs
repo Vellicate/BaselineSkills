@@ -12,22 +12,21 @@
 
       <!-- Exact Primary Hero Heading -->
       <h1 class="hero-title animate-title">
-        Build the skills your next role is looking for.
+        From &ldquo;I should learn this&rdquo; to &ldquo;I can use this.&rdquo;
       </h1>
 
       <p class="hero-subtitle animate-fade-in delay-1">
-        Live, practitioner-led learning in requirements engineering, business analysis, systems engineering, project management, automobile, AI — with a clear route from first lesson to recognised certification.
+        Learn skills that matter at work&mdash;not just courses you can complete. Choose a useful outcome, learn with experienced practitioners, practise what you learn, and take it back to work.
       </p>
 
       <div class="hero-ctas animate-fade-in delay-2">
-        <a href="/courses" class="btn btn-gold btn-lg btn-glow">
-          <span>Explore Courses</span>
+        <a href="#outcomes" class="btn btn-gold btn-lg btn-glow" data-analytics-event="choose_outcome">
+          <span>Choose your outcome</span>
           <svg class="btn-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
         </a>
-        <button type="button" class="btn btn-outline-light btn-lg btn-expert-hero" onclick="openExpertModal()">
-          <span class="cta-pulse-dot"></span>
-          <span>Talk to Expert</span>
-        </button>
+        <a href="/courses" class="btn btn-outline-light btn-lg" data-analytics-event="explore_learning_path">
+          <span>Explore learning paths</span>
+        </a>
       </div>
 
       <!-- CORE Professional Trainer Card -->
@@ -66,26 +65,33 @@
       <div class="featured-card-wrapper">
         <div class="featured-card-glow"></div>
         <div class="hero-card next-steps-card">
-          <h2 style="margin-bottom:18px;font-size:1.43rem">Your next three steps</h2>
+          <h2 style="margin-bottom:18px;font-size:1.43rem">How it works</h2>
           <div class="next-step-item">
             <span class="next-step-num">01</span>
             <div>
-              <h4 style="margin:0 0 4px">Choose your direction</h4>
-              <p style="margin:0;color:var(--muted);font-size:.9rem">Tell us what you want to do next.</p>
+              <h4 style="margin:0 0 4px">Choose a useful outcome</h4>
+              <p style="margin:0;color:var(--muted);font-size:.9rem">Start with what you want to be able to do.</p>
             </div>
           </div>
           <div class="next-step-item">
             <span class="next-step-num">02</span>
             <div>
-              <h4 style="margin:0 0 4px">Learn with a practitioner</h4>
-              <p style="margin:0;color:var(--muted);font-size:.9rem">Live sessions, examples and feedback.</p>
+              <h4 style="margin:0 0 4px">Learn with practitioners</h4>
+              <p style="margin:0;color:var(--muted);font-size:.9rem">Learn from professionals who have done the work.</p>
             </div>
           </div>
           <div class="next-step-item">
             <span class="next-step-num">03</span>
             <div>
-              <h4 style="margin:0 0 4px">Prove what you can do</h4>
-              <p style="margin:0;color:var(--muted);font-size:.9rem">Apply it at work. Earn your credential.</p>
+              <h4 style="margin:0 0 4px">Practise what you learn</h4>
+              <p style="margin:0;color:var(--muted);font-size:.9rem">Turn concepts into practical capability.</p>
+            </div>
+          </div>
+          <div class="next-step-item">
+            <span class="next-step-num">04</span>
+            <div>
+              <h4 style="margin:0 0 4px">Take it back to work</h4>
+              <p style="margin:0;color:var(--muted);font-size:.9rem">Apply the skill to your project, team or organisation.</p>
             </div>
           </div>
           <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--line);text-align:center">
@@ -97,16 +103,71 @@
   </div>
 </section>
 
-<!-- Feature Learning Paths Section (Highlighted & Animated) -->
-<section class="section learning-paths-section" id="paths">
+<!-- Learn -> Practise -> Apply -->
+<section class="section" style="background:#fff">
   <div class="container">
     <div class="section-hdr center">
-      <h2>What do you want to get better at?</h2>
-      <p class="lead">Pick the outcome that sounds most like your next move. We'll help you find the right level and format.</p>
+      <h2>Learning doesn&rsquo;t stop when the session ends.</h2>
+      <p class="lead">The difference between knowing a method and being able to use it is practice.</p>
+    </div>
+    <div class="kpd-progression">
+      <span>KNOW</span><span class="kpd-arrow">&darr;</span><span>PRACTISE</span><span class="kpd-arrow">&darr;</span><span>DO</span>
+    </div>
+    <div class="lpa-grid">
+      <div class="lpa-card">
+        <div class="lpa-icon" aria-hidden="true">📖</div>
+        <h4>Learn</h4>
+        <p>Build the concepts, methods and professional judgement with experienced practitioners.</p>
+      </div>
+      <div class="lpa-card">
+        <div class="lpa-icon" aria-hidden="true">🛠️</div>
+        <h4>Practise</h4>
+        <p>Work through realistic situations and exercises that turn knowledge into capability.</p>
+      </div>
+      <div class="lpa-card">
+        <div class="lpa-icon" aria-hidden="true">🎯</div>
+        <h4>Apply</h4>
+        <p>Take what you have learned back to your project, team and workplace.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Feature Learning Paths Section (Highlighted & Animated) -->
+<section class="section learning-paths-section" id="outcomes">
+  <div class="container">
+    <div class="section-hdr center">
+      <span class="eyebrow">Start with what you want to be able to do</span>
+      <h2>Choose a useful outcome</h2>
+      <p class="lead">Don't start with a course. Start with an outcome.</p>
+    </div>
+
+    <% const categoryDisplayLabel = (cat) => cat === 'AI' ? 'Artificial Intelligence' : cat; %>
+    <% const outcomeCopy = {
+      "Requirements Engineering": { title: "Improve Requirements", desc: "Write, analyse and manage better requirements." },
+      "Business Analysis": { title: "Become a Better Business Analyst", desc: "Build practical analysis, stakeholder and decision-making skills." },
+      "Systems Engineering": { title: "Build Systems Thinking", desc: "Understand systems, architecture and engineering relationships." },
+      "Business Process Modeling": { title: "Improve Business Processes", desc: "Model, analyse and improve how work gets done." },
+      "Artificial Intelligence": { title: "Work with AI", desc: "Apply AI thoughtfully to professional work." },
+      "AI": { title: "Work with AI", desc: "Apply AI thoughtfully to professional work." },
+      "Automotive": { title: "Build Automotive Engineering Skills", desc: "Develop practical capability for modern automotive and software-defined products." },
+      "Project Management": { title: "Manage Projects with Confidence", desc: "Plan, track and deliver work that stays on budget and on time." },
+    }; %>
+    <div class="outcome-grid">
+      <% Object.keys(byCategory).forEach((cat) => { %>
+        <% const copy = outcomeCopy[cat] || { title: categoryDisplayLabel(cat), desc: "Build practical, job-ready skills in this area." }; %>
+        <div class="outcome-card">
+          <div class="outcome-count"><%= byCategory[cat].length %> course<%= byCategory[cat].length === 1 ? '' : 's' %></div>
+          <h4><%= copy.title %></h4>
+          <p><%= copy.desc %></p>
+          <a href="#path-<%= cat.replace(/\s+/g,'-') %>" class="btn btn-outline btn-sm" onclick="selectOutcome('<%= cat.replace(/\s+/g,'-') %>', event)" data-analytics-event="choose_outcome" data-category="<%= cat %>">
+            Explore <%= categoryDisplayLabel(cat) %>
+          </a>
+        </div>
+      <% }) %>
     </div>
 
     <!-- Animated Path Tabs Container -->
-    <% const categoryDisplayLabel = (cat) => cat === 'AI' ? 'Artificial Intelligence' : cat; %>
     <div class="path-tabs-container">
       <div class="path-tabs" style="justify-content:center">
         <% Object.keys(byCategory).forEach((cat, i) => { %>
@@ -132,6 +193,7 @@
               </div>
 
               <h4 class="mini-course-title"><%= c.title %></h4>
+              <div style="margin:-2px 0 6px"><%- include('partials/practice-badge', { course: c }) %></div>
               <p class="mini-course-summary"><%= c.summary %></p>
 
               <% const cardMode = c.cardData.nextSession ? c.cardData.nextSession.mode : ((c.sessions && c.sessions.length) ? c.sessions[0].mode : 'Live Online'); %>
@@ -178,6 +240,32 @@
     </div>
   </div>
 </section>
+
+<!-- Sequenced learning paths -->
+<% if (learningPaths && learningPaths.length > 0) { %>
+<section class="section" style="background:#fff;padding-top:0">
+  <div class="container">
+    <div class="section-hdr center">
+      <h2>Build skills that build on each other.</h2>
+      <p class="lead">Follow a practical learning path from foundational knowledge to workplace application.</p>
+    </div>
+    <% learningPaths.forEach(path => { %>
+      <div class="path-sequence-block">
+        <div class="path-sequence-name"><%= path.name %></div>
+        <div class="path-sequence-row">
+          <% path.courses.forEach((c, i) => { %>
+            <% if (i > 0) { %><div class="path-sequence-arrow" aria-hidden="true">&rarr;</div><% } %>
+            <a href="/courses/<%= c.slug %>" class="path-sequence-item" style="text-decoration:none;color:inherit" data-analytics-event="explore_learning_path" data-course-id="<%= c.id %>">
+              <h5><%= c.title %></h5>
+              <p><%= c.durationDays %> Day<%= c.durationDays > 1 ? 's' : '' %></p>
+            </a>
+          <% }) %>
+        </div>
+      </div>
+    <% }) %>
+  </div>
+</section>
+<% } %>
 
 <!-- Upcoming Programs & Live Batches Section -->
 <section class="section" style="padding-top:0;padding-bottom:0">
@@ -330,6 +418,46 @@
         <p>Bespoke training mapped directly to your internal tools (DOORS, Polarion, Jira, Cameo).</p>
       </div>
     </div>
+    <p style="text-align:center;margin-top:32px">
+      <a href="/trainers" class="btn btn-outline" data-analytics-event="meet_practitioners">Meet our practitioners</a>
+    </p>
+  </div>
+</section>
+
+<!-- Baseline Skills + ReqDrive: learn -> practise -> apply -->
+<section class="section reqdrive-section">
+  <div class="container">
+    <div class="section-hdr center">
+      <h2 style="color:#fff">Learn it. Practise it. Apply it.</h2>
+      <p class="lead" style="color:rgba(255,255,255,.8)">For selected Requirements Engineering and Business Analysis programmes, Baseline Skills connects learning with hands-on practice through ReqDrive.</p>
+    </div>
+    <p style="max-width:640px;margin:0 auto;text-align:center;color:rgba(255,255,255,.75);font-size:.92rem">
+      ReqDrive is an AI-powered practice and delivery environment for Requirements Engineering. It gives learners a place to work with requirements, explore quality issues, improve their thinking and apply professional techniques in realistic situations.
+    </p>
+    <div class="reqdrive-flow">
+      <div class="reqdrive-flow-step">
+        <div class="rf-kicker">Baseline Skills</div>
+        <h4>Learn the method</h4>
+        <p>Live sessions with a practitioner instructor.</p>
+      </div>
+      <div class="reqdrive-flow-arrow" aria-hidden="true">&rarr;</div>
+      <div class="reqdrive-flow-step">
+        <div class="rf-kicker">ReqDrive</div>
+        <h4>Practise the method</h4>
+        <p>Guided, hands-on practice with realistic requirements.</p>
+      </div>
+      <div class="reqdrive-flow-arrow" aria-hidden="true">&rarr;</div>
+      <div class="reqdrive-flow-step">
+        <div class="rf-kicker">Your workplace</div>
+        <h4>Apply the skill</h4>
+        <p>Bring the method back to your own project.</p>
+      </div>
+    </div>
+    <p style="text-align:center;margin-top:28px">
+      <a href="#outcomes" class="btn btn-gold" data-analytics-event="explore_reqdrive">Explore practice-enabled learning</a>
+      <a href="https://reqdrive.com" target="_blank" rel="noopener" class="btn btn-outline-light" style="margin-left:10px" data-analytics-event="explore_reqdrive">Explore ReqDrive</a>
+    </p>
+    <p class="reqdrive-principle">AI accelerates the work. The professional owns the judgement.</p>
   </div>
 </section>
 
@@ -338,23 +466,28 @@
   <div class="container">
     <div class="section-hdr center">
       <span class="eyebrow">A BETTER WAY TO LEARN</span>
-      <h2>From "I should learn this" to "I can use this."</h2>
+      <h2>A better way to build professional capability</h2>
     </div>
-    <div class="why-grid" style="grid-template-columns:repeat(3,1fr)">
+    <div class="why-grid-4">
       <div class="why-item">
         <div class="card-icon">01</div>
-        <h4>Choose a useful outcome</h4>
-        <p>Start with the work you want to do better, not a catalogue of course names.</p>
+        <h4>Outcome-led</h4>
+        <p>Start with what you want to be able to do.</p>
       </div>
       <div class="why-item">
         <div class="card-icon">02</div>
-        <h4>Learn in a live cohort</h4>
-        <p>Ask questions, practise with realistic examples and learn alongside people like you.</p>
+        <h4>Practitioner-led</h4>
+        <p>Learn from people with real-world experience.</p>
       </div>
       <div class="why-item">
         <div class="card-icon">03</div>
-        <h4>Take it back to work</h4>
-        <p>Leave with a credential, a repeatable method and more confidence in your next conversation.</p>
+        <h4>Practice-driven</h4>
+        <p>Turn concepts into practical capability.</p>
+      </div>
+      <div class="why-item">
+        <div class="card-icon">04</div>
+        <h4>Workplace-focused</h4>
+        <p>Take the skill back to your job.</p>
       </div>
     </div>
   </div>
@@ -406,7 +539,7 @@
     <div class="logo-slider-inner">
       <% [...orgs, ...orgs].forEach(org => { %>
         <span class="logo-slider-item" role="listitem">
-          <img src="/img/customer-logos/<%= org.file %>" alt="<%= org.name %>" loading="lazy" />
+          <img src="/img/customer-logos/<%= org.file %>" alt="<%= org.name %>" />
         </span>
       <% }) %>
     </div>
@@ -451,6 +584,28 @@
           <div>
             <div class="testimonial-author">Rajeev Ponmanessery</div>
             <div class="testimonial-by">Emirates, Dubai</div>
+          </div>
+        </div>
+      </div>
+      <div class="testimonial-enhanced">
+        <div class="quote-mark">“</div>
+        <p>I could relate to all my work done at office. I will be able to apply the learning on my job. Thank you for such a wonderful training!</p>
+        <div class="testimonial-profile">
+          <div class="testimonial-avatar">🏦</div>
+          <div>
+            <div class="testimonial-author">Surya Sagar</div>
+            <div class="testimonial-by">HSBC, Bangalore</div>
+          </div>
+        </div>
+      </div>
+      <div class="testimonial-enhanced">
+        <div class="quote-mark">“</div>
+        <p>It gave a clear direction as to how we can study for the exams and how we can apply the learnings on our project.</p>
+        <div class="testimonial-profile">
+          <div class="testimonial-avatar">⚙️</div>
+          <div>
+            <div class="testimonial-author">Vijay Kumar Menedhal</div>
+            <div class="testimonial-by">Bosch, Bangalore</div>
           </div>
         </div>
       </div>
@@ -532,11 +687,14 @@
 <section class="cta-band">
   <div class="cta-band-bg-accent" aria-hidden="true"></div>
   <div class="container cta-band-inner">
-    <h2>Ready to Build Stronger Engineering Capabilities?</h2>
-    <p class="cta-band-sub">Talk with our senior engineering advisors or download the full curriculum catalogue today.</p>
+    <h2>What do you want to be able to do?</h2>
+    <p class="cta-band-sub">Choose a useful outcome. Learn with practitioners. Practise what you learn. Take it back to work.</p>
     <div class="cta-band-btns">
-      <button type="button" class="btn btn-gold btn-lg btn-glow" onclick="openExpertModal()">Schedule a Consultation</button>
-      <a href="/courses" class="btn btn-outline-light btn-lg">Explore All Courses</a>
+      <a href="#outcomes" class="btn btn-gold btn-lg btn-glow" data-analytics-event="choose_outcome">Choose your outcome</a>
+      <button type="button" class="btn btn-outline-light btn-lg btn-expert-hero" onclick="openExpertModal()">
+        <span class="cta-pulse-dot"></span>
+        <span>Talk to an expert</span>
+      </button>
     </div>
   </div>
 </section>
@@ -549,6 +707,34 @@ function showPath(id, btn){
   if (target) target.classList.add('active');
   if (btn) btn.classList.add('active');
 }
+
+// Outcome cards trigger the same tab-switching as clicking a tab directly,
+// then scroll the tabs/panel into view -- so "Explore Requirements
+// Engineering" on an outcome card and clicking the "Requirements
+// Engineering" tab always land in exactly the same state.
+function selectOutcome(id, event){
+  if (event) event.preventDefault();
+  const tabBtn = Array.from(document.querySelectorAll('.path-tab')).find(t => t.getAttribute('onclick') && t.getAttribute('onclick').includes("'" + id + "'"));
+  showPath(id, tabBtn);
+  const tabsContainer = document.querySelector('.path-tabs-container');
+  if (tabsContainer) tabsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// Fire-and-forget analytics beacon for the interactions called out in the
+// Phase 1 repositioning brief. Never blocks navigation and never throws --
+// an ad blocker or a network hiccup here should not be able to break a CTA.
+document.addEventListener('click', function(e) {
+  const el = e.target.closest('[data-analytics-event]');
+  if (!el) return;
+  const body = { eventType: el.dataset.analyticsEvent };
+  if (el.dataset.courseId) body.courseId = el.dataset.courseId;
+  fetch('/analytics/event', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+    keepalive: true,
+  }).catch(() => {});
+});
 </script>
 
 <%- include('partials/footer') %>

@@ -167,7 +167,7 @@ router.get("/set-language/:lang", (req, res) => {
 router.get("/sitemap.xml", (req, res) => {
   const base = "https://www.baselineskills.com";
   const today = new Date().toISOString().slice(0, 10);
-  const staticPages = ["/", "/courses", "/about", "/contact", "/corporate-training", "/resources", "/blog", "/become-a-trainer", "/become-an-affiliate"].map((path) => ({ path, lastmod: today }));
+  const staticPages = ["/", "/courses", "/about", "/contact", "/corporate-training", "/resources", "/blog", "/become-a-trainer", "/become-an-affiliate", "/trainers"].map((path) => ({ path, lastmod: today }));
   const courses = store.readAll("courses").map((c) => ({ path: `/courses/${c.slug}`, lastmod: (c.updatedAt || c.createdAt || today).slice(0, 10) }));
   const blogs = store.readAll("blogs").filter((b) => b.published).map((b) => ({ path: `/blog/${b.slug}`, lastmod: (b.updatedAt || b.createdAt || today).slice(0, 10) }));
   const resources = store.readAll("resources").filter((r) => r.body).map((r) => ({ path: `/resources/${r.slug}`, lastmod: (r.updatedAt || r.createdAt || today).slice(0, 10) }));
@@ -243,6 +243,24 @@ router.get("/", (req, res) => {
     industries: store.getSetting("stat_industries_served", "10+"),
   };
 
+  // Phase 1 repositioning, Section 13: sequenced learning paths, distinct
+  // from the flat per-category outcome cards above them. Each entry is a
+  // curated *order* through real, existing courses -- looked up from the
+  // `courses` array already loaded above so title/price/duration can never
+  // drift stale, rather than hardcoding course details in the template.
+  // Slugs only; if a course is ever renamed or removed, it silently drops
+  // out of the path instead of showing broken/stale data.
+  const pathDefinitions = [
+    { name: "Requirements Engineering", slugs: ["cpre-foundation-level", "cpre-advanced-elicitation", "cpre-advanced-requirements-management", "ai4re-microcredential", "cpre-advanced-requirements-modeling"] },
+    { name: "Business Analysis", slugs: ["requirements-elicitation-workshop", "bulletproof-business-cases", "certification-of-capability-in-business-analysis", "certified-business-analysis-professional"] },
+    { name: "Systems Engineering", slugs: ["introduction-to-systems-engineering", "complete-system-analysis", "mbse-fundamentals"] },
+    { name: "Automotive", slugs: ["aspice-fundamentals", "software-defined-vehicles", "functional-safety-overview", "automotive-cybersecurity-introduction"] },
+  ];
+  const learningPaths = pathDefinitions.map((p) => ({
+    name: p.name,
+    courses: p.slugs.map((slug) => courses.find((c) => c.slug === slug)).filter(Boolean),
+  })).filter((p) => p.courses.length > 0);
+
   // Same search bar as /courses, replicated just above the cohorts
   // section — it submits straight to /courses (GET, no JS) rather than
   // duplicating that page's filtering logic here, so the two can never
@@ -253,7 +271,7 @@ router.get("/", (req, res) => {
   const searchCertBodies = ["All", ...searchAllBodies.map((b) => ({ slug: b.slug, name: b.name }))]
     .filter((v, i, arr) => v === "All" || arr.findIndex((x) => x.slug === v.slug) === i);
 
-  res.render("home", { title: "Baseline Skills — Build Skills. Establish Excellence.", metaDescription: "Accredited IREB CPRE, IIBA business analysis, and systems engineering training and certification. Live online and corporate cohorts, taught by practitioners.", byCategory, upcoming, featuredCourse, featuredPricing, siteStats, searchLevels, searchFormats, searchCertBodies });
+  res.render("home", { title: "Baseline Skills | Professional Skills, Made Practical", metaDescription: "Practitioner-led live learning and hands-on practice in IREB Requirements Engineering, Business Analysis, Systems Engineering, Automotive and AI.", byCategory, upcoming, featuredCourse, featuredPricing, siteStats, searchLevels, searchFormats, searchCertBodies, learningPaths });
 });
 
 router.get("/courses", (req, res) => {
@@ -308,6 +326,24 @@ router.get("/courses", (req, res) => {
     formats, activeFormat: format,
     certBodies, activeCertBody: certBody,
     q, maxPrice: req.query.maxPrice || "",
+  });
+});
+
+// Phase 1 repositioning: a real "meet our practitioners" destination.
+// Individual trainer profiles (/trainers/:id) already existed; there was
+// no listing page linking to them. Approved instructors only -- pending
+// applicants have a record in this same table but shouldn't appear on a
+// public credibility page before they're actually vetted.
+router.get("/trainers", (req, res) => {
+  const trainers = store.readAll("trainers").filter((t) => t.verificationStatus === "approved");
+  const withCourseCounts = trainers.map((t) => ({
+    ...t,
+    courseCount: publishedCourses().filter((c) => c.trainerId === t.id).length,
+  }));
+  res.render("trainers", {
+    title: "Meet our practitioners — Baseline Skills",
+    metaDescription: "Baseline Skills courses are designed and delivered by experienced practitioners, each accredited specifically in the discipline they teach.",
+    trainers: withCourseCounts,
   });
 });
 
@@ -840,6 +876,41 @@ router.get("/verify/:id", (req, res) => {
   // template change can't accidentally leak PII on a page anyone can load.
   const learner = { name: learnerRecord.name };
   res.render("verify", { title: `Verified: ${learner.name} — Baseline Skills`, noindex: true, certificate, learner, course });
+});
+
+// Phase 1 repositioning: real event capture for the analytics_events table,
+// which existed in the schema but had no write path anywhere in the app
+// before this. Deliberately a tiny, generic endpoint (one event type per
+// call, no batching, no PII) rather than a new analytics framework — the
+// front end just fires a beacon on the specific interactions called out in
+// the repositioning brief (choose_outcome, explore_reqdrive, etc.).
+// Unauthenticated by design (most of these fire on the homepage, before
+// login), so eventType is checked against an allow-list rather than trusted
+// as free text, and courseId is verified to actually exist rather than
+// stored blind.
+const ANALYTICS_EVENT_TYPES = new Set([
+  "choose_outcome", "explore_learning_path", "meet_practitioners",
+  "practice_enabled_course", "explore_reqdrive", "start_practice",
+  "corporate_capability", "course_view", "course_registration",
+]);
+const analyticsRateLimiter = createRateLimiter({
+  windowMs: publicCfg.ANALYTICS_EVENT_RATE_LIMIT_WINDOW_MINUTES * 60 * 1000,
+  max: publicCfg.ANALYTICS_EVENT_RATE_LIMIT_MAX,
+  keyPrefix: "analytics_event",
+  message: "Too many events.",
+});
+router.post("/analytics/event", analyticsRateLimiter, (req, res) => {
+  const eventType = req.body.eventType;
+  if (!ANALYTICS_EVENT_TYPES.has(eventType)) return res.status(400).json({ error: "Unknown event type." });
+  const courseId = req.body.courseId && store.findOne("courses", (c) => c.id === req.body.courseId) ? req.body.courseId : null;
+  store.insert("analytics_events", {
+    sessionId: req.sessionID || null,
+    learnerId: req.session.learnerId || null,
+    eventType,
+    courseId,
+    timestamp: new Date().toISOString(),
+  });
+  res.status(204).end();
 });
 
 module.exports = router;

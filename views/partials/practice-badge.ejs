@@ -1,0 +1,20 @@
+<%
+/*
+ * Reusable "PRACTICE-ENABLED" badge. Include with a standard EJS
+ * unescaped-output include tag, passing { course }.
+ * Renders nothing at all when the course doesn't have practice enabled --
+ * callers never need their own if-check before including this. Driven
+ * entirely by course.practice_enabled / course.practice_platform, which
+ * default to false/null for every course until an admin explicitly turns
+ * this on -- never hard-code this badge onto a specific course.
+ */
+%>
+<% if (typeof course !== 'undefined' && course && course.practice_enabled) { %>
+  <span class="practice-badge" tabindex="0" aria-describedby="practice-badge-tip-<%= course.id %>">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true" focusable="false"><path d="M13 2 3 14h7l-1 8 10-12h-7z"/></svg>
+    PRACTICE-ENABLED
+  </span>
+  <span role="tooltip" id="practice-badge-tip-<%= course.id %>" class="practice-badge-tip">
+    Includes guided practice using <%= course.practice_platform || 'ReqDrive' %>.
+  </span>
+<% } %>

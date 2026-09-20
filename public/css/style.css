@@ -5450,3 +5450,133 @@ footer.site-footer {
     padding: 20px !important;
   }
 }
+/* ===== Phase 1 repositioning additions ===== */
+
+/* Reusable Practice-Enabled badge (views/partials/practice-badge.ejs) */
+.practice-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: #FFF6DF; color: #7a4e02; border: 1px solid #F0D896;
+  font-size: .68rem; font-weight: 700; letter-spacing: .03em;
+  padding: 4px 9px; border-radius: 999px; cursor: default;
+}
+.practice-badge-tip {
+  position: absolute; opacity: 0; pointer-events: none; width: 1px; height: 1px; overflow: hidden;
+}
+.practice-badge:hover + .practice-badge-tip,
+.practice-badge:focus + .practice-badge-tip {
+  position: static; opacity: 1; pointer-events: auto; width: auto; height: auto; overflow: visible;
+  display: block; font-size: .78rem; color: var(--muted); margin-top: 4px;
+}
+
+/* Hero: 4-step Choose -> Learn -> Practise -> Apply journey */
+.journey-steps {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 28px;
+}
+.journey-step {
+  background: #fff; border: 1px solid var(--line); border-radius: var(--r-lg, 16px);
+  padding: 16px 14px; text-align: left; position: relative;
+}
+.journey-step-num {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; border-radius: 50%; background: var(--navy); color: #fff;
+  font-size: .72rem; font-weight: 700; margin-bottom: 10px;
+}
+.journey-step h4 { margin: 0 0 4px; font-size: .92rem; }
+.journey-step p { margin: 0; font-size: .8rem; color: var(--muted); line-height: 1.4; }
+.journey-arrow { display: none; }
+@media (min-width: 769px) {
+  .journey-step:not(:last-child)::after {
+    content: ""; position: absolute; right: -14px; top: 50%; transform: translateY(-50%);
+    width: 0; height: 0; border-top: 5px solid transparent; border-bottom: 5px solid transparent;
+    border-left: 7px solid var(--navy-soft); z-index: 1;
+  }
+}
+@media (max-width: 768px) {
+  .journey-steps { grid-template-columns: 1fr; }
+}
+
+/* "Learning doesn't stop when the session ends" -- Know -> Practise -> Do */
+.kpd-progression {
+  display: flex; align-items: center; justify-content: center; gap: 10px; margin: 10px 0 36px;
+  font-size: .78rem; font-weight: 700; letter-spacing: .06em; color: var(--navy-soft);
+}
+.kpd-progression .kpd-arrow { color: var(--line); font-weight: 400; }
+.lpa-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.lpa-card {
+  background: #EAF5F3; border-radius: var(--r-lg, 16px); padding: 24px; text-align: center;
+}
+.lpa-card .lpa-icon { font-size: 1.6rem; margin-bottom: 10px; }
+.lpa-card h4 { margin: 0 0 8px; color: var(--navy); }
+.lpa-card p { margin: 0; color: var(--muted); font-size: .9rem; }
+@media (max-width: 768px) { .lpa-grid { grid-template-columns: 1fr; } }
+
+/* Outcome cards ("Choose a useful outcome") */
+.outcome-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-bottom: 40px;
+}
+.outcome-card {
+  border: 1px solid var(--line); border-radius: var(--r-lg, 16px); padding: 22px;
+  background: #fff; display: flex; flex-direction: column; height: 100%;
+}
+.outcome-card h4 { margin: 0 0 6px; font-size: 1.02rem; color: var(--navy); }
+.outcome-card p { margin: 0 0 16px; color: var(--muted); font-size: .88rem; flex-grow: 1; }
+.outcome-card .outcome-count { font-size: .74rem; color: var(--navy-soft); font-weight: 600; margin-bottom: 10px; }
+@media (max-width: 900px) { .outcome-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 600px) { .outcome-grid { grid-template-columns: 1fr; } }
+
+/* ReqDrive connection section */
+.reqdrive-section { background: var(--navy-deep, #083834); color: #fff; }
+.reqdrive-flow {
+  display: flex; align-items: stretch; justify-content: center; gap: 0; margin: 32px 0 8px; flex-wrap: wrap;
+}
+.reqdrive-flow-step {
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14); border-radius: var(--r-lg, 16px);
+  padding: 20px; text-align: center; flex: 1; min-width: 200px; max-width: 260px;
+}
+.reqdrive-flow-step .rf-kicker { font-size: .7rem; letter-spacing: .08em; color: #D98E04; font-weight: 700; text-transform: uppercase; }
+.reqdrive-flow-step h4 { margin: 6px 0 4px; color: #fff; }
+.reqdrive-flow-step p { margin: 0; font-size: .82rem; color: rgba(255,255,255,0.75); }
+.reqdrive-flow-arrow {
+  display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.4);
+  padding: 0 14px; font-size: 1.2rem;
+}
+@media (max-width: 768px) {
+  .reqdrive-flow { flex-direction: column; align-items: center; }
+  .reqdrive-flow-arrow { transform: rotate(90deg); padding: 6px 0; }
+}
+.reqdrive-principle {
+  text-align: center; font-size: .85rem; color: rgba(255,255,255,0.65); margin-top: 22px; font-style: italic;
+}
+
+/* Sequenced learning paths (Phase 1 Section 13) */
+.path-sequence-block { margin-bottom: 36px; }
+.path-sequence-name {
+  font-size: .78rem; font-weight: 700; letter-spacing: .04em; color: var(--navy-soft);
+  text-transform: uppercase; margin-bottom: 12px;
+}
+.path-sequence-row {
+  display: flex; align-items: stretch; gap: 8px; overflow-x: auto; padding-bottom: 8px;
+}
+.path-sequence-item {
+  flex: 0 0 auto; width: 190px; background: #fff; border: 1px solid var(--line);
+  border-radius: var(--r, 10px); padding: 14px;
+}
+.path-sequence-item h5 { margin: 0 0 4px; font-size: .86rem; line-height: 1.3; }
+.path-sequence-item p { margin: 0; font-size: .74rem; color: var(--muted); }
+.path-sequence-arrow {
+  display: flex; align-items: center; justify-content: center; color: var(--line);
+  flex: 0 0 auto; font-size: 1.1rem;
+}
+@media (max-width: 600px) {
+  .path-sequence-item { width: 160px; }
+}
+
+/* 4-column variant of .why-grid with its own complete responsive behavior,
+   used by the "better way to build capability" and corporate
+   learn/practise/apply/improve strips -- a plain inline
+   grid-template-columns override on .why-grid was overriding that class's
+   own mobile breakpoints (higher specificity beats a media query on the
+   same class), causing horizontal overflow on narrow viewports. */
+.why-grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+@media (max-width: 900px) { .why-grid-4 { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 480px) { .why-grid-4 { grid-template-columns: 1fr; } }
