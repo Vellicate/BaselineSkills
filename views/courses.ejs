@@ -26,24 +26,24 @@
     <form method="GET" action="/courses" class="card course-filter-bar" style="margin-bottom:32px;padding:20px">
       <input type="hidden" name="category" value="<%= activeCategory %>">
       <div class="form-field filter-field-search">
-        <label>Search</label>
-        <input type="text" name="q" placeholder="Search by course name..." value="<%= q %>">
+        <label for="courses-search-q">Search</label>
+        <input type="text" id="courses-search-q" name="q" placeholder="Search by course name..." value="<%= q %>">
       </div>
       <div class="form-field filter-field-select">
-        <label>Level</label>
-        <select name="level">
+        <label for="courses-search-level">Level</label>
+        <select id="courses-search-level" name="level">
           <% levels.forEach(l => { %><option value="<%= l %>" <%= l===activeLevel?'selected':'' %>><%= l %></option><% }) %>
         </select>
       </div>
       <div class="form-field filter-field-select">
-        <label>Format</label>
-        <select name="format">
+        <label for="courses-search-format">Format</label>
+        <select id="courses-search-format" name="format">
           <% formats.forEach(f => { %><option value="<%= f %>" <%= f===activeFormat?'selected':'' %>><%= f %></option><% }) %>
         </select>
       </div>
       <div class="form-field filter-field-select">
-        <label>Certification Body</label>
-        <select name="certBody">
+        <label for="courses-search-certbody">Certification Body</label>
+        <select id="courses-search-certbody" name="certBody">
           <% certBodies.forEach(b => { %>
             <% const val = b === 'All' ? 'All' : b.slug; const label = b === 'All' ? 'All' : b.name; %>
             <option value="<%= val %>" <%= val===activeCertBody?'selected':'' %>><%= label %></option>
@@ -51,8 +51,8 @@
         </select>
       </div>
       <div class="form-field filter-field-price">
-        <label>Max price (€)</label>
-        <input type="number" name="maxPrice" placeholder="Any" value="<%= maxPrice %>">
+        <label for="courses-search-maxprice">Max price (€)</label>
+        <input type="number" id="courses-search-maxprice" name="maxPrice" placeholder="Any" value="<%= maxPrice %>">
       </div>
       <button type="submit" class="btn btn-navy">Filter</button>
       <a href="/courses" class="btn btn-outline">Reset</a>

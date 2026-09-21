@@ -38,8 +38,37 @@
 <link rel="shortcut icon" href="/img/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/style.css">
+<!--
+  Both stylesheets below were flagged by PageSpeed/Search Console as
+  render-blocking (combined ~1.7s of estimated savings): a plain
+  <link rel="stylesheet"> forces the browser to fetch and parse the
+  CSS before it can paint anything, which delays First/Largest
+  Contentful Paint. This is the standard fix Lighthouse itself
+  recommends for exactly this flag: load each stylesheet as a
+  non-blocking preload, then swap it to an active stylesheet once it
+  arrives, via the onload handler below. The <noscript> fallback
+  covers the rare case of JavaScript being disabled, where the swap
+  script would never run.
+
+  Trade-off worth knowing, not just a free win: for a brief moment
+  (roughly the download time shown above, a few hundred ms) the page
+  paints before its own CSS has applied, so text may flash in an
+  unstyled or system font before snapping into the real design. That
+  flash is the mechanism by which this technique removes the render
+  block — it can't unblock the paint without also being the thing
+  that used to happen after that paint. If that flash becomes
+  noticeable or objectionable in practice, the more thorough (and
+  more involved) fix is extracting just the above-the-fold CSS to
+  inline directly in <head> and deferring only the rest — deliberately
+  not attempted here, since doing that correctly means tracing every
+  rule actually needed for first paint across every page template
+  this stylesheet serves, not just the homepage, and getting it wrong
+  risks a worse, inconsistent flash rather than a smaller one.
+-->
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&display=swap"></noscript>
+<link rel="preload" as="style" href="/css/style.css" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="/css/style.css"></noscript>
 </head>
 <body>
 <div id="page-transition-curtain" class="page-transition-curtain"></div>
@@ -48,7 +77,7 @@
   <div class="container nav-wrapper">
     <!-- Logo with Smooth Text Animation & Interactive Baseline Button Effect -->
     <a href="/" class="brand-interactive-btn" id="main-brand-logo" aria-label="Baseline Skills Home" onclick="handleBrandClick(event, '/')">
-      <img src="/img/wordmark.png" alt="Baseline Skills" style="height:32px;width:auto;display:block">
+      <img src="/img/wordmark.png" alt="Baseline Skills" width="352" height="64" style="height:32px;width:auto;display:block">
     </a>
 
     <!-- Top-Center Header & Menu Container Card -->
@@ -311,3 +340,4 @@ document.addEventListener('keydown', (e) => {
 });
 </script>
 
+<main>

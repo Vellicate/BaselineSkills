@@ -69,28 +69,28 @@
           <div class="next-step-item">
             <span class="next-step-num">01</span>
             <div>
-              <h4 style="margin:0 0 4px">Choose a useful outcome</h4>
+              <h3 style="margin:0 0 4px;font-size:1.05rem">Choose a useful outcome</h3>
               <p style="margin:0;color:var(--muted);font-size:.9rem">Start with what you want to be able to do.</p>
             </div>
           </div>
           <div class="next-step-item">
             <span class="next-step-num">02</span>
             <div>
-              <h4 style="margin:0 0 4px">Learn with practitioners</h4>
+              <h3 style="margin:0 0 4px;font-size:1.05rem">Learn with practitioners</h3>
               <p style="margin:0;color:var(--muted);font-size:.9rem">Learn from professionals who have done the work.</p>
             </div>
           </div>
           <div class="next-step-item">
             <span class="next-step-num">03</span>
             <div>
-              <h4 style="margin:0 0 4px">Practise what you learn</h4>
+              <h3 style="margin:0 0 4px;font-size:1.05rem">Practise what you learn</h3>
               <p style="margin:0;color:var(--muted);font-size:.9rem">Turn concepts into practical capability.</p>
             </div>
           </div>
           <div class="next-step-item">
             <span class="next-step-num">04</span>
             <div>
-              <h4 style="margin:0 0 4px">Take it back to work</h4>
+              <h3 style="margin:0 0 4px;font-size:1.05rem">Take it back to work</h3>
               <p style="margin:0;color:var(--muted);font-size:.9rem">Apply the skill to your project, team or organisation.</p>
             </div>
           </div>
@@ -116,17 +116,17 @@
     <div class="lpa-grid">
       <div class="lpa-card">
         <div class="lpa-icon" aria-hidden="true">📖</div>
-        <h4>Learn</h4>
+        <h3>Learn</h3>
         <p>Build the concepts, methods and professional judgement with experienced practitioners.</p>
       </div>
       <div class="lpa-card">
         <div class="lpa-icon" aria-hidden="true">🛠️</div>
-        <h4>Practise</h4>
+        <h3>Practise</h3>
         <p>Work through realistic situations and exercises that turn knowledge into capability.</p>
       </div>
       <div class="lpa-card">
         <div class="lpa-icon" aria-hidden="true">🎯</div>
-        <h4>Apply</h4>
+        <h3>Apply</h3>
         <p>Take what you have learned back to your project, team and workplace.</p>
       </div>
     </div>
@@ -158,7 +158,7 @@
         <% const copy = outcomeCopy[cat] || { title: categoryDisplayLabel(cat), desc: "Build practical, job-ready skills in this area." }; %>
         <div class="outcome-card">
           <div class="outcome-count"><%= byCategory[cat].length %> course<%= byCategory[cat].length === 1 ? '' : 's' %></div>
-          <h4><%= copy.title %></h4>
+          <h3><%= copy.title %></h3>
           <p><%= copy.desc %></p>
           <a href="#path-<%= cat.replace(/\s+/g,'-') %>" class="btn btn-outline btn-sm" onclick="selectOutcome('<%= cat.replace(/\s+/g,'-') %>', event)" data-analytics-event="choose_outcome" data-category="<%= cat %>">
             Explore <%= categoryDisplayLabel(cat) %>
@@ -251,12 +251,12 @@
     </div>
     <% learningPaths.forEach(path => { %>
       <div class="path-sequence-block">
-        <div class="path-sequence-name"><%= path.name %></div>
+        <h3 class="path-sequence-name"><%= path.name %></h3>
         <div class="path-sequence-row">
           <% path.courses.forEach((c, i) => { %>
             <% if (i > 0) { %><div class="path-sequence-arrow" aria-hidden="true">&rarr;</div><% } %>
             <a href="/courses/<%= c.slug %>" class="path-sequence-item" style="text-decoration:none;color:inherit" data-analytics-event="explore_learning_path" data-course-id="<%= c.id %>">
-              <h5><%= c.title %></h5>
+              <h4><%= c.title %></h4>
               <p><%= c.durationDays %> Day<%= c.durationDays > 1 ? 's' : '' %></p>
             </a>
           <% }) %>
@@ -272,24 +272,24 @@
   <div class="container">
     <form method="GET" action="/courses" class="card course-filter-bar" style="margin-bottom:32px;padding:20px">
       <div class="form-field filter-field-search">
-        <label>Search</label>
-        <input type="text" name="q" placeholder="Search by course name...">
+        <label for="home-search-q">Search</label>
+        <input type="text" id="home-search-q" name="q" placeholder="Search by course name...">
       </div>
       <div class="form-field filter-field-select">
-        <label>Level</label>
-        <select name="level">
+        <label for="home-search-level">Level</label>
+        <select id="home-search-level" name="level">
           <% searchLevels.forEach(l => { %><option value="<%= l %>"><%= l %></option><% }) %>
         </select>
       </div>
       <div class="form-field filter-field-select">
-        <label>Format</label>
-        <select name="format">
+        <label for="home-search-format">Format</label>
+        <select id="home-search-format" name="format">
           <% searchFormats.forEach(f => { %><option value="<%= f %>"><%= f %></option><% }) %>
         </select>
       </div>
       <div class="form-field filter-field-select">
-        <label>Certification Body</label>
-        <select name="certBody">
+        <label for="home-search-certbody">Certification Body</label>
+        <select id="home-search-certbody" name="certBody">
           <% searchCertBodies.forEach(b => { %>
             <% const val = b === 'All' ? 'All' : b.slug; const label = b === 'All' ? 'All' : b.name; %>
             <option value="<%= val %>"><%= label %></option>
@@ -297,8 +297,8 @@
         </select>
       </div>
       <div class="form-field filter-field-price">
-        <label>Max price (€)</label>
-        <input type="number" name="maxPrice" placeholder="Any">
+        <label for="home-search-maxprice">Max price (€)</label>
+        <input type="number" id="home-search-maxprice" name="maxPrice" placeholder="Any">
       </div>
       <button type="submit" class="btn btn-navy">Search Courses</button>
     </form>
@@ -394,27 +394,27 @@
     <div class="why-grid">
       <div class="why-item">
         <div class="card-icon">📋</div>
-        <h4>Industry-Aligned Curriculum</h4>
+        <h3>Industry-Aligned Curriculum</h3>
         <p>Built directly on IREB, IIBA, INCOSE, and ISO 26262 international specifications.</p>
       </div>
       <div class="why-item">
         <div class="card-icon">👨‍🔬</div>
-        <h4>Practitioner Instructors</h4>
+        <h3>Practitioner Instructors</h3>
         <p>Each instructor is accredited specifically in the discipline they teach, not a general trainer stretched across all four.</p>
       </div>
       <div class="why-item">
         <div class="card-icon">🛠️</div>
-        <h4>Hands-on Case Studies</h4>
+        <h3>Hands-on Case Studies</h3>
         <p>Work with realistic aerospace, automotive, and medical system requirements templates.</p>
       </div>
       <div class="why-item">
         <div class="card-icon">🌐</div>
-        <h4>Flexible Delivery Modes</h4>
+        <h3>Flexible Delivery Modes</h3>
         <p>Interactive live online sessions, dedicated corporate cohorts, or classroom training.</p>
       </div>
       <div class="why-item">
         <div class="card-icon">🏢</div>
-        <h4>Enterprise Customization</h4>
+        <h3>Enterprise Customization</h3>
         <p>Bespoke training mapped directly to your internal tools (DOORS, Polarion, Jira, Cameo).</p>
       </div>
     </div>
@@ -437,19 +437,19 @@
     <div class="reqdrive-flow">
       <div class="reqdrive-flow-step">
         <div class="rf-kicker">Baseline Skills</div>
-        <h4>Learn the method</h4>
+        <h3>Learn the method</h3>
         <p>Live sessions with a practitioner instructor.</p>
       </div>
       <div class="reqdrive-flow-arrow" aria-hidden="true">&rarr;</div>
       <div class="reqdrive-flow-step">
         <div class="rf-kicker">ReqDrive</div>
-        <h4>Practise the method</h4>
+        <h3>Practise the method</h3>
         <p>Guided, hands-on practice with realistic requirements.</p>
       </div>
       <div class="reqdrive-flow-arrow" aria-hidden="true">&rarr;</div>
       <div class="reqdrive-flow-step">
         <div class="rf-kicker">Your workplace</div>
-        <h4>Apply the skill</h4>
+        <h3>Apply the skill</h3>
         <p>Bring the method back to your own project.</p>
       </div>
     </div>
@@ -471,22 +471,22 @@
     <div class="why-grid-4">
       <div class="why-item">
         <div class="card-icon">01</div>
-        <h4>Outcome-led</h4>
+        <h3>Outcome-led</h3>
         <p>Start with what you want to be able to do.</p>
       </div>
       <div class="why-item">
         <div class="card-icon">02</div>
-        <h4>Practitioner-led</h4>
+        <h3>Practitioner-led</h3>
         <p>Learn from people with real-world experience.</p>
       </div>
       <div class="why-item">
         <div class="card-icon">03</div>
-        <h4>Practice-driven</h4>
+        <h3>Practice-driven</h3>
         <p>Turn concepts into practical capability.</p>
       </div>
       <div class="why-item">
         <div class="card-icon">04</div>
-        <h4>Workplace-focused</h4>
+        <h3>Workplace-focused</h3>
         <p>Take the skill back to your job.</p>
       </div>
     </div>
@@ -502,44 +502,44 @@
   </div>
   <div class="logo-slider-track" role="list" aria-label="Organizations professionals have learned with us from">
     <% const orgs = [
-      { name: "Mercedes-Benz", file: "mercedes-benz.png" },
-      { name: "Continental Automotive", file: "continental-automotive.png" },
-      { name: "Aumovio", file: "aumovio.png" },
-      { name: "Bosch", file: "bosch.png" },
-      { name: "Mahindra & Mahindra", file: "mahindra-and-mahindra.png" },
-      { name: "Renault-Nissan Technology and Business Center", file: "renault-nissan-technology-and-business-center.png" },
-      { name: "Tata Technologies", file: "tata-technologies.png" },
-      { name: "Blue Binaries", file: "blue-binaries.png" },
-      { name: "Garrett Motion", file: "garrett-motion.png" },
-      { name: "Rolls-Royce", file: "rolls-royce.png" },
-      { name: "Accenture", file: "accenture.png" },
-      { name: "Capgemini", file: "capgemini.png" },
-      { name: "Cognizant", file: "cognizant.png" },
-      { name: "CSC", file: "csc.png" },
-      { name: "L&T Infotech", file: "l-t-infotech.png" },
-      { name: "HSBC", file: "hsbc.png" },
-      { name: "RBS", file: "rbs.png" },
-      { name: "Bank of America", file: "bank-of-america.png" },
-      { name: "JLT", file: "jlt.png" },
-      { name: "First American", file: "first-american.png" },
-      { name: "Cisco", file: "cisco.png" },
-      { name: "Vodafone", file: "vodafone.png" },
-      { name: "Deloitte", file: "deloitte.png" },
-      { name: "D. E. Shaw", file: "de-shaw.png" },
-      { name: "Siemens Healthineers", file: "siemens-healthineers.png" },
-      { name: "Cerner", file: "cerner.png" },
-      { name: "AstraZeneca", file: "astra-zeneca.png" },
-      { name: "Eurofins", file: "eurofins.png" },
-      { name: "Shell", file: "shell.png" },
-      { name: "Siemens", file: "siemens.png" },
-      { name: "Zeiss", file: "zeiss.png" },
-      { name: "Giesecke+Devrient", file: "gi-de.png" },
-      { name: "Marsh McLennan", file: "marsh-mclennan.png" }
+      { name: "Mercedes-Benz", file: "mercedes-benz.png", w: 600, h: 370 },
+      { name: "Continental Automotive", file: "continental-automotive.png", w: 600, h: 338 },
+      { name: "Aumovio", file: "aumovio.png", w: 500, h: 148 },
+      { name: "Bosch", file: "bosch.png", w: 600, h: 142 },
+      { name: "Mahindra & Mahindra", file: "mahindra-and-mahindra.png", w: 600, h: 338 },
+      { name: "Renault-Nissan Technology and Business Center", file: "renault-nissan-technology-and-business-center.png", w: 600, h: 400 },
+      { name: "Tata Technologies", file: "tata-technologies.png", w: 600, h: 229 },
+      { name: "Blue Binaries", file: "blue-binaries.png", w: 600, h: 166 },
+      { name: "Garrett Motion", file: "garrett-motion.png", w: 461, h: 157 },
+      { name: "Rolls-Royce", file: "rolls-royce.png", w: 600, h: 600 },
+      { name: "Accenture", file: "accenture.png", w: 600, h: 158 },
+      { name: "Capgemini", file: "capgemini.png", w: 600, h: 140 },
+      { name: "Cognizant", file: "cognizant.png", w: 600, h: 128 },
+      { name: "CSC", file: "csc.png", w: 600, h: 234 },
+      { name: "L&T Infotech", file: "l-t-infotech.png", w: 600, h: 157 },
+      { name: "HSBC", file: "hsbc.png", w: 600, h: 162 },
+      { name: "RBS", file: "rbs.png", w: 600, h: 600 },
+      { name: "Bank of America", file: "bank-of-america.png", w: 600, h: 334 },
+      { name: "JLT", file: "jlt.png", w: 600, h: 230 },
+      { name: "First American", file: "first-american.png", w: 600, h: 378 },
+      { name: "Cisco", file: "cisco.png", w: 600, h: 317 },
+      { name: "Vodafone", file: "vodafone.png", w: 600, h: 428 },
+      { name: "Deloitte", file: "deloitte.png", w: 600, h: 115 },
+      { name: "D. E. Shaw", file: "de-shaw.png", w: 600, h: 131 },
+      { name: "Siemens Healthineers", file: "siemens-healthineers.png", w: 600, h: 150 },
+      { name: "Cerner", file: "cerner.png", w: 600, h: 148 },
+      { name: "AstraZeneca", file: "astra-zeneca.png", w: 600, h: 174 },
+      { name: "Eurofins", file: "eurofins.png", w: 600, h: 122 },
+      { name: "Shell", file: "shell.png", w: 600, h: 338 },
+      { name: "Siemens", file: "siemens.png", w: 600, h: 338 },
+      { name: "Zeiss", file: "zeiss.png", w: 600, h: 600 },
+      { name: "Giesecke+Devrient", file: "gi-de.png", w: 600, h: 85 },
+      { name: "Marsh McLennan", file: "marsh-mclennan.png", w: 600, h: 338 }
     ]; %>
     <div class="logo-slider-inner">
       <% [...orgs, ...orgs].forEach(org => { %>
         <span class="logo-slider-item" role="listitem">
-          <img src="/img/customer-logos/<%= org.file %>" alt="<%= org.name %>" />
+          <img src="/img/customer-logos/<%= org.file %>" alt="<%= org.name %>" width="<%= org.w %>" height="<%= org.h %>" />
         </span>
       <% }) %>
     </div>
