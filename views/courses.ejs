@@ -115,11 +115,11 @@
 
           <div class="course-mini-ctas">
             <a href="/courses/<%= c.slug %>" class="btn btn-outline btn-learn-more">
-              <span>View Course</span>
+              <span>View Course <span class="sr-only">details for <%= c.title %></span></span>
               <svg class="cta-arrow-slide" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
             </a>
             <a href="/courses/<%= c.slug %>#sessions" class="btn btn-navy btn-batches-cta">
-              <span>Upcoming Batches</span>
+              <span>Upcoming Batches <span class="sr-only">for <%= c.title %></span></span>
               <span class="batch-count-dot">📅</span>
             </a>
           </div>
