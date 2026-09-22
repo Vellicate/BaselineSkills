@@ -8,6 +8,17 @@
 
 <form method="POST" action="<%= mode === 'new' ? '/admin/trainers/new' : `/admin/trainers/${trainer.id}/edit` %>" enctype="multipart/form-data" class="card" style="max-width:640px">
   <div class="form-field"><label>Full name *</label><input type="text" name="name" required value="<%= trainer ? trainer.name : '' %>"></div>
+  <div class="form-field">
+    <label>Email (for trainer login)</label>
+    <input type="email" name="email" value="<%= trainer ? (trainer.email || '') : '' %>" placeholder="trainer@example.com">
+    <p class="form-hint">
+      <% if (trainer && trainer.email) { %>
+        This trainer can log in at <a href="/trainer/login" target="_blank">/trainer/login</a> using this email, setting their password via <a href="/trainer/forgot-password" target="_blank">Forgot password</a> if they haven't already.
+      <% } else { %>
+        Required for this trainer to actually log in and manage their courses' LMS content. Without an email on file, they have a public profile but no way to sign in at all -- leave blank only if this trainer never needs to log in themselves.
+      <% } %>
+    </p>
+  </div>
   <div class="form-field"><label>Title / role</label><input type="text" name="title" placeholder="e.g. Senior RE Consultant, ASPICE Assessor" value="<%= trainer ? trainer.title : '' %>"></div>
   <div class="form-field"><label>Profile link *</label><input type="url" name="profileUrl" required placeholder="https://www.linkedin.com/in/..." value="<%= trainer ? trainer.profileUrl : '' %>"></div>
 

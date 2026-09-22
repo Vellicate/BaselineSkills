@@ -1334,17 +1334,37 @@ router.get("/trainers/new", auth.requireSuperAdmin, (req, res) => {
 
 router.post("/trainers/new", auth.requireSuperAdmin, handleTrainerPhotoUpload, (req, res) => {
   const { name, title, bio, profileUrl, workExperienceRaw } = req.body;
+  const email = (req.body.email || "").trim().toLowerCase() || null;
   if (!name || !profileUrl) {
     return res.status(400).render("admin/trainer-form", {
       title: "New trainer — Baseline Skills", trainer: req.body, mode: "new",
       error: "Name and profile link are required.",
     });
   }
+  // instructors.email is UNIQUE -- checked explicitly here rather than
+  // letting a raw constraint violation surface as an unhandled 500, the
+  // same lesson learned from the isLate crash earlier in this project:
+  // never assume a write will succeed just because the request looked
+  // valid on the surface.
+  if (email && store.findOne("instructors", (i) => i.email && i.email.toLowerCase() === email)) {
+    return res.status(400).render("admin/trainer-form", {
+      title: "New trainer — Baseline Skills", trainer: req.body, mode: "new",
+      error: "That email is already in use by another trainer/instructor account.",
+    });
+  }
   const workExperience = (workExperienceRaw || "").split("\n").map((s) => s.trim()).filter(Boolean);
   store.insert("trainers", {
-    id: newId("trainer"), name, title: title || "", bio: bio || "", profileUrl,
+    id: newId("trainer"), name, title: title || "", bio: bio || "", profileUrl, email,
     photoPath: req.file ? `/trainer-photo/${req.file.filename}` : "",
     workExperience,
+    // An admin directly creating this record is a different situation
+    // from the self-service "become a trainer" application flow, which
+    // correctly starts at the 'pending' default awaiting review --
+    // here, the admin's own action *is* the approval, so a trainer given
+    // login credentials this way isn't left unable to sign in despite
+    // having valid ones, mirroring exactly the login gate at
+    // /trainer/login that also checks verificationStatus.
+    verificationStatus: email ? "approved" : "pending",
     createdAt: new Date().toISOString(),
   });
   res.redirect("/admin/trainers?success=Trainer+added");
@@ -1367,17 +1387,34 @@ router.post("/trainers/:id/edit", handleTrainerPhotoUpload, (req, res) => {
   if (!existing) return res.status(404).send("Trainer not found");
   if (!trainerIsVisibleTo(req, existing.id)) return res.status(403).send("You don't have access to this trainer.");
   const { name, title, bio, profileUrl, workExperienceRaw } = req.body;
+  const email = (req.body.email || "").trim().toLowerCase() || null;
   if (!name || !profileUrl) {
     return res.status(400).render("admin/trainer-form", {
       title: `Edit ${existing.name} — Baseline Skills`, trainer: { ...existing, ...req.body }, mode: "edit",
       error: "Name and profile link are required.",
     });
   }
+  if (email && email !== (existing.email || "").toLowerCase() &&
+      store.findOne("instructors", (i) => i.id !== existing.id && i.email && i.email.toLowerCase() === email)) {
+    return res.status(400).render("admin/trainer-form", {
+      title: `Edit ${existing.name} — Baseline Skills`, trainer: { ...existing, ...req.body }, mode: "edit",
+      error: "That email is already in use by another trainer/instructor account.",
+    });
+  }
   const workExperience = (workExperienceRaw || "").split("\n").map((s) => s.trim()).filter(Boolean);
   store.update("trainers", req.params.id, {
-    name, title: title || "", bio: bio || "", profileUrl,
+    name, title: title || "", bio: bio || "", profileUrl, email,
     photoPath: req.file ? `/trainer-photo/${req.file.filename}` : existing.photoPath,
     workExperience,
+    // Retroactively unblocks exactly the situation this was built for:
+    // an existing trainer profile with a public bio but no login at
+    // all, still sitting at the 'pending' default it was created with
+    // before it ever had an email. Adding an email here now is the
+    // admin's own act of granting access, the same reasoning as on
+    // creation -- but only when it wasn't already approved, so an
+    // admin correcting a typo in an already-approved trainer's email
+    // doesn't need to re-trigger anything.
+    verificationStatus: (email && existing.verificationStatus !== "approved") ? "approved" : existing.verificationStatus,
   });
   res.redirect("/admin/trainers?success=Trainer+updated");
 });

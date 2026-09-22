@@ -52,7 +52,19 @@ function registerPasswordReset({ table, forgotPath, setPath, loginPath, portalLa
     // Deliberately same response whether or not a matching, approved
     // account exists — including for a pending/rejected applicant, who
     // shouldn't be able to tell their application status from this page.
-    if (record && record.passwordHash) {
+    //
+    // Sends the link whenever a matching record exists at all, not only
+    // when record.passwordHash is already set. The original check meant
+    // an admin-created trainer who has an email on file but has never
+    // had a password at all (the normal state right after an admin adds
+    // one, before this route existed) would get the generic "we've sent
+    // a link if you have an account" response while nothing was actually
+    // sent — found by tracing a real trainer's account through this
+    // exact flow, not by reading the condition in isolation. There's no
+    // security reason to withhold a set-password link from a real,
+    // email-verified account just because no password has existed yet;
+    // this route only ever sets a new one, never reveals an old one.
+    if (record) {
       const token = crypto.randomBytes(32).toString("hex");
       store.update(table, record.id, {
         passwordResetToken: token,
