@@ -10,7 +10,7 @@ const { ROE_UPLOAD_DIR } = require("../lib/onboarding");
 const createRateLimiter = require("../lib/rate-limiter");
 const discounts = require("../lib/discounts");
 const crypto = require("crypto");
-const { sendMail } = require("../lib/mailer");
+const { sendMail, escapeHtml } = require("../lib/mailer");
 const { generateCaptcha, verifyCaptcha } = require("../lib/captcha");
 
 router.use(security.requireSameOrigin);
@@ -157,7 +157,7 @@ router.get("/teach-with-us", (req, res) => {
 });
 router.get("/become-a-trainer", (req, res) => res.redirect(301, "/teach-with-us"));
 
-router.post("/become-a-trainer/apply", applicationRateLimiter, handleRoeUpload("become-a-trainer"), (req, res) => {
+router.post("/become-a-trainer/apply", applicationRateLimiter, handleRoeUpload("become-a-trainer"), async (req, res) => {
   const { name, email, password, title, bio, profileUrl } = req.body;
   if (!name || !email || !password || !req.file) {
     return res.status(400).render("become-a-trainer", { title: "Become a Trainer — Baseline Skills", error: "Name, email, password, and the signed Rules of Engagement PDF are all required." });
@@ -190,6 +190,25 @@ router.post("/become-a-trainer/apply", applicationRateLimiter, handleRoeUpload("
   store.insert("roe_acknowledgments", {
     id: newId("roeack"), recipientType: "instructor", recipientId: instructor.id,
     sentAt: new Date().toISOString(), acknowledgedAt: new Date().toISOString(),
+  });
+
+  // The application was already being saved correctly -- this was the
+  // actual missing piece behind "the form isn't reaching admin": nothing
+  // ever told anyone it existed. An admin had to already know to check
+  // /admin/trainer-applications with no prompt to do so. Matches the
+  // exact notification pattern already used for new course
+  // registrations (routes/registration.js) rather than introducing a
+  // different one.
+  await sendMail({
+    to: process.env.ADMIN_EMAIL || "admin@baselineskills.example",
+    subject: `New trainer application — ${escapeHtml(instructor.name).replace(/[\r\n]/g, "")}`,
+    html: `<h2>New trainer application</h2>
+      <p><strong>${escapeHtml(instructor.name)}</strong> (${escapeHtml(instructor.email)}) applied to teach.</p>
+      <ul>
+        <li>Title: ${escapeHtml(instructor.title) || "n/a"}</li>
+        <li>Profile: ${instructor.profileUrl ? `<a href="${escapeHtml(instructor.profileUrl)}">${escapeHtml(instructor.profileUrl)}</a>` : "n/a"}</li>
+      </ul>
+      <p><a href="${process.env.APP_BASE_URL || "https://www.baselineskills.com"}/admin/trainer-applications">Review this application</a>.</p>`,
   });
 
   res.render("application-submitted", { title: "Application submitted — Baseline Skills", type: "trainer" });

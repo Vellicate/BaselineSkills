@@ -13,9 +13,20 @@
     <input type="email" name="email" value="<%= trainer ? (trainer.email || '') : '' %>" placeholder="trainer@example.com">
     <p class="form-hint">
       <% if (trainer && trainer.email) { %>
-        This trainer can log in at <a href="/trainer/login" target="_blank">/trainer/login</a> using this email, setting their password via <a href="/trainer/forgot-password" target="_blank">Forgot password</a> if they haven't already.
+        This trainer can log in at <a href="/trainer/login" target="_blank">/trainer/login</a> using this email.
       <% } else { %>
         Required for this trainer to actually log in and manage their courses' LMS content. Without an email on file, they have a public profile but no way to sign in at all -- leave blank only if this trainer never needs to log in themselves.
+      <% } %>
+    </p>
+  </div>
+  <div class="form-field">
+    <label>Initial password (optional)</label>
+    <input type="password" name="password" placeholder="<%= trainer && trainer.passwordHash ? 'Leave blank to keep the current password' : 'Leave blank to let them set their own' %>" autocomplete="new-password">
+    <p class="form-hint">
+      <% if (trainer && trainer.passwordHash) { %>
+        This trainer already has a password set. Only fill this in to replace it -- leave blank to keep their current one unchanged.
+      <% } else { %>
+        Sets this trainer's password directly, so they can log in immediately without a reset step. Leave blank to have them set their own via <a href="/trainer/forgot-password" target="_blank">Forgot password</a> once an email is on file instead -- either way works.
       <% } %>
     </p>
   </div>

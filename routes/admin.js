@@ -164,6 +164,19 @@ router.get("/logout", (req, res) => {
 router.use(requireAdmin); // everything below this line requires admin auth
 router.use(verifyOrigin); // enforce CSRF origin protection for admin POST requests
 
+// Makes the pending-trainer-application count available to every admin
+// page render, including the shared sidebar partial (views/admin/partials/head.ejs)
+// -- without this, the applications page existed but nothing in the admin
+// UI ever pointed to it, which was exactly why a submitted application
+// could sit there indefinitely with no admin aware it existed. Computed
+// once per admin request here rather than duplicated in every route that
+// renders a page.
+router.use((req, res, next) => {
+  res.locals.pendingTrainerApplicationsCount = store.readAll("instructors")
+    .filter((i) => i.signedRoePath && i.verificationStatus === "pending").length;
+  next();
+});
+
 // Blogs and resources are general site content, not tied to any specific
 // course — there's no "assigned course" concept that applies to them, so
 // unlike course editing, scoping isn't the right model here. Restricted to
@@ -1335,10 +1348,17 @@ router.get("/trainers/new", auth.requireSuperAdmin, (req, res) => {
 router.post("/trainers/new", auth.requireSuperAdmin, handleTrainerPhotoUpload, (req, res) => {
   const { name, title, bio, profileUrl, workExperienceRaw } = req.body;
   const email = (req.body.email || "").trim().toLowerCase() || null;
+  const password = req.body.password || "";
   if (!name || !profileUrl) {
     return res.status(400).render("admin/trainer-form", {
       title: "New trainer — Baseline Skills", trainer: req.body, mode: "new",
       error: "Name and profile link are required.",
+    });
+  }
+  if (password && password.length < adminCfg.PASSWORD_MIN_LENGTH) {
+    return res.status(400).render("admin/trainer-form", {
+      title: "New trainer — Baseline Skills", trainer: req.body, mode: "new",
+      error: `Password must be at least ${adminCfg.PASSWORD_MIN_LENGTH} characters, or leave it blank.`,
     });
   }
   // instructors.email is UNIQUE -- checked explicitly here rather than
@@ -1355,6 +1375,7 @@ router.post("/trainers/new", auth.requireSuperAdmin, handleTrainerPhotoUpload, (
   const workExperience = (workExperienceRaw || "").split("\n").map((s) => s.trim()).filter(Boolean);
   store.insert("trainers", {
     id: newId("trainer"), name, title: title || "", bio: bio || "", profileUrl, email,
+    passwordHash: password ? auth.hashPassword(password) : null,
     photoPath: req.file ? `/trainer-photo/${req.file.filename}` : "",
     workExperience,
     // An admin directly creating this record is a different situation
@@ -1388,10 +1409,17 @@ router.post("/trainers/:id/edit", handleTrainerPhotoUpload, (req, res) => {
   if (!trainerIsVisibleTo(req, existing.id)) return res.status(403).send("You don't have access to this trainer.");
   const { name, title, bio, profileUrl, workExperienceRaw } = req.body;
   const email = (req.body.email || "").trim().toLowerCase() || null;
+  const password = req.body.password || "";
   if (!name || !profileUrl) {
     return res.status(400).render("admin/trainer-form", {
       title: `Edit ${existing.name} — Baseline Skills`, trainer: { ...existing, ...req.body }, mode: "edit",
       error: "Name and profile link are required.",
+    });
+  }
+  if (password && password.length < adminCfg.PASSWORD_MIN_LENGTH) {
+    return res.status(400).render("admin/trainer-form", {
+      title: `Edit ${existing.name} — Baseline Skills`, trainer: { ...existing, ...req.body }, mode: "edit",
+      error: `Password must be at least ${adminCfg.PASSWORD_MIN_LENGTH} characters, or leave it blank to keep the current one.`,
     });
   }
   if (email && email !== (existing.email || "").toLowerCase() &&
@@ -1404,6 +1432,11 @@ router.post("/trainers/:id/edit", handleTrainerPhotoUpload, (req, res) => {
   const workExperience = (workExperienceRaw || "").split("\n").map((s) => s.trim()).filter(Boolean);
   store.update("trainers", req.params.id, {
     name, title: title || "", bio: bio || "", profileUrl, email,
+    // Blank means "leave unchanged" here, not "clear it" -- an admin
+    // fixing a typo in a trainer's title shouldn't accidentally wipe out
+    // a password that was already set, unlike email above, where a
+    // blank submission genuinely does mean "no email on file."
+    passwordHash: password ? auth.hashPassword(password) : existing.passwordHash,
     photoPath: req.file ? `/trainer-photo/${req.file.filename}` : existing.photoPath,
     workExperience,
     // Retroactively unblocks exactly the situation this was built for:
