@@ -1,0 +1,208 @@
+<%- include('../partials/header') %>
+
+<%
+// Shared by /student/lms/courses/:id (real learner, enrollment-checked
+// already by the route) and /trainer/lms/courses/:id/preview
+// (isTeacherPreview=true, the owning instructor, no enrollment check --
+// Section 18). The template itself never re-derives access; it only
+// renders whatever the route already decided was visible.
+const allLessons = modules.flatMap(m => m.lessons);
+const firstLesson = allLessons[0] || null;
+const lessonToShow = activeLesson || firstLesson;
+%>
+
+<section class="section-tight" style="background:#fff;border-bottom:1px solid var(--line)">
+  <div class="container">
+    <% if (isTeacherPreview) { %>
+      <span class="pill" style="background:#FFF6DF;color:#7a4e02;margin-bottom:8px;display:inline-block">Teacher preview &mdash; not the enrolled-student view</span>
+    <% } %>
+    <h1 style="font-size:1.6rem;margin:0"><%= course.title %></h1>
+  </div>
+</section>
+
+<section class="section" style="padding-top:32px">
+  <div class="container">
+    <% if (allLessons.length === 0) { %>
+      <div class="card" style="text-align:center;padding:48px 24px">
+        <p class="lead" style="color:var(--muted);margin:0">
+          <%= isTeacherPreview ? "This course doesn't have any content yet." : "This course's learning content is being prepared. Check back soon." %>
+        </p>
+      </div>
+    <% } else { %>
+    <div style="display:grid;grid-template-columns:280px 1fr;gap:28px;align-items:start" class="lms-player-grid">
+
+      <nav aria-label="Course content" class="card" style="padding:16px">
+        <% modules.forEach(mod => { %>
+          <div style="margin-bottom:16px">
+            <h4 style="margin:0 0 8px;font-size:.85rem;text-transform:uppercase;letter-spacing:.03em;color:var(--muted)"><%= mod.title %></h4>
+            <ul style="list-style:none;margin:0;padding:0">
+              <% mod.lessons.forEach(lesson => { %>
+                <% const isActive = lessonToShow && lessonToShow.id === lesson.id; %>
+                <% const isDone = completedLessonIds.has(lesson.id); %>
+                <li style="margin-bottom:4px">
+                  <a href="<%= isTeacherPreview ? '/trainer/lms/courses/' + course.id + '/preview/lessons/' + lesson.id : '/student/lms/courses/' + course.id + '/lessons/' + lesson.id %>"
+                     style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;text-decoration:none;font-size:.88rem;<%= isActive ? 'background:var(--navy);color:#fff' : 'color:var(--text)' %>">
+                    <span aria-hidden="true"><%- isDone ? '&#10003;' : (isActive ? '&#9656;' : '&#9675;') %></span>
+                    <span><%= lesson.title %></span>
+                    <% if (!lesson.isPublished) { %><span style="font-size:.7rem;opacity:.7">(draft)</span><% } %>
+                  </a>
+                </li>
+              <% }) %>
+            </ul>
+          </div>
+        <% }) %>
+      </nav>
+
+      <div class="card" style="min-height:320px">
+        <% if (!lessonToShow) { %>
+          <p style="color:var(--muted)">Select a lesson to begin.</p>
+        <% } else { %>
+          <h2 style="margin-top:0"><%= lessonToShow.title %></h2>
+          <% if (lessonToShow.description) { %><p class="lead" style="color:var(--muted)"><%= lessonToShow.description %></p><% } %>
+
+          <% if (lessonToShow.contentType === 'RICH_TEXT') { %>
+            <div class="lesson-body"><%- lessonToShow.bodyHtml || '' %></div>
+          <% } else if (lessonToShow.contentType === 'QUIZ') { %>
+            <div class="card" style="background:var(--bg-soft,#F1F5F9);text-align:center;padding:32px">
+              <% if (isTeacherPreview) { %>
+                <p style="margin:0 0 12px;color:var(--muted)">Quiz preview isn't part of the learner player -- manage this quiz directly.</p>
+                <a href="/trainer/lms/lessons/<%= lessonToShow.id %>/quiz" class="btn btn-outline btn-sm">Open quiz builder</a>
+              <% } else { %>
+                <a href="/student/lms/lessons/<%= lessonToShow.id %>/quiz" class="btn btn-navy">Go to quiz</a>
+              <% } %>
+            </div>
+          <% } else if (lessonToShow.contentType === 'ASSIGNMENT') { %>
+            <div class="card" style="background:var(--bg-soft,#F1F5F9);text-align:center;padding:32px">
+              <% if (isTeacherPreview) { %>
+                <p style="margin:0 0 12px;color:var(--muted)">Assignment preview isn't part of the learner player -- manage this assignment directly.</p>
+                <a href="/trainer/lms/lessons/<%= lessonToShow.id %>/assignment" class="btn btn-outline btn-sm">Open assignment builder</a>
+              <% } else { %>
+                <a href="/student/lms/lessons/<%= lessonToShow.id %>/assignment" class="btn btn-navy">Go to assignment</a>
+              <% } %>
+            </div>
+          <% } else if (!lessonToShow.asset) { %>
+            <div class="card" style="background:var(--bg-soft,#F1F5F9);text-align:center;padding:32px">
+              <p style="margin:0;color:var(--muted)">This lesson doesn't have its file uploaded yet.</p>
+            </div>
+          <% } else if (lessonToShow.contentType === 'VIDEO') { %>
+            <video id="lms-video-player" controls style="width:100%;border-radius:8px;background:#000"
+                   src="/lms/content/<%= lessonToShow.asset.id %>/stream"
+                   data-lesson-id="<%= lessonToShow.id %>"
+                   data-resume-position="<%= typeof videoResumePosition !== 'undefined' ? videoResumePosition : 0 %>">
+              Your browser doesn't support HTML5 video.
+            </video>
+            <% if (lessonToShow.downloadAllowed) { %>
+              <p style="margin-top:10px"><a href="/lms/content/<%= lessonToShow.asset.id %>/download" class="btn btn-outline btn-sm">Download video</a></p>
+            <% } %>
+          <% } else if (lessonToShow.contentType === 'PDF') { %>
+            <iframe src="/lms/content/<%= lessonToShow.asset.id %>/stream" style="width:100%;height:640px;border:1px solid var(--line);border-radius:8px" title="<%= lessonToShow.title %>"></iframe>
+            <% if (lessonToShow.downloadAllowed) { %>
+              <p style="margin-top:10px"><a href="/lms/content/<%= lessonToShow.asset.id %>/download" class="btn btn-outline btn-sm">Download PDF</a></p>
+            <% } %>
+          <% } else { %>
+            <!-- DOCUMENT/PRESENTATION: Word and PowerPoint files have no
+                 reliable native in-browser viewer the way PDF and video
+                 do -- rather than pretend one exists, this is honest about
+                 it and offers a download when the teacher has actually
+                 allowed one, exactly Section 65's point that "protected
+                 viewer where technically possible" is conditional, not a
+                 given for every format. -->
+            <div class="card" style="background:var(--bg-soft,#F1F5F9);text-align:center;padding:32px">
+              <p style="margin:0 0 12px;color:var(--muted)"><%= lessonToShow.contentType.replace('_',' ') %>: <%= lessonToShow.asset.originalFilename %></p>
+              <% if (lessonToShow.downloadAllowed) { %>
+                <a href="/lms/content/<%= lessonToShow.asset.id %>/download" class="btn btn-navy btn-sm">Download to view</a>
+              <% } else { %>
+                <p style="margin:0;font-size:.85rem;color:var(--muted)">This file isn't available for download.</p>
+              <% } %>
+            </div>
+          <% } %>
+
+          <% if (!isTeacherPreview) { %>
+            <div style="margin-top:24px;padding-top:16px;border-top:1px solid var(--line)">
+              <% if (completedLessonIds.has(lessonToShow.id)) { %>
+                <span class="pill" style="background:#F0FDF4;color:#166534">&#10003; Completed</span>
+              <% } else { %>
+                <button type="button" class="btn btn-navy" id="mark-complete-btn" data-lesson-id="<%= lessonToShow.id %>">Mark Complete</button>
+              <% } %>
+            </div>
+          <% } %>
+        <% } %>
+      </div>
+
+    </div>
+    <% } %>
+  </div>
+</section>
+
+<style>
+  @media (max-width: 768px) {
+    .lms-player-grid { grid-template-columns: 1fr !important; }
+  }
+</style>
+
+<% if (!isTeacherPreview) { %>
+<script>
+const markBtn = document.getElementById('mark-complete-btn');
+if (markBtn) {
+  markBtn.addEventListener('click', function() {
+    const lessonId = this.dataset.lessonId;
+    this.disabled = true;
+    this.textContent = 'Saving\u2026';
+    fetch('/student/lms/lessons/' + lessonId + '/complete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+      .then(r => r.json())
+      .then(() => location.reload())
+      .catch(() => { this.disabled = false; this.textContent = 'Mark Complete \u2014 retry'; });
+  });
+}
+
+// Section 40/41: resume playback from the last saved position, and save
+// periodically plus on pause/seek/tab-hide -- not relying on beforeunload
+// alone, since that event is unreliable enough on mobile browsers that
+// Section 40 explicitly calls it out as insufficient by itself.
+const videoEl = document.getElementById('lms-video-player');
+if (videoEl) {
+  const lessonId = videoEl.dataset.lessonId;
+  const resumeAt = parseFloat(videoEl.dataset.resumePosition) || 0;
+  let lastSaved = 0;
+
+  function saveProgress() {
+    const position = videoEl.currentTime;
+    if (Math.abs(position - lastSaved) < 1) return; // avoid redundant saves for near-identical positions
+    lastSaved = position;
+    fetch('/student/lms/lessons/' + lessonId + '/video-progress', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ positionSeconds: position }),
+      keepalive: true, // lets the save actually complete during page unload/tab-close
+    }).catch(() => {});
+  }
+
+  videoEl.addEventListener('loadedmetadata', function() {
+    if (resumeAt > 0 && resumeAt < videoEl.duration - 2) videoEl.currentTime = resumeAt;
+  });
+  // The listener above alone has a real race: the <video src="..."> tag
+  // starts loading as soon as it's parsed, before this script (placed
+  // after it in the page) runs and attaches anything -- for a small or
+  // cached video, loadedmetadata can fire before the listener exists,
+  // silently skipping the resume seek entirely. Found by actually testing
+  // resume in a browser, not by reading the event-driven code and
+  // assuming it would fire correctly. If metadata is already available by
+  // the time this runs, seek immediately instead of waiting for an event
+  // that already happened.
+  if (videoEl.readyState >= 1 && resumeAt > 0 && resumeAt < videoEl.duration - 2) {
+    videoEl.currentTime = resumeAt;
+  }
+  let progressTimer = null;
+  videoEl.addEventListener('play', function() {
+    if (progressTimer) clearInterval(progressTimer);
+    progressTimer = setInterval(saveProgress, 10000);
+  });
+  videoEl.addEventListener('pause', saveProgress);
+  videoEl.addEventListener('seeked', saveProgress);
+  document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'hidden') saveProgress();
+  });
+}
+</script>
+<% } %>
+
+<%- include('../partials/footer') %>

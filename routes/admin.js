@@ -833,6 +833,25 @@ router.post("/courses/:id/edit", auth.requireCourseAccess(r => r.params.id), han
 });
 
 router.post("/courses/:id/delete", auth.requireCourseAccess(r => r.params.id), (req, res) => {
+  // Same orphaned-file risk as the LMS module-delete route: the FK cascade
+  // (courses -> lms_modules -> lms_lessons -> lms_content_assets) correctly
+  // removes every row, but has no idea those rows referenced real files on
+  // disk. Cleaned up here before the cascade takes the rows that are the
+  // only record of which files those were -- found this exact gap testing
+  // the module-delete route, then checked (rather than assumed) that
+  // course deletion had it too, since it cascades through the same tables.
+  const { LMS_CONTENT_DIR } = require("../lib/lms-content-storage");
+  const fs = require("fs");
+  const modulesInCourse = store.readAll("lms_modules").filter((m) => m.courseId === req.params.id);
+  const moduleIds = new Set(modulesInCourse.map((m) => m.id));
+  const lessonsInCourse = store.readAll("lms_lessons").filter((l) => moduleIds.has(l.moduleId));
+  lessonsInCourse.forEach((lesson) => {
+    const asset = store.findOne("lms_content_assets", (a) => a.lessonId === lesson.id);
+    if (asset) {
+      const assetPath = path.join(LMS_CONTENT_DIR, asset.storageKey);
+      if (fs.existsSync(assetPath)) fs.unlinkSync(assetPath);
+    }
+  });
   store.remove("courses", req.params.id);
   res.redirect("/admin/courses?success=Course+deleted");
 });

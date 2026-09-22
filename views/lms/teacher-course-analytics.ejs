@@ -1,0 +1,80 @@
+<%- include('../partials/header') %>
+
+<section class="section-tight" style="background:#fff;border-bottom:1px solid var(--line)">
+  <div class="container">
+    <a href="/trainer/lms/courses/<%= course.id %>" style="font-size:.85rem;color:var(--muted)">&larr; <%= course.title %></a>
+    <h1 style="font-size:1.8rem;margin-top:8px">Analytics</h1>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <% if (analytics.enrolledCount === 0) { %>
+      <div class="card" style="text-align:center;padding:48px 24px">
+        <p class="lead" style="color:var(--muted);margin:0">No one is enrolled in this course yet, so there's nothing to report on.</p>
+      </div>
+    <% } else { %>
+      <div class="why-grid" style="grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px">
+        <div class="card" style="text-align:center">
+          <div style="font-size:1.8rem;font-weight:700;color:var(--navy)"><%= analytics.enrolledCount %></div>
+          <div style="font-size:.8rem;color:var(--muted)">Enrolled</div>
+        </div>
+        <div class="card" style="text-align:center">
+          <div style="font-size:1.8rem;font-weight:700;color:var(--navy)"><%= analytics.activeCount %></div>
+          <div style="font-size:.8rem;color:var(--muted)">Active (30 days)</div>
+        </div>
+        <div class="card" style="text-align:center">
+          <div style="font-size:1.8rem;font-weight:700;color:var(--navy)"><%= analytics.completedCount %></div>
+          <div style="font-size:.8rem;color:var(--muted)">Completed</div>
+        </div>
+        <div class="card" style="text-align:center">
+          <div style="font-size:1.8rem;font-weight:700;color:var(--navy)"><%= analytics.completionRate %>%</div>
+          <div style="font-size:.8rem;color:var(--muted)">Completion rate</div>
+        </div>
+        <div class="card" style="text-align:center">
+          <div style="font-size:1.8rem;font-weight:700;color:var(--navy)"><%= analytics.averageProgress %>%</div>
+          <div style="font-size:.8rem;color:var(--muted)">Average progress</div>
+        </div>
+        <div class="card" style="text-align:center">
+          <div style="font-size:1.8rem;font-weight:700;color:var(--navy)"><%= analytics.averageQuizScore != null ? analytics.averageQuizScore + '%' : '—' %></div>
+          <div style="font-size:.8rem;color:var(--muted)">Average quiz score</div>
+        </div>
+        <div class="card" style="text-align:center">
+          <div style="font-size:1.8rem;font-weight:700;color:var(--navy)"><%= analytics.assignmentSubmissionRate != null ? analytics.assignmentSubmissionRate + '%' : '—' %></div>
+          <div style="font-size:.8rem;color:var(--muted)">Assignment submission rate</div>
+        </div>
+        <div class="card" style="text-align:center">
+          <div style="font-size:1rem;font-weight:700;color:var(--navy)"><%= analytics.lastActivity ? new Date(analytics.lastActivity).toLocaleDateString() : 'No activity yet' %></div>
+          <div style="font-size:.8rem;color:var(--muted)">Most recent activity</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-top:0">Students</h3>
+        <table style="width:100%;font-size:.9rem">
+          <thead><tr style="text-align:left;color:var(--muted)">
+            <th>Student</th><th>Progress</th><th>Quiz avg</th><th>Assignments</th><th>Last activity</th><th>Status</th>
+          </tr></thead>
+          <tbody>
+            <% analytics.students.forEach(s => { %>
+              <tr>
+                <td><%= s.learner ? s.learner.name : '(unknown)' %></td>
+                <td><%= s.progressPercent %>%</td>
+                <td><%= s.avgQuizScore != null ? Math.round(s.avgQuizScore) + '% (' + s.quizAttemptsCount + ' attempt' + (s.quizAttemptsCount===1?'':'s') + ')' : '—' %></td>
+                <td><%= s.assignmentsSubmitted %> / <%= s.assignmentsTotal %></td>
+                <td><%= s.lastActivity ? new Date(s.lastActivity).toLocaleDateString() : 'Never' %></td>
+                <td>
+                  <% if (s.isComplete) { %><span class="pill" style="background:#F0FDF4;color:#166534">Completed</span>
+                  <% } else if (s.isActive) { %><span class="pill" style="background:#EFF6FF;color:#1E40AF">In progress</span>
+                  <% } else { %><span class="pill">Inactive</span><% } %>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </div>
+</section>
+
+<%- include('../partials/footer') %>

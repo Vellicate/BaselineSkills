@@ -1,0 +1,38 @@
+<%- include('../partials/header') %>
+
+<section class="section-tight" style="background:#fff;border-bottom:1px solid var(--line)">
+  <div class="container">
+    <span class="eyebrow">My Learning</span>
+    <h1 style="font-size:2rem">Continue learning</h1>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <% if (courseSummaries.length === 0) { %>
+      <div class="card" style="text-align:center;padding:48px 24px">
+        <p class="lead" style="color:var(--muted);margin:0">You don't have any courses with online learning content yet.</p>
+        <a href="/courses" class="btn btn-navy" style="margin-top:16px">Browse courses</a>
+      </div>
+    <% } else { %>
+      <div class="why-grid" style="grid-template-columns:repeat(2,1fr);gap:20px">
+        <% courseSummaries.forEach(s => { %>
+          <div class="card">
+            <h3 style="margin:0 0 8px"><%= s.course.title %></h3>
+            <% if (s.totalLessons === 0) { %>
+              <p style="color:var(--muted);font-size:.9rem">This course's learning content is being prepared.</p>
+            <% } else { %>
+              <div style="background:var(--line);border-radius:999px;height:8px;overflow:hidden;margin-bottom:6px">
+                <div style="background:var(--navy);height:100%;width:<%= s.progressPercent %>%"></div>
+              </div>
+              <p style="font-size:.85rem;color:var(--muted);margin:0 0 16px"><%= s.completedLessons %> of <%= s.totalLessons %> lessons complete (<%= s.progressPercent %>%)</p>
+            <% } %>
+            <a href="/student/lms/courses/<%= s.course.id %>" class="btn btn-navy btn-sm"><%= s.completedLessons > 0 ? 'Continue' : 'Start learning' %></a>
+          </div>
+        <% }) %>
+      </div>
+    <% } %>
+  </div>
+</section>
+
+<%- include('../partials/footer') %>

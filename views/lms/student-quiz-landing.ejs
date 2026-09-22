@@ -1,0 +1,51 @@
+<%- include('../partials/header') %>
+
+<section class="section-tight" style="background:#fff;border-bottom:1px solid var(--line)">
+  <div class="container">
+    <a href="/student/lms/courses/<%= course.id %>" style="font-size:.85rem;color:var(--muted)">&larr; <%= course.title %></a>
+    <h1 style="font-size:1.8rem;margin-top:8px"><%= lesson.title %></h1>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container" style="max-width:640px">
+    <div class="card">
+      <p style="color:var(--muted)">
+        <%= questions.length %> question<%= questions.length===1?'':'s' %>
+        <% if (quiz.timeLimitSeconds) { %> &middot; <%= Math.round(quiz.timeLimitSeconds/60) %> minute time limit<% } %>
+        &middot; Pass mark: <%= quiz.passPercentage %>%
+      </p>
+
+      <% if (inProgress) { %>
+        <a href="/student/lms/attempts/<%= inProgress.id %>" class="btn btn-navy">Continue attempt in progress</a>
+      <% } else if (attemptsRemaining > 0) { %>
+        <form method="POST" action="/student/lms/lessons/<%= lesson.id %>/quiz/start">
+          <button type="submit" class="btn btn-navy">Start attempt <%= attemptsUsed + 1 %> of <%= quiz.maxAttempts %></button>
+        </form>
+      <% } else { %>
+        <p class="pill" style="background:#FEF2F2;color:#991B1B">You've used all <%= quiz.maxAttempts %> attempt<%= quiz.maxAttempts===1?'':'s' %> for this quiz.</p>
+      <% } %>
+    </div>
+
+    <% if (attempts.length > 0) { %>
+      <div class="card" style="margin-top:20px">
+        <h3 style="margin-top:0">Your attempts</h3>
+        <table style="width:100%;font-size:.9rem">
+          <thead><tr style="text-align:left;color:var(--muted)"><th>Attempt</th><th>Status</th><th>Score</th><th></th></tr></thead>
+          <tbody>
+            <% attempts.forEach(a => { %>
+              <tr>
+                <td>#<%= a.attemptNumber %></td>
+                <td><%= a.status.replace('_',' ') %></td>
+                <td><% if (a.percentage != null) { %><%= Math.round(a.percentage) %>% <%= a.passed ? '(Pass)' : (a.passed === false ? '(Fail)' : '') %><% } else { %>&mdash;<% } %></td>
+                <td><% if (a.status !== 'IN_PROGRESS') { %><a href="/student/lms/attempts/<%= a.id %>/review" style="font-size:.85rem">Review</a><% } %></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </div>
+</section>
+
+<%- include('../partials/footer') %>

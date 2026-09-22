@@ -1,0 +1,329 @@
+<%- include('../partials/header') %>
+
+<section class="section-tight" style="background:#fff;border-bottom:1px solid var(--line)">
+  <div class="container">
+    <a href="/trainer/lms" style="font-size:.85rem;color:var(--muted)">&larr; My LMS courses</a>
+    <h1 style="font-size:1.8rem;margin-top:8px"><%= course.title %></h1>
+    <form method="POST" action="/trainer/lms/courses/<%= course.id %>/delivery-mode" style="margin-top:12px;display:flex;align-items:center;gap:10px">
+      <label for="lmsDeliveryMode" style="font-size:.85rem;font-weight:600">Delivery mode</label>
+      <select name="lmsDeliveryMode" id="lmsDeliveryMode" onchange="this.form.submit()">
+        <option value="" <%= !course.lmsDeliveryMode ? 'selected' : '' %> disabled>Choose one&hellip;</option>
+        <option value="LIVE_ONLINE" <%= course.lmsDeliveryMode === 'LIVE_ONLINE' ? 'selected' : '' %>>Live Online</option>
+        <option value="RECORDED" <%= course.lmsDeliveryMode === 'RECORDED' ? 'selected' : '' %>>Recorded</option>
+        <option value="HYBRID" <%= course.lmsDeliveryMode === 'HYBRID' ? 'selected' : '' %>>Hybrid</option>
+      </select>
+    </form>
+    <form method="POST" action="/trainer/lms/courses/<%= course.id %>/access-window" style="margin-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <label for="lmsAccessStartDate" style="font-size:.85rem;font-weight:600">Available from</label>
+      <input type="date" name="lmsAccessStartDate" id="lmsAccessStartDate" value="<%= course.lmsAccessStartDate || '' %>">
+      <label for="lmsAccessEndDate" style="font-size:.85rem;font-weight:600">Until</label>
+      <input type="date" name="lmsAccessEndDate" id="lmsAccessEndDate" value="<%= course.lmsAccessEndDate || '' %>">
+      <button type="submit" class="btn btn-outline btn-sm">Save dates</button>
+      <span style="font-size:.78rem;color:var(--muted)">Leave blank for no restriction on that end.</span>
+    </form>
+    <% if (modules.length > 0) { %>
+      <a href="/trainer/lms/courses/<%= course.id %>/preview" class="btn btn-outline btn-sm" style="margin-top:12px" target="_blank" rel="noopener">Preview course</a>
+    <% } %>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container" style="max-width:820px">
+
+    <div id="modules-list">
+      <% modules.forEach(mod => { %>
+        <div class="card module-card" data-module-id="<%= mod.id %>" style="margin-bottom:20px">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+            <div style="display:flex;align-items:center;gap:8px;flex:1">
+              <span class="drag-handle" title="Drag to reorder" aria-hidden="true" style="cursor:grab;color:var(--muted)">&#9776;</span>
+              <h3 style="margin:0"><%= mod.title %></h3>
+            </div>
+            <div style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap;max-width:100%">
+              <button type="button" class="btn btn-outline btn-sm module-move-up" aria-label="Move module up">&uarr;</button>
+              <button type="button" class="btn btn-outline btn-sm module-move-down" aria-label="Move module down">&darr;</button>
+              <form method="POST" action="/trainer/lms/modules/<%= mod.id %>/delete" onsubmit="return confirm('Delete this module and all its lessons?')">
+                <button type="submit" class="btn btn-outline btn-sm" style="color:#B91C1C">Delete</button>
+              </form>
+            </div>
+          </div>
+          <% if (mod.description) { %><p style="color:var(--muted);font-size:.9rem;margin:8px 0 0"><%= mod.description %></p><% } %>
+
+          <div class="lessons-list" data-module-id="<%= mod.id %>" style="margin-top:16px;padding-left:8px;border-left:2px solid var(--line)">
+            <% mod.lessons.forEach(lesson => { %>
+              <div class="lesson-row" data-lesson-id="<%= lesson.id %>" style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;background:var(--bg-soft,#F1F5F9);border-radius:8px;margin-bottom:8px;flex-wrap:wrap">
+                <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0">
+                  <span class="drag-handle" title="Drag to reorder" aria-hidden="true" style="cursor:grab;color:var(--muted)">&#9776;</span>
+                  <div style="min-width:0">
+                    <strong style="font-size:.92rem"><%= lesson.title %></strong>
+                    <div style="font-size:.75rem;color:var(--muted)">
+                      <%= lesson.contentType.replace('_',' ') %>
+                      <% if (lesson.isPublished) { %> &middot; <span style="color:#166534">Published</span><% } else { %> &middot; Draft<% } %>
+                      <% if (lesson.previewEnabled) { %> &middot; Preview-enabled<% } %>
+                      <% if (lesson.downloadAllowed) { %> &middot; Download-enabled<% } %>
+                    </div>
+                  </div>
+                </div>
+                <div style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap;max-width:100%">
+                  <button type="button" class="btn btn-outline btn-sm lesson-move-up" aria-label="Move lesson up">&uarr;</button>
+                  <button type="button" class="btn btn-outline btn-sm lesson-move-down" aria-label="Move lesson down">&darr;</button>
+                  <% if (lesson.contentType === 'QUIZ') { %>
+                    <a href="/trainer/lms/lessons/<%= lesson.id %>/quiz" class="btn btn-outline btn-sm">Edit quiz</a>
+                  <% } else if (lesson.contentType === 'ASSIGNMENT') { %>
+                    <a href="/trainer/lms/lessons/<%= lesson.id %>/assignment" class="btn btn-outline btn-sm">Edit assignment</a>
+                  <% } else { %>
+                    <button type="button" class="btn btn-outline btn-sm lesson-edit-btn" data-module-id="<%= mod.id %>" data-lesson="<%= JSON.stringify(lesson) %>">Edit</button>
+                  <% } %>
+                  <form method="POST" action="/trainer/lms/lessons/<%= lesson.id %>/publish" style="display:inline">
+                    <button type="submit" class="btn btn-outline btn-sm"><%= lesson.isPublished ? 'Unpublish' : 'Publish' %></button>
+                  </form>
+                  <form method="POST" action="/trainer/lms/lessons/<%= lesson.id %>/preview" style="display:inline">
+                    <button type="submit" class="btn btn-outline btn-sm"><%= lesson.previewEnabled ? 'Disable preview' : 'Enable preview' %></button>
+                  </form>
+                  <% if (lesson.contentType !== 'RICH_TEXT') { %>
+                    <form method="POST" action="/trainer/lms/lessons/<%= lesson.id %>/download-toggle" style="display:inline">
+                      <button type="submit" class="btn btn-outline btn-sm"><%= lesson.downloadAllowed ? 'Disable download' : 'Enable download' %></button>
+                    </form>
+                  <% } %>
+                  <form method="POST" action="/trainer/lms/lessons/<%= lesson.id %>/delete" onsubmit="return confirm('Delete this lesson?')" style="display:inline">
+                    <button type="submit" class="btn btn-outline btn-sm" style="color:#B91C1C">Delete</button>
+                  </form>
+                </div>
+              </div>
+            <% }) %>
+          </div>
+
+          <button type="button" class="btn btn-outline btn-sm" style="margin-top:8px" onclick="openLessonEditor('<%= mod.id %>', null)">+ Add lesson</button>
+        </div>
+      <% }) %>
+    </div>
+
+    <div class="card" style="background:var(--bg-soft,#F1F5F9);border:1px dashed var(--line)">
+      <h4 style="margin-top:0">Add a module</h4>
+      <form method="POST" action="/trainer/lms/courses/<%= course.id %>/modules" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+        <div class="form-field" style="flex:1;min-width:200px">
+          <label for="new-module-title">Title</label>
+          <input type="text" id="new-module-title" name="title" required placeholder="e.g. Requirements Fundamentals">
+        </div>
+        <button type="submit" class="btn btn-navy">Add module</button>
+      </form>
+    </div>
+
+  </div>
+</section>
+
+<!-- Lesson editor modal: a single modal reused for both create and edit,
+     matching this app's existing modal pattern (see the Talk to an Expert
+     modal in the header partial) rather than introducing a new dialog
+     mechanism. -->
+<div id="lesson-modal" class="modal-backdrop" aria-hidden="true" onclick="if(event.target===this) closeLessonEditor()">
+  <div class="modal-card" style="max-width:640px" role="dialog" aria-modal="true" aria-labelledby="lesson-modal-title">
+    <button type="button" onclick="closeLessonEditor()" aria-label="Close" style="position:absolute;top:16px;right:16px;background:none;border:none;font-size:1.4rem;cursor:pointer">&times;</button>
+    <h3 id="lesson-modal-title">Lesson</h3>
+    <form id="lesson-form" method="POST" enctype="multipart/form-data">
+      <div class="form-field">
+        <label for="lesson-title">Title</label>
+        <input type="text" id="lesson-title" name="title" required>
+      </div>
+      <div class="form-field">
+        <label for="lesson-description">Short description (optional)</label>
+        <input type="text" id="lesson-description" name="description">
+      </div>
+      <!-- contentType is placed before the file input deliberately, not
+           just visually first -- multer/busboy only has a multipart
+           field's value available (for fileFilter/filename) once that
+           field has actually been parsed, which happens in the order
+           fields appear in the submitted form. A contentType select
+           placed after the file input would be invisible to the upload
+           validation that depends on it. -->
+      <div class="form-field" id="lesson-content-type-field">
+        <label for="lesson-content-type">Content type</label>
+        <select id="lesson-content-type" name="contentType">
+          <option value="RICH_TEXT">Rich text</option>
+          <option value="VIDEO">Video</option>
+          <option value="PDF">PDF</option>
+          <option value="DOCUMENT">Document (Word)</option>
+          <option value="PRESENTATION">Presentation (PowerPoint)</option>
+          <option value="QUIZ">Quiz</option>
+          <option value="ASSIGNMENT">Assignment</option>
+        </select>
+      </div>
+      <div id="lesson-content-type-readonly" style="display:none;font-size:.85rem;color:var(--muted);margin-bottom:12px"></div>
+
+      <div class="form-field" id="lesson-richtext-field">
+        <label id="lesson-body-label">Content</label>
+        <div role="toolbar" aria-label="Text formatting" style="display:flex;gap:4px;margin-bottom:6px">
+          <button type="button" class="btn btn-outline btn-sm" onmousedown="event.preventDefault()" onclick="document.execCommand('bold')"><strong>B</strong></button>
+          <button type="button" class="btn btn-outline btn-sm" onmousedown="event.preventDefault()" onclick="document.execCommand('italic')"><em>I</em></button>
+          <button type="button" class="btn btn-outline btn-sm" onmousedown="event.preventDefault()" onclick="document.execCommand('underline')"><u>U</u></button>
+          <button type="button" class="btn btn-outline btn-sm" onmousedown="event.preventDefault()" onclick="document.execCommand('formatBlock', false, 'h3')">H</button>
+          <button type="button" class="btn btn-outline btn-sm" onmousedown="event.preventDefault()" onclick="document.execCommand('insertUnorderedList')">&bull; List</button>
+          <button type="button" class="btn btn-outline btn-sm" onmousedown="event.preventDefault()" onclick="document.execCommand('formatBlock', false, 'blockquote')">&ldquo;&rdquo;</button>
+          <button type="button" class="btn btn-outline btn-sm" onmousedown="event.preventDefault()" onclick="const u=prompt('Link URL:'); if(u) document.execCommand('createLink', false, u)">Link</button>
+        </div>
+        <div id="lesson-body-editor" contenteditable="true" aria-labelledby="lesson-body-label"
+             style="border:1px solid var(--line);border-radius:8px;padding:12px;min-height:160px;background:#fff"></div>
+        <input type="hidden" name="bodyHtml" id="lesson-body-hidden">
+      </div>
+
+      <div class="form-field" id="lesson-file-field" style="display:none">
+        <label for="lesson-content-file">File</label>
+        <div id="lesson-current-file" style="font-size:.85rem;color:var(--muted);margin-bottom:6px"></div>
+        <input type="file" id="lesson-content-file" name="contentFile">
+        <p style="font-size:.78rem;color:var(--muted);margin:6px 0 0" id="lesson-file-hint"></p>
+      </div>
+
+      <div id="lesson-form-status" style="font-size:.8rem;color:var(--muted);min-height:1.2em"></div>
+      <button type="submit" class="btn btn-navy" id="lesson-save-btn">Save lesson</button>
+    </form>
+  </div>
+</div>
+
+<script>
+function openLessonEditor(moduleId, lesson) {
+  const form = document.getElementById('lesson-form');
+  const editor = document.getElementById('lesson-body-editor');
+  const typeSelect = document.getElementById('lesson-content-type');
+  const typeReadonly = document.getElementById('lesson-content-type-readonly');
+  const richTextField = document.getElementById('lesson-richtext-field');
+  const fileField = document.getElementById('lesson-file-field');
+  const currentFileDiv = document.getElementById('lesson-current-file');
+  const fileInput = document.getElementById('lesson-content-file');
+  const fileHint = document.getElementById('lesson-file-hint');
+
+  document.getElementById('lesson-modal-title').textContent = lesson ? 'Edit lesson' : 'Add lesson';
+  document.getElementById('lesson-title').value = lesson ? lesson.title : '';
+  document.getElementById('lesson-description').value = lesson ? (lesson.description || '') : '';
+  editor.innerHTML = lesson ? (lesson.bodyHtml || '') : '';
+  fileInput.value = '';
+
+  const contentType = lesson ? lesson.contentType : 'RICH_TEXT';
+  if (lesson) {
+    // Content type is fixed once a lesson exists -- switching a video
+    // lesson to rich text (or vice versa) isn't something the edit route
+    // supports, so this is shown as read-only rather than offered as a
+    // choice that would silently do nothing.
+    document.getElementById('lesson-content-type-field').style.display = 'none';
+    typeReadonly.style.display = 'block';
+    typeReadonly.textContent = 'Content type: ' + contentType.replace('_', ' ') + ' (set when the lesson was created)';
+  } else {
+    document.getElementById('lesson-content-type-field').style.display = 'block';
+    typeReadonly.style.display = 'none';
+    typeSelect.value = 'RICH_TEXT';
+  }
+
+  function applyTypeVisibility(type) {
+    richTextField.style.display = type === 'RICH_TEXT' ? 'block' : 'none';
+    fileField.style.display = (type === 'RICH_TEXT' || type === 'QUIZ' || type === 'ASSIGNMENT') ? 'none' : 'block';
+    fileInput.required = type !== 'RICH_TEXT' && type !== 'QUIZ' && type !== 'ASSIGNMENT' && !lesson;
+    const hints = { VIDEO: 'MP4, WebM or MOV.', PDF: 'PDF only.', DOCUMENT: 'DOC or DOCX.', PRESENTATION: 'PPT or PPTX.', QUIZ: 'Questions are added after creating the quiz.', ASSIGNMENT: 'Instructions are added after creating the assignment.' };
+    fileHint.textContent = hints[type] || '';
+    if (lesson && lesson.asset) {
+      currentFileDiv.textContent = 'Current file: ' + lesson.asset.originalFilename + ' (uploading a new file replaces it)';
+    } else {
+      currentFileDiv.textContent = '';
+    }
+  }
+  applyTypeVisibility(contentType);
+  typeSelect.onchange = () => applyTypeVisibility(typeSelect.value);
+
+  form.action = lesson ? ('/trainer/lms/lessons/' + lesson.id + '/edit') : ('/trainer/lms/modules/' + moduleId + '/lessons');
+  document.getElementById('lesson-modal').classList.add('active');
+  document.getElementById('lesson-modal').setAttribute('aria-hidden', 'false');
+  document.getElementById('lesson-title').focus();
+}
+function closeLessonEditor() {
+  document.getElementById('lesson-modal').classList.remove('active');
+  document.getElementById('lesson-modal').setAttribute('aria-hidden', 'true');
+}
+// Lesson data travels via a data-lesson="<json>" attribute (EJS-escaped,
+// so the browser correctly HTML-decodes it back to valid JSON), not
+// inline in an onclick call -- the JSON serialization of a lesson's own
+// title/description/body can freely contain quote characters, which
+// would otherwise prematurely close the onclick="..." attribute itself.
+// Found exactly this happening during mobile testing: real lesson JSON
+// was leaking as visible page text instead of staying inside the
+// attribute.
+document.querySelectorAll('.lesson-edit-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    openLessonEditor(this.dataset.moduleId, JSON.parse(this.dataset.lesson));
+  });
+});
+document.getElementById('lesson-form').addEventListener('submit', function() {
+  // The contenteditable div is just an input surface -- its HTML is copied
+  // into the real form field right before submit, and the server sanitizes
+  // it before it's ever stored. Section 12 is explicit that client-side
+  // sanitization (or none at all, as here) must never be trusted as the
+  // real defense -- lib/lms-sanitize.js on the server is the actual
+  // control, this is purely an editing convenience.
+  document.getElementById('lesson-body-hidden').value = document.getElementById('lesson-body-editor').innerHTML;
+});
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeLessonEditor();
+});
+
+// Reordering: move-up/move-down buttons work everywhere (including
+// mobile, per Section 67's explicit accessible-alternative requirement);
+// native HTML5 drag-and-drop is layered on top for desktop pointer users.
+// Both paths funnel into the same saveOrder() call, so there's exactly
+// one place that talks to the reorder endpoint.
+function saveOrder(url, orderedIds) {
+  fetch(url, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ orderedIds }),
+  }).then(r => { if (!r.ok) location.reload(); });
+}
+function reorderModules() {
+  const ids = Array.from(document.querySelectorAll('.module-card')).map(el => el.dataset.moduleId);
+  saveOrder('/trainer/lms/courses/<%= course.id %>/modules/reorder', ids);
+}
+function reorderLessons(moduleId) {
+  const container = document.querySelector('.lessons-list[data-module-id="' + moduleId + '"]');
+  const ids = Array.from(container.querySelectorAll('.lesson-row')).map(el => el.dataset.lessonId);
+  saveOrder('/trainer/lms/modules/' + moduleId + '/lessons/reorder', ids);
+}
+
+document.querySelectorAll('.module-move-up').forEach(btn => btn.addEventListener('click', function() {
+  const card = this.closest('.module-card');
+  const prev = card.previousElementSibling;
+  if (prev) { card.parentNode.insertBefore(card, prev); reorderModules(); }
+}));
+document.querySelectorAll('.module-move-down').forEach(btn => btn.addEventListener('click', function() {
+  const card = this.closest('.module-card');
+  const next = card.nextElementSibling;
+  if (next) { card.parentNode.insertBefore(next, card); reorderModules(); }
+}));
+document.querySelectorAll('.lesson-move-up').forEach(btn => btn.addEventListener('click', function() {
+  const row = this.closest('.lesson-row');
+  const prev = row.previousElementSibling;
+  if (prev) { row.parentNode.insertBefore(row, prev); reorderLessons(row.closest('.lessons-list').dataset.moduleId); }
+}));
+document.querySelectorAll('.lesson-move-down').forEach(btn => btn.addEventListener('click', function() {
+  const row = this.closest('.lesson-row');
+  const next = row.nextElementSibling;
+  if (next) { row.parentNode.insertBefore(next, row); reorderLessons(row.closest('.lessons-list').dataset.moduleId); }
+}));
+
+// Native drag-and-drop, desktop pointer convenience only -- the move-up/
+// move-down buttons above are the real, always-available mechanism.
+[document.getElementById('modules-list'), ...document.querySelectorAll('.lessons-list')].forEach(container => {
+  if (!container) return;
+  const itemSelector = container.id === 'modules-list' ? '.module-card' : '.lesson-row';
+  container.querySelectorAll(itemSelector).forEach(el => el.setAttribute('draggable', 'true'));
+  let dragged = null;
+  container.addEventListener('dragstart', e => { const item = e.target.closest(itemSelector); if (item) dragged = item; });
+  container.addEventListener('dragover', e => {
+    e.preventDefault();
+    const target = e.target.closest(itemSelector);
+    if (!target || target === dragged) return;
+    const rect = target.getBoundingClientRect();
+    const before = (e.clientY - rect.top) < rect.height / 2;
+    container.insertBefore(dragged, before ? target : target.nextSibling);
+  });
+  container.addEventListener('drop', () => {
+    if (container.id === 'modules-list') reorderModules();
+    else reorderLessons(container.dataset.moduleId);
+  });
+});
+</script>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,66 @@
+<%- include('../partials/header') %>
+
+<section class="section-tight" style="background:#fff;border-bottom:1px solid var(--line)">
+  <div class="container">
+    <a href="/trainer/lms/courses/<%= course.id %>" style="font-size:.85rem;color:var(--muted)">&larr; <%= course.title %></a>
+    <h1 style="font-size:1.8rem;margin-top:8px">Assignment: <%= lesson.title %></h1>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container" style="max-width:720px">
+
+    <div class="card" style="margin-bottom:24px">
+      <h3 style="margin-top:0">Settings</h3>
+      <form method="POST" action="/trainer/lms/assignments/<%= assignment.id %>/settings">
+        <div class="form-field"><label>Instructions</label><textarea name="instructions" rows="4"><%= assignment.instructions %></textarea></div>
+        <div style="display:flex;gap:16px;flex-wrap:wrap">
+          <div class="form-field">
+            <label>Deadline</label>
+            <input type="datetime-local" name="deadline" value="<%= assignment.deadline ? assignment.deadline.slice(0,16) : '' %>">
+          </div>
+          <div class="form-field"><label>Max marks</label><input type="number" name="maxMarks" min="1" step="1" value="<%= assignment.maxMarks %>" required></div>
+          <div class="form-field"><label>Max file size (MB)</label><input type="number" name="maxFileSizeMB" min="1" value="<%= assignment.maxFileSizeMB %>" required></div>
+        </div>
+        <div class="form-field"><label>Allowed file types (comma-separated)</label><input type="text" name="allowedFileTypes" value="<%= assignment.allowedFileTypes %>"></div>
+        <div class="form-field" style="display:flex;align-items:center;gap:6px">
+          <input type="checkbox" name="allowResubmission" <%= assignment.allowResubmission ? 'checked' : '' %> style="width:auto">
+          <label style="margin:0">Allow resubmission</label>
+        </div>
+        <button type="submit" class="btn btn-navy btn-sm">Save settings</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0">Submissions</h3>
+      <% if (submissions.length === 0) { %>
+        <p style="color:var(--muted)">No submissions yet.</p>
+      <% } else { %>
+        <% submissions.forEach(s => { %>
+          <div style="padding:12px;background:var(--bg-soft,#F1F5F9);border-radius:8px;margin-bottom:10px">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+              <div>
+                <strong><%= s.learner.name %></strong> &middot; submission #<%= s.submissionNumber %>
+                <% if (s.isLate) { %><span class="pill" style="background:#FEF2F2;color:#991B1B;font-size:.7rem">Late</span><% } %>
+                <div style="font-size:.8rem;color:var(--muted)"><%= new Date(s.submittedAt).toLocaleString() %></div>
+              </div>
+              <a href="/trainer/lms/submissions/<%= s.id %>/download" class="btn btn-outline btn-sm"><%= s.originalFilename %></a>
+            </div>
+            <% if (s.marks != null) { %>
+              <p style="font-size:.85rem;margin:8px 0 0"><strong>Graded:</strong> <%= s.marks %> / <%= assignment.maxMarks %><% if (s.feedback) { %> &mdash; <%= s.feedback %><% } %></p>
+            <% } else { %>
+              <form method="POST" action="/trainer/lms/submissions/<%= s.id %>/grade" style="margin-top:8px;display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+                <div class="form-field"><label>Marks (out of <%= assignment.maxMarks %>)</label><input type="number" name="marks" min="0" max="<%= assignment.maxMarks %>" step="0.5" required></div>
+                <div class="form-field" style="flex:1;min-width:200px"><label>Feedback</label><input type="text" name="feedback"></div>
+                <button type="submit" class="btn btn-navy btn-sm">Save grade</button>
+              </form>
+            <% } %>
+          </div>
+        <% }) %>
+      <% } %>
+    </div>
+
+  </div>
+</section>
+
+<%- include('../partials/footer') %>

@@ -141,6 +141,9 @@ app.use("/", require("./routes/public"));
 app.use("/", require("./routes/registration"));
 app.use("/", require("./routes/auth"));
 app.use("/", require("./routes/onboarding"));
+app.use("/", require("./routes/lms-teacher"));
+app.use("/", require("./routes/lms-student"));
+app.use("/", require("./routes/lms-content-delivery"));
 app.use("/admin", require("./routes/admin"));
 
 app.use((req, res) => {

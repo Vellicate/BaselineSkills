@@ -1,0 +1,64 @@
+<%
+const now = new Date();
+const deadlinePassed = assignment.deadline && now > new Date(assignment.deadline);
+const latestSubmission = submissions[0] || null;
+%>
+<%- include('../partials/header') %>
+
+<section class="section-tight" style="background:#fff;border-bottom:1px solid var(--line)">
+  <div class="container">
+    <a href="/student/lms/courses/<%= course.id %>" style="font-size:.85rem;color:var(--muted)">&larr; <%= course.title %></a>
+    <h1 style="font-size:1.8rem;margin-top:8px"><%= lesson.title %></h1>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container" style="max-width:640px">
+    <div class="card">
+      <% if (assignment.instructions) { %><div><%- assignment.instructions %></div><% } %>
+      <p style="color:var(--muted);font-size:.9rem;margin-top:12px">
+        Max marks: <%= assignment.maxMarks %>
+        <% if (assignment.deadline) { %>
+          &middot; Deadline: <%= new Date(assignment.deadline).toLocaleString() %>
+          <% if (deadlinePassed) { %> &middot; <span style="color:#991B1B">Submission closed</span><% } %>
+        <% } %>
+      </p>
+
+      <% if (!latestSubmission || assignment.allowResubmission) { %>
+        <form method="POST" action="/student/lms/lessons/<%= lesson.id %>/assignment/submit" enctype="multipart/form-data" style="margin-top:16px">
+          <div class="form-field">
+            <label>Upload file (<%= assignment.allowedFileTypes %>, up to <%= assignment.maxFileSizeMB %>MB)</label>
+            <input type="file" name="submissionFile" required>
+          </div>
+          <button type="submit" class="btn btn-navy"><%= latestSubmission ? 'Resubmit' : 'Submit' %></button>
+        </form>
+      <% } else { %>
+        <p style="margin-top:16px;color:var(--muted)">This assignment doesn't allow resubmission.</p>
+      <% } %>
+    </div>
+
+    <% if (submissions.length > 0) { %>
+      <div class="card" style="margin-top:20px">
+        <h3 style="margin-top:0">Your submissions</h3>
+        <% submissions.forEach(s => { %>
+          <div style="padding:10px 12px;background:var(--bg-soft,#F1F5F9);border-radius:8px;margin-bottom:8px">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+              <div>
+                #<%= s.submissionNumber %> &middot; <%= new Date(s.submittedAt).toLocaleString() %>
+                <% if (s.isLate) { %><span class="pill" style="background:#FEF2F2;color:#991B1B;font-size:.7rem">Late</span><% } %>
+              </div>
+              <a href="/student/lms/submissions/<%= s.id %>/download" style="font-size:.85rem"><%= s.originalFilename %></a>
+            </div>
+            <% if (s.marks != null) { %>
+              <p style="font-size:.85rem;margin:8px 0 0;color:#166534"><strong>Graded: <%= s.marks %> / <%= assignment.maxMarks %></strong><% if (s.feedback) { %> &mdash; <%= s.feedback %><% } %></p>
+            <% } else { %>
+              <p style="font-size:.85rem;margin:8px 0 0;color:var(--muted)">Awaiting grading</p>
+            <% } %>
+          </div>
+        <% }) %>
+      </div>
+    <% } %>
+  </div>
+</section>
+
+<%- include('../partials/footer') %>

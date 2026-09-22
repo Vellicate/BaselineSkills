@@ -1,0 +1,123 @@
+<%- include('../partials/header') %>
+
+<section class="section-tight" style="background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10">
+  <div class="container" style="display:flex;justify-content:space-between;align-items:center">
+    <h1 style="font-size:1.3rem;margin:0">Attempt #<%= attempt.attemptNumber %></h1>
+    <% if (attempt.expiresAt) { %>
+      <span id="quiz-timer" style="font-weight:700;color:var(--navy)" data-expires-at="<%= attempt.expiresAt %>">--:--</span>
+    <% } %>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container" style="max-width:720px">
+
+    <% caseStudies.forEach(cs => { %>
+      <div class="card" style="background:var(--bg-soft,#F1F5F9);margin-bottom:16px" id="case-study-<%= cs.id %>">
+        <% if (cs.title) { %><h4 style="margin-top:0"><%= cs.title %></h4><% } %>
+        <div><%- cs.content %></div>
+      </div>
+    <% }) %>
+
+    <form id="quiz-form">
+      <% questions.forEach((q, i) => { %>
+        <% const existing = existingAnswers.find(a => a.questionId === q.id); %>
+        <div class="card question-card" data-question-id="<%= q.id %>" data-question-type="<%= q.questionType %>" style="margin-bottom:16px">
+          <p style="font-weight:600"><%= i+1 %>. <%- q.questionText %> <span style="font-size:.78rem;color:var(--muted);font-weight:400">(<%= q.marks %> mark<%= q.marks===1?'':'s' %>)</span></p>
+
+          <% if (q.questionType === 'SHORT_ANSWER') { %>
+            <textarea class="answer-input" rows="4" style="width:100%"><%= existing && typeof existing.answerData === 'string' ? existing.answerData : '' %></textarea>
+          <% } else if (q.questionType === 'MULTI_SELECT') { %>
+            <% const selectedIds = existing && Array.isArray(existing.answerData) ? existing.answerData : []; %>
+            <% q.options.forEach(o => { %>
+              <label style="display:block;margin-bottom:6px">
+                <input type="checkbox" class="answer-input" value="<%= o.id %>" <%= selectedIds.includes(o.id) ? 'checked' : '' %>> <%= o.optionText %>
+              </label>
+            <% }) %>
+          <% } else { %>
+            <% const selectedId = existing && typeof existing.answerData === 'string' ? existing.answerData : null; %>
+            <% q.options.forEach(o => { %>
+              <label style="display:block;margin-bottom:6px">
+                <input type="radio" name="q-<%= q.id %>" class="answer-input" value="<%= o.id %>" <%= selectedId === o.id ? 'checked' : '' %>> <%= o.optionText %>
+              </label>
+            <% }) %>
+          <% } %>
+          <div class="save-status" style="font-size:.75rem;color:var(--muted);min-height:1.2em"></div>
+        </div>
+      <% }) %>
+
+      <button type="button" id="submit-quiz-btn" class="btn btn-navy">Submit quiz</button>
+    </form>
+  </div>
+</section>
+
+<script>
+// Autosave each question's answer as soon as it changes -- Section 44's
+// "answer questions" is naturally incremental, not one big blob sent only
+// at final submit, and this also means a browser crash or accidental
+// navigation before the explicit submit doesn't lose everything typed so
+// far.
+function collectAnswer(card) {
+  const type = card.dataset.questionType;
+  if (type === 'MULTI_SELECT') {
+    return Array.from(card.querySelectorAll('.answer-input:checked')).map(el => el.value);
+  }
+  if (type === 'SHORT_ANSWER') {
+    return card.querySelector('.answer-input').value;
+  }
+  const checked = card.querySelector('.answer-input:checked');
+  return checked ? checked.value : null;
+}
+
+function saveAnswer(card) {
+  const status = card.querySelector('.save-status');
+  status.textContent = 'Saving\u2026';
+  fetch('/student/lms/attempts/<%= attempt.id %>/answers', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ questionId: card.dataset.questionId, answerData: collectAnswer(card) }),
+  }).then(r => {
+    if (r.ok) { status.textContent = 'Saved'; }
+    else { status.textContent = 'Time is up -- this answer was not saved.'; }
+  }).catch(() => { status.textContent = "Couldn't save -- check your connection."; });
+}
+
+document.querySelectorAll('.question-card').forEach(card => {
+  card.querySelectorAll('.answer-input').forEach(input => {
+    input.addEventListener('change', () => saveAnswer(card));
+    if (input.tagName === 'TEXTAREA') input.addEventListener('blur', () => saveAnswer(card));
+  });
+});
+
+document.getElementById('submit-quiz-btn').addEventListener('click', function() {
+  if (!confirm('Submit this quiz? You will not be able to change your answers afterwards.')) return;
+  this.disabled = true;
+  this.textContent = 'Submitting\u2026';
+  fetch('/student/lms/attempts/<%= attempt.id %>/submit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+    .then(r => r.json())
+    .then(data => { if (data.resultUrl) window.location.href = data.resultUrl; })
+    .catch(() => { this.disabled = false; this.textContent = 'Submit quiz -- retry'; });
+});
+
+// Countdown display only -- purely cosmetic. The server (Section 46)
+// independently rejects any answer-save once its own clock passes
+// expiresAt, regardless of what this timer shows or whether the tab was
+// left open past that point; this never gates anything by itself.
+const timerEl = document.getElementById('quiz-timer');
+if (timerEl) {
+  const expiresAt = new Date(timerEl.dataset.expiresAt).getTime();
+  function tick() {
+    const remaining = Math.max(0, Math.round((expiresAt - Date.now()) / 1000));
+    const m = Math.floor(remaining / 60);
+    const s = remaining % 60;
+    timerEl.textContent = m + ':' + String(s).padStart(2, '0');
+    if (remaining === 0) {
+      timerEl.textContent = "Time's up";
+      clearInterval(timerHandle);
+    }
+  }
+  tick();
+  const timerHandle = setInterval(tick, 1000);
+}
+</script>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,33 @@
+<%- include('../partials/header') %>
+
+<section class="section-tight" style="background:#fff;border-bottom:1px solid var(--line)">
+  <div class="container">
+    <a href="/trainer/lms/lessons/<%= lesson.id %>/quiz" style="font-size:.85rem;color:var(--muted)">&larr; <%= lesson.title %></a>
+    <h1 style="font-size:1.8rem;margin-top:8px">Grade short-answer responses</h1>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container" style="max-width:720px">
+    <% if (pendingAnswers.length === 0) { %>
+      <div class="card" style="text-align:center;padding:40px"><p style="color:var(--muted);margin:0">Nothing waiting to be graded.</p></div>
+    <% } else { %>
+      <% pendingAnswers.forEach(pa => { %>
+        <div class="card" style="margin-bottom:16px">
+          <p style="font-size:.85rem;color:var(--muted);margin:0 0 6px"><%= pa.learner.name %> &middot; Attempt #<%= pa.attempt.attemptNumber %></p>
+          <p style="font-weight:600"><%- pa.question.questionText %></p>
+          <p style="background:var(--bg-soft,#F1F5F9);padding:10px;border-radius:8px"><%= pa.answer.answerData %></p>
+          <form method="POST" action="/trainer/lms/answers/<%= pa.answer.id %>/grade" style="display:flex;gap:10px;align-items:flex-end">
+            <div class="form-field">
+              <label>Marks (out of <%= pa.question.marks %>)</label>
+              <input type="number" name="marksAwarded" min="0" max="<%= pa.question.marks %>" step="0.5" required>
+            </div>
+            <button type="submit" class="btn btn-navy btn-sm">Save grade</button>
+          </form>
+        </div>
+      <% }) %>
+    <% } %>
+  </div>
+</section>
+
+<%- include('../partials/footer') %>
