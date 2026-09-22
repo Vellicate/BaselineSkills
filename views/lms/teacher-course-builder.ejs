@@ -4,29 +4,51 @@
   <div class="container">
     <a href="/trainer/lms" style="font-size:.85rem;color:var(--muted)">&larr; My LMS courses</a>
     <h1 style="font-size:1.8rem;margin-top:8px"><%= course.title %></h1>
-    <form method="POST" action="/trainer/lms/courses/<%= course.id %>/delivery-mode" style="margin-top:12px;display:flex;align-items:center;gap:10px">
-      <label for="lmsDeliveryMode" style="font-size:.85rem;font-weight:600">Delivery mode</label>
-      <select name="lmsDeliveryMode" id="lmsDeliveryMode" onchange="this.form.submit()">
-        <option value="" <%= !course.lmsDeliveryMode ? 'selected' : '' %> disabled>Choose one&hellip;</option>
-        <option value="LIVE_ONLINE" <%= course.lmsDeliveryMode === 'LIVE_ONLINE' ? 'selected' : '' %>>Live Online</option>
-        <option value="RECORDED" <%= course.lmsDeliveryMode === 'RECORDED' ? 'selected' : '' %>>Recorded</option>
-        <option value="HYBRID" <%= course.lmsDeliveryMode === 'HYBRID' ? 'selected' : '' %>>Hybrid</option>
-      </select>
-    </form>
-    <form method="POST" action="/trainer/lms/courses/<%= course.id %>/access-window" style="margin-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-      <label for="lmsAccessStartDate" style="font-size:.85rem;font-weight:600">Available from</label>
-      <input type="date" name="lmsAccessStartDate" id="lmsAccessStartDate" value="<%= course.lmsAccessStartDate || '' %>">
-      <label for="lmsAccessEndDate" style="font-size:.85rem;font-weight:600">Until</label>
-      <input type="date" name="lmsAccessEndDate" id="lmsAccessEndDate" value="<%= course.lmsAccessEndDate || '' %>">
-      <button type="submit" class="btn btn-outline btn-sm">Save dates</button>
-      <span style="font-size:.78rem;color:var(--muted)">Leave blank for no restriction on that end.</span>
-    </form>
-    <% if (modules.length > 0) { %>
-      <a href="/trainer/lms/courses/<%= course.id %>/preview" class="btn btn-outline btn-sm" style="margin-top:12px" target="_blank" rel="noopener">Preview course</a>
+
+    <% if (!course.lmsDeliveryMode) { %>
+      <!-- No delivery mode chosen yet: this IS "creating the course" from
+           the teacher's point of view, and a plain, unlabeled <select>
+           reading "Choose one..." next to a large "Add a module" card
+           below it was genuinely easy to miss entirely -- a teacher
+           looking for "the button that creates a recorded course" would
+           not obviously recognize a small native dropdown as that
+           button. Made unmissable instead: a full-width banner with
+           three real, clearly-labeled choices, shown only until a choice
+           is made. -->
+      <div class="card" style="margin-top:16px;background:var(--bg-soft,#F1F5F9);border:2px solid var(--navy)">
+        <h3 style="margin-top:0">Choose how this course will be delivered</h3>
+        <p style="color:var(--muted);font-size:.9rem;margin-bottom:16px">This is the first step -- pick one to start building this course's content.</p>
+        <form method="POST" action="/trainer/lms/courses/<%= course.id %>/delivery-mode" style="display:flex;gap:12px;flex-wrap:wrap">
+          <button type="submit" name="lmsDeliveryMode" value="RECORDED" class="btn btn-navy">Recorded (self-paced)</button>
+          <button type="submit" name="lmsDeliveryMode" value="LIVE_ONLINE" class="btn btn-outline">Live Online</button>
+          <button type="submit" name="lmsDeliveryMode" value="HYBRID" class="btn btn-outline">Hybrid</button>
+        </form>
+      </div>
+    <% } else { %>
+      <form method="POST" action="/trainer/lms/courses/<%= course.id %>/delivery-mode" style="margin-top:12px;display:flex;align-items:center;gap:10px">
+        <label for="lmsDeliveryMode" style="font-size:.85rem;font-weight:600">Delivery mode</label>
+        <select name="lmsDeliveryMode" id="lmsDeliveryMode" onchange="this.form.submit()">
+          <option value="LIVE_ONLINE" <%= course.lmsDeliveryMode === 'LIVE_ONLINE' ? 'selected' : '' %>>Live Online</option>
+          <option value="RECORDED" <%= course.lmsDeliveryMode === 'RECORDED' ? 'selected' : '' %>>Recorded</option>
+          <option value="HYBRID" <%= course.lmsDeliveryMode === 'HYBRID' ? 'selected' : '' %>>Hybrid</option>
+        </select>
+      </form>
+      <form method="POST" action="/trainer/lms/courses/<%= course.id %>/access-window" style="margin-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <label for="lmsAccessStartDate" style="font-size:.85rem;font-weight:600">Available from</label>
+        <input type="date" name="lmsAccessStartDate" id="lmsAccessStartDate" value="<%= course.lmsAccessStartDate || '' %>">
+        <label for="lmsAccessEndDate" style="font-size:.85rem;font-weight:600">Until</label>
+        <input type="date" name="lmsAccessEndDate" id="lmsAccessEndDate" value="<%= course.lmsAccessEndDate || '' %>">
+        <button type="submit" class="btn btn-outline btn-sm">Save dates</button>
+        <span style="font-size:.78rem;color:var(--muted)">Leave blank for no restriction on that end.</span>
+      </form>
+      <% if (modules.length > 0) { %>
+        <a href="/trainer/lms/courses/<%= course.id %>/preview" class="btn btn-outline btn-sm" style="margin-top:12px" target="_blank" rel="noopener">Preview course</a>
+      <% } %>
     <% } %>
   </div>
 </section>
 
+<% if (course.lmsDeliveryMode) { %>
 <section class="section">
   <div class="container" style="max-width:820px">
 
@@ -110,6 +132,7 @@
 
   </div>
 </section>
+<% } %>
 
 <!-- Lesson editor modal: a single modal reused for both create and edit,
      matching this app's existing modal pattern (see the Talk to an Expert
