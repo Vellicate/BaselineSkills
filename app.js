@@ -171,8 +171,23 @@ const PORT = process.env.PORT || 3000;
 // a certificate/badge download mid-regeneration — see the comment on
 // backfillCertificates() in lib/certificates.js for why this exists.
 require("./lib/certificates").backfillCertificates().finally(() => {
-  app.listen(PORT, () => {
+  const server = app.listen(PORT, () => {
     console.log(`Baseline Skills running at http://localhost:${PORT}`);
     console.log(`Admin panel: http://localhost:${PORT}/admin/login`);
   });
+  // LMS video uploads can be large (up to LMS_VIDEO_MAX_FILE_SIZE_MB,
+  // currently 1GB) and take longer to fully arrive than Node's own
+  // defaults allow for -- Node 18+'s server.requestTimeout defaults to 5
+  // minutes for the whole request including its body, which a large file
+  // on a modest upload connection can easily exceed, aborting the
+  // request with no clear error ever reaching the browser ("save lesson
+  // does not lead to anything" is exactly what that looks like from the
+  // user's side). Raised well beyond what even a slow connection should
+  // need for the largest allowed upload. This is Node's own server-level
+  // timeout only -- a hosting platform's own reverse proxy/load balancer
+  // (Render's, if that's where this runs) may enforce a separate,
+  // shorter timeout in front of this server that isn't something this
+  // application can configure from its own code.
+  server.requestTimeout = 20 * 60 * 1000; // 20 minutes
+  server.headersTimeout = 20 * 60 * 1000 + 5000; // must exceed requestTimeout
 });

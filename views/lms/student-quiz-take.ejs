@@ -22,8 +22,12 @@
     <form id="quiz-form">
       <% questions.forEach((q, i) => { %>
         <% const existing = existingAnswers.find(a => a.questionId === q.id); %>
-        <div class="card question-card" data-question-id="<%= q.id %>" data-question-type="<%= q.questionType %>" style="margin-bottom:16px">
+        <% const correctCount = q.questionType === 'MULTI_SELECT' ? q.options.filter(o => o.isCorrect).length : null; %>
+        <div class="card question-card" data-question-id="<%= q.id %>" data-question-type="<%= q.questionType %>" <%- correctCount ? `data-max-selections="${correctCount}"` : '' %> style="margin-bottom:16px">
           <p style="font-weight:600"><%= i+1 %>. <%- q.questionText %> <span style="font-size:.78rem;color:var(--muted);font-weight:400">(<%= q.marks %> mark<%= q.marks===1?'':'s' %>)</span></p>
+          <% if (correctCount) { %>
+            <p style="font-size:.8rem;color:var(--muted);margin:-6px 0 8px">Select exactly <%= correctCount %>.</p>
+          <% } %>
 
           <% if (q.questionType === 'SHORT_ANSWER') { %>
             <textarea class="answer-input" rows="4" style="width:100%"><%= existing && typeof existing.answerData === 'string' ? existing.answerData : '' %></textarea>
@@ -86,6 +90,24 @@ document.querySelectorAll('.question-card').forEach(card => {
     input.addEventListener('change', () => saveAnswer(card));
     if (input.tagName === 'TEXTAREA') input.addEventListener('blur', () => saveAnswer(card));
   });
+
+  // Enforces "select exactly N" for a MULTI_SELECT question client-side:
+  // once N boxes are checked, the rest are disabled rather than letting
+  // the student check every option and only discover afterward that a
+  // partial-over-selection scores as wrong. This is a UX guardrail, not
+  // the real control -- the server independently re-validates the
+  // submitted count in the answers route regardless of what this allowed
+  // through, since client-side JS is never trustworthy on its own.
+  const maxSelections = parseInt(card.dataset.maxSelections, 10);
+  if (card.dataset.questionType === 'MULTI_SELECT' && Number.isFinite(maxSelections) && maxSelections > 0) {
+    const checkboxes = Array.from(card.querySelectorAll('.answer-input[type="checkbox"]'));
+    function applySelectionLimit() {
+      const checkedCount = checkboxes.filter(cb => cb.checked).length;
+      checkboxes.forEach(cb => { cb.disabled = !cb.checked && checkedCount >= maxSelections; });
+    }
+    checkboxes.forEach(cb => cb.addEventListener('change', applySelectionLimit));
+    applySelectionLimit(); // in case the page loaded with a prior answer already at the limit
+  }
 });
 
 document.getElementById('submit-quiz-btn').addEventListener('click', function() {

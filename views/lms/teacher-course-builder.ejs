@@ -279,6 +279,20 @@ document.getElementById('lesson-form').addEventListener('submit', function() {
   // real defense -- lib/lms-sanitize.js on the server is the actual
   // control, this is purely an editing convenience.
   document.getElementById('lesson-body-hidden').value = document.getElementById('lesson-body-editor').innerHTML;
+
+  // This is a plain form submission, not an AJAX upload, so there's no
+  // real progress bar available without a larger rewrite -- but a large
+  // video file can genuinely take several minutes to fully upload, and
+  // with zero visual change during that time, a teacher has no way to
+  // tell a slow-but-working upload apart from one that's actually stuck.
+  // This at least answers that question directly rather than leaving the
+  // button looking exactly as clickable as before submission started.
+  const fileInput = document.getElementById('lesson-content-file');
+  const saveBtn = document.getElementById('lesson-save-btn');
+  if (fileInput.files.length > 0) {
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Uploading ' + fileInput.files[0].name + ' (' + Math.round(fileInput.files[0].size / 1024 / 1024) + 'MB) -- this can take several minutes for large files. Please don\u2019t close this page.';
+  }
 });
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') closeLessonEditor();

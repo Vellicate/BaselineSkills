@@ -334,6 +334,20 @@ router.post("/student/lms/attempts/:attemptId/answers", auth.requireLearner, (re
   const questionRow = store.findOne("lms_questions", (q) => q.id === questionId && q.quizId === result.quiz.id);
   if (!questionRow) return res.status(400).json({ error: "That question doesn't belong to this quiz." });
 
+  // The client-side checkbox-disabling in student-quiz-take.ejs is a UX
+  // guardrail only -- this is the real enforcement, since a request can
+  // always be sent directly regardless of what the page's own JS allowed
+  // through. A MULTI_SELECT answer with more selections than there are
+  // correct options is never a legitimate answer to save, regardless of
+  // which options were picked.
+  if (questionRow.questionType === "MULTI_SELECT") {
+    const correctCount = store.readAll("lms_question_options").filter((o) => o.questionId === questionRow.id && o.isCorrect).length;
+    const selectedCount = Array.isArray(req.body.answerData) ? req.body.answerData.length : 0;
+    if (selectedCount > correctCount) {
+      return res.status(400).json({ error: `You can select at most ${correctCount} option${correctCount === 1 ? "" : "s"} for this question.` });
+    }
+  }
+
   const existing = store.findOne("lms_quiz_answers", (a) => a.attemptId === result.attempt.id && a.questionId === questionId);
   if (existing) {
     store.update("lms_quiz_answers", existing.id, { answerData: req.body.answerData });
