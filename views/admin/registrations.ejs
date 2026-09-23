@@ -13,6 +13,13 @@
   </div>
 </div>
 
+<% if (typeof error !== 'undefined' && error) { %>
+  <div class="alert alert-error" style="margin-bottom:16px"><%= error %></div>
+<% } %>
+<% if (typeof success !== 'undefined' && success) { %>
+  <div class="alert alert-success" style="margin-bottom:16px"><%= success %></div>
+<% } %>
+
 <form method="GET" action="/admin/registrations" style="display:flex;gap:12px;margin-bottom:16px;align-items:end">
   <div class="form-field" style="margin-bottom:0">
     <label>Course</label>
@@ -128,6 +135,11 @@
                 <span class="status-dot"></span>
                 <%= (r.status || '').replace('_', ' ') %>
               </span>
+              <% if (r.status === 'invoice_pending') { %>
+                <form method="POST" action="/admin/registrations/<%= r.id %>/mark-paid" onsubmit="return confirm('Mark this registration as paid? This sends the payment-confirmed email and generates a real invoice.')" style="margin-top:6px">
+                  <button type="submit" class="btn btn-outline btn-sm">Mark as Paid</button>
+                </form>
+              <% } %>
             </td>
 
             <td data-label="Registered">

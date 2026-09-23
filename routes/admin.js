@@ -3,6 +3,7 @@ const router = express.Router();
 const path = require("path");
 const store = require("../lib/db");
 const auth = require("../lib/auth");
+const { finalizeRegistration } = require("./registration");
 const security = require("../lib/security");
 const certificates = require("../lib/certificates");
 const payoutsLib = require("../lib/payouts");
@@ -1224,6 +1225,31 @@ router.post("/registrations/:id/complete", (req, res, next) => {
   }
 
   res.redirect("/admin/registrations?success=Course+marked+complete+—+certificate+issued");
+});
+
+// Invoice-pending → confirmed, for when a registration was recorded via
+// the no-payment-provider fallback (or an offline/bank-transfer invoice)
+// and payment has now genuinely been received. Reuses finalizeRegistration
+// itself -- the exact same function the Paddle/PayPal webhooks and the
+// fallback path already call -- rather than a second, separate
+// "mark confirmed" implementation that could drift out of sync with it:
+// this gets the same group-cascade (every sibling registration in the
+// same group is confirmed together, Part 13), the same real invoice
+// generation (skipped for the fallback path, generated here since this
+// is a genuine payment confirmation), and the same confirmation emails a
+// live webhook would have sent, for free.
+router.post("/registrations/:id/mark-paid", (req, res, next) => {
+  const reg = store.findOne("registrations", (r) => r.id === req.params.id);
+  if (!reg) return res.status(404).send("Registration not found");
+  return auth.requireCourseAccess(() => reg.courseId)(req, res, next);
+}, async (req, res) => {
+  const reg = store.findOne("registrations", (r) => r.id === req.params.id);
+  if (!reg) return res.status(404).send("Registration not found");
+  if (reg.status !== "invoice_pending") {
+    return res.redirect("/admin/registrations?error=Only+an+invoice-pending+registration+can+be+marked+as+paid");
+  }
+  await finalizeRegistration(reg.id, {});
+  res.redirect("/admin/registrations?success=Registration+marked+as+paid+—+confirmation+sent");
 });
 
 // ==================== Trainer & Affiliate Applications ====================
