@@ -27,19 +27,18 @@
           <div class="form-field"><label>Company</label><input type="text" name="company"></div>
           <div class="form-field"><label>Role</label><input type="text" name="role"></div>
         </div>
-        <div class="form-row">
-          <div class="form-field">
-            <label>Preferred session</label>
-            <select name="sessionStartDate" id="sessionStartDateSelect" onchange="changeSession(this.value)">
-              <% course.sessions.forEach(s => { const soldOut = s.seatsLeft !== null && s.seatsLeft !== undefined && s.seatsLeft <= 0; %><option value="<%= s.startDate %>" <%= s.startDate === selectedSessionStartDate ? 'selected' : '' %>><%= s.startDate %> — <%= s.mode %><%= soldOut ? ' (Sold out)' : '' %></option><% }) %>
-            </select>
-          </div>
-          <div class="form-field">
-            <label>Delivery mode</label>
-            <select name="deliveryMode" id="deliveryModeSelect">
-              <% course.deliveryModes.filter(m => !["Corporate On-site","Private Cohort"].includes(m)).forEach(m => { %><option value="<%= m %>" <%= (typeof selectedDeliveryMode !== 'undefined' && selectedDeliveryMode === m) ? 'selected' : '' %>><%= m %></option><% }) %>
-            </select>
-          </div>
+        <div class="form-field" id="sessionFieldWrap">
+          <label>Preferred session</label>
+          <select name="sessionStartDate" id="sessionStartDateSelect" onchange="changeSession(this.value)" style="width:100%">
+            <% course.sessions.forEach(s => { const soldOut = s.seatsLeft !== null && s.seatsLeft !== undefined && s.seatsLeft <= 0; %><option value="<%= s.startDate %>" <%= s.startDate === selectedSessionStartDate ? 'selected' : '' %>><%= s.startDate %> — <%= s.mode %><%= soldOut ? ' (Sold out)' : '' %></option><% }) %>
+          </select>
+          <p class="form-hint" id="sessionNotApplicableNote" style="display:none">Recorded is self-paced — start anytime, no fixed session date.</p>
+        </div>
+        <div class="form-field">
+          <label>Delivery mode</label>
+          <select name="deliveryMode" id="deliveryModeSelect" onchange="onDeliveryModeChange()">
+            <% course.deliveryModes.filter(m => !["Corporate On-site","Private Cohort"].includes(m)).forEach(m => { %><option value="<%= m %>" <%= (typeof selectedDeliveryMode !== 'undefined' && selectedDeliveryMode === m) ? 'selected' : '' %>><%= m %></option><% }) %>
+          </select>
         </div>
 
         <div class="form-field" style="border:1px solid var(--line);border-radius:8px;padding:14px;margin-top:6px;background:var(--bg-soft,#F8FAFC)">
@@ -128,6 +127,31 @@ function changeSession(newSessionStartDate) {
   window.location.href = '/courses/' + courseSlug + '/register?session=' + encodeURIComponent(newSessionStartDate) + '&mode=' + encodeURIComponent(mode);
 }
 
+// Part 1C: Recorded has no session date at all. Handled client-side,
+// without reloading the page, unlike changeSession above -- a mode
+// change happening after the visitor has already started filling in
+// their own and their participants' details shouldn't throw that away.
+// The session field is hidden and its value cleared so a blank,
+// unambiguous value reaches the server (which independently enforces
+// the same rule regardless of what this sends -- Part 23: never trust
+// the client alone for something this consequential to pricing).
+function onDeliveryModeChange() {
+  const mode = document.getElementById('deliveryModeSelect').value;
+  const wrap = document.getElementById('sessionFieldWrap');
+  const select = document.getElementById('sessionStartDateSelect');
+  const note = document.getElementById('sessionNotApplicableNote');
+  if (mode === 'Recorded') {
+    select.style.display = 'none';
+    select.disabled = true;
+    note.style.display = 'block';
+  } else {
+    select.style.display = '';
+    select.disabled = false;
+    note.style.display = 'none';
+  }
+  refreshPricingPreview();
+}
+
 function stepParticipants(delta) {
   const input = document.getElementById('participantCount');
   const next = Math.max(1, Math.min(50, (parseInt(input.value, 10) || 1) + delta));
@@ -148,6 +172,7 @@ function renderParticipantBlocks() {
   const startIndex = purchaserAttending ? 2 : 1;
   if (purchaserAttending) {
     const p1 = document.createElement('div');
+    p1.id = 'participant1Block';
     p1.className = 'form-field';
     p1.style.cssText = 'border:1px solid var(--line);border-radius:8px;padding:10px 14px;margin-bottom:8px;background:#F8FAFC';
     p1.innerHTML = '<strong style="font-size:.85rem">Participant 1 (you)</strong><input type="hidden" name="participantName" value="' + escapeAttr(document.getElementById('purchaserName').value) + '"><input type="hidden" name="participantEmail" value="' + escapeAttr(document.getElementById('purchaserEmail').value) + '"><input type="hidden" name="participantPhone" value="' + escapeAttr(document.getElementById('purchaserPhone').value) + '">';
@@ -164,6 +189,23 @@ function renderParticipantBlocks() {
     wrap.appendChild(block);
   }
   refreshPricingPreview();
+}
+// Re-copies just the purchaser's current field values into the hidden
+// "Participant 1 (you)" inputs, in place -- unlike renderParticipantBlocks,
+// this never touches the rest of #participantsWrap, so it's safe to call
+// right before submit without erasing whatever the visitor already typed
+// for participants 2 and up. renderParticipantBlocks() only refreshes
+// those hidden values at the moment the count or checkbox changes, which
+// is typically before the visitor has filled in their own name and email
+// at all -- without this, participant 1's details would submit blank
+// even when the visitor filled in their own details correctly.
+function syncParticipant1FromPurchaser() {
+  const block = document.getElementById('participant1Block');
+  if (!block) return; // purchaser isn't attending -- nothing to sync
+  const inputs = block.querySelectorAll('input[type="hidden"]');
+  inputs[0].value = document.getElementById('purchaserName').value;
+  inputs[1].value = document.getElementById('purchaserEmail').value;
+  inputs[2].value = document.getElementById('purchaserPhone').value;
 }
 function escapeAttr(s) { return (s || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
 
@@ -200,8 +242,20 @@ function refreshPricingPreview() {
   }, 250);
 }
 
-document.getElementById('deliveryModeSelect').addEventListener('change', refreshPricingPreview);
 renderParticipantBlocks();
+onDeliveryModeChange(); // apply the Recorded-hides-session rule to whatever mode loaded pre-selected
+
+// Critical: renderParticipantBlocks() only copies the purchaser's current
+// name/email/phone into the hidden "Participant 1 (you)" fields at the
+// moment it runs -- on page load, that's before the visitor has typed
+// anything, so those hidden fields would otherwise submit empty even
+// though the visitor filled in their own details correctly. Re-run right
+// before the browser actually submits, so the hidden fields always carry
+// whatever is in the purchaser fields at that final moment, not whatever
+// was there when the count or checkbox last changed.
+document.getElementById('registerForm').addEventListener('submit', function () {
+  syncParticipant1FromPurchaser();
+});
 </script>
 
 <%- include('partials/footer') %>

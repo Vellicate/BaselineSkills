@@ -47,18 +47,21 @@ router.get("/courses/:slug/register", (req, res) => {
   // attributed correctly, but won't be if they return days later without
   // the link. Documented as a deliberate scope reduction, not an oversight.
   if (req.query.ref) req.session.refCode = req.query.ref;
-  const sessionStartDate = req.query.session || (course.sessions[0] && course.sessions[0].startDate) || "";
+  // Part 1C/19: Recorded has no session/date at all -- resolved before
+  // sessionStartDate below, so a Recorded selection (from the query, or
+  // the only public mode this course offers) never falls back to some
+  // other mode's session date, which would misattribute an early-bird
+  // window and a real session's seat capacity to a registration that
+  // has nothing to do with that session.
+  const publicModes = course.deliveryModes.filter((m) => !["Corporate On-site", "Private Cohort"].includes(m));
+  const selectedDeliveryMode = publicModes.includes(req.query.mode) ? req.query.mode : (publicModes[0] || "");
+  const sessionStartDate = selectedDeliveryMode === "Recorded" ? "" : (req.query.session || (course.sessions[0] && course.sessions[0].startDate) || "");
   const couponCode = req.query.coupon || "";
   const couponValidation = couponCode ? discounts.validateCouponCode(couponCode, course.id, sessionStartDate) : null;
   const discountInfo = discounts.earlyBirdForSession(sessionStartDate);
   const examProduct = store.findOne("certification_exams", (e) => e.courseId === course.id);
   const examDiscountPercent = discounts.effectiveDiscountPercent(course, sessionStartDate, couponValidation && couponValidation.valid ? couponCode : null);
   const examFinalPriceCents = examProduct ? Math.round(examProduct.priceCents * (1 - examDiscountPercent / 100)) : null;
-  // Part 19: a course-detail comparison-table link carries ?mode=<mode> so
-  // the right delivery mode is preselected here rather than defaulting to
-  // whichever mode happens to be listed first.
-  const publicModes = course.deliveryModes.filter((m) => !["Corporate On-site", "Private Cohort"].includes(m));
-  const selectedDeliveryMode = publicModes.includes(req.query.mode) ? req.query.mode : (publicModes[0] || "");
   res.render("register", {
     title: `Register — ${course.title}`, course,
     finalPrice: discounts.finalPriceCentsForSession(course, sessionStartDate, couponValidation && couponValidation.valid ? couponCode : null),
@@ -78,7 +81,7 @@ router.get("/courses/:slug/register/pricing-preview", (req, res) => {
   if (!course) return res.status(404).json({ error: "Course not found" });
   const participantCount = Math.max(1, Math.min(50, parseInt(req.query.participantCount, 10) || 1));
   const deliveryMode = req.query.deliveryMode || course.deliveryModes[0];
-  const sessionStartDate = req.query.sessionStartDate || (course.sessions[0] && course.sessions[0].startDate) || null;
+  const sessionStartDate = deliveryMode === "Recorded" ? null : (req.query.sessionStartDate || (course.sessions[0] && course.sessions[0].startDate) || null);
   const result = pricing.calculatePricing({ course, deliveryMode, participantCount, sessionStartDate, couponCode: null });
   res.json({ ...result, currencySymbol: currencySymbol(result.currency) });
 });
@@ -89,8 +92,13 @@ router.post("/courses/:slug/register", regRateLimiter, async (req, res) => {
   if (!course) return res.status(404).render("404", { title: "Course not found" });
 
   const { name, email, phone, address, company, role, sessionStartDate, deliveryMode, notes, addExam, couponCode } = req.body;
-  const resolvedSessionStartDate = sessionStartDate || (course.sessions[0] && course.sessions[0].startDate) || "";
   const resolvedDeliveryMode = deliveryMode || (course.sessions[0] && course.sessions[0].mode) || "";
+  // Part 1C: Recorded has no session at all -- resolved from the mode
+  // first, so a submitted date (or the fallback to the course's first
+  // session) is never attached to a Recorded registration regardless of
+  // what the client sent, closing the same "silently borrows an
+  // unrelated session's date" gap fixed on the GET route above.
+  const resolvedSessionStartDate = resolvedDeliveryMode === "Recorded" ? "" : (sessionStartDate || (course.sessions[0] && course.sessions[0].startDate) || "");
   const couponValidation = couponCode ? discounts.validateCouponCode(couponCode, course.id, resolvedSessionStartDate) : null;
   const validCoupon = couponValidation && couponValidation.valid ? couponCode : null;
   const discountInfo = discounts.earlyBirdForSession(resolvedSessionStartDate);
