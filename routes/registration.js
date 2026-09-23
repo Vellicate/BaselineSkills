@@ -172,7 +172,11 @@ router.post("/courses/:slug/register", regRateLimiter, async (req, res) => {
     )
   );
   if (alreadyRegistered.length > 0) {
-    return rerender(400, `${alreadyRegistered.length === 1 ? "One of these people is" : "Some of these people are"} already registered for this session (${resolvedSessionStartDate}). If you need to change or cancel an existing registration, please contact us.`);
+    // Recorded has no real session (resolvedSessionStartDate is always
+    // "" for it), so "already registered for this session ()" would be
+    // confusing -- worded around the course itself for that case instead.
+    const sessionPhrase = resolvedSessionStartDate ? `this session (${resolvedSessionStartDate})` : "this course";
+    return rerender(400, `${alreadyRegistered.length === 1 ? "One of these people is" : "Some of these people are"} already registered for ${sessionPhrase}. If you need to change or cancel an existing registration, please contact us.`);
   }
 
   // Seat-availability check for the whole group at once, same atomic
