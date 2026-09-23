@@ -5,6 +5,8 @@ const store = require("../lib/db");
 const auth = require("../lib/auth");
 const { finalizeRegistration } = require("./registration");
 const lmsAccess = require("../lib/lms-content-access");
+const { LMS_CONTENT_DIR } = require("../lib/lms-content-storage");
+const fs = require("fs");
 const security = require("../lib/security");
 const certificates = require("../lib/certificates");
 const payoutsLib = require("../lib/payouts");
@@ -1281,12 +1283,28 @@ router.get("/lms-access-check", auth.requireSuperAdmin, (req, res) => {
     const windowStatus = course ? lmsAccess.courseAccessWindowStatus(course) : null;
     const isEnrolledResult = learner && course ? lmsAccess.isEnrolled(learner.id, course.id) : false;
 
+    // Every asset a published lesson actually needs to serve (video/PDF/
+    // document/presentation) is checked against the real filesystem, not
+    // just the database record -- a lesson can be correctly published,
+    // with a correct asset row, and still be unviewable if the file
+    // itself isn't where the current storage configuration expects it
+    // (e.g. an asset uploaded before a storage-path change, or DATA_DIR
+    // pointing somewhere different than when it was uploaded).
+    const publishedLessonIds = new Set(publishedLessons.map((l) => l.id));
+    const assets = store.readAll("lms_content_assets").filter((a) => publishedLessonIds.has(a.lessonId));
+    const assetChecks = assets.map((a) => {
+      const filePath = path.join(LMS_CONTENT_DIR, a.storageKey);
+      const lesson = publishedLessons.find((l) => l.id === a.lessonId);
+      return { lessonTitle: lesson ? lesson.title : "(unknown lesson)", storageKey: a.storageKey, exists: fs.existsSync(filePath), filePath };
+    });
+
     report = {
       courseFound: !!course, course,
       learnerFound: !!learner, learner,
       registrations,
       modulesCount: modules.length, lessonsCount: lessons.length, publishedLessonsCount: publishedLessons.length,
       windowStatus, isEnrolledResult,
+      assetChecks, lmsContentDir: LMS_CONTENT_DIR, dataDirSet: !!process.env.DATA_DIR,
     };
   }
 

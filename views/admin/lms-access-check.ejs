@@ -37,6 +37,11 @@
     <% checks.push({ label: 'Course has at least one published lesson', pass: report.publishedLessonsCount > 0, detail: `${report.publishedLessonsCount} published of ${report.lessonsCount} total lesson(s)` + (report.lessonsCount > 0 && report.publishedLessonsCount === 0 ? ' -- lessons exist but none are published yet.' : '') }); %>
   <% } %>
   <% checks.push({ label: 'Final verdict: isEnrolled() (the actual function every LMS route checks)', pass: report.isEnrolledResult, detail: report.isEnrolledResult ? 'This student has LMS access to this course.' : 'This student does NOT have LMS access to this course -- see whichever check above failed.' }); %>
+  <% if (report.assetChecks) { %>
+    <% report.assetChecks.forEach(a => { %>
+      <% checks.push({ label: `Content file exists on disk: "${a.lessonTitle}"`, pass: a.exists, detail: a.exists ? a.filePath : `Missing at ${a.filePath} -- the lesson and its content record both exist, but the actual video/document file isn't at the path the server currently expects. This can happen if the file was uploaded before a storage-configuration change and never migrated.` }); %>
+    <% }) %>
+  <% } %>
 
   <div class="card" style="padding:0;overflow:hidden">
     <table style="width:100%;border-collapse:collapse">
@@ -49,6 +54,17 @@
       <% }) %>
     </table>
   </div>
+
+  <% if (report.assetChecks && report.assetChecks.some(a => !a.exists)) { %>
+    <div class="card" style="margin-top:16px;padding:16px;background:var(--bg-soft,#F1F5F9)">
+      <strong style="font-size:.9rem">Storage configuration (for the missing-file case above)</strong>
+      <p style="font-size:.85rem;color:var(--muted);margin:6px 0 0">
+        DATA_DIR environment variable: <%= report.dataDirSet ? 'set' : 'NOT set' %><br>
+        Server is currently looking for content in: <code><%= report.lmsContentDir %></code><br>
+        If this content was uploaded before a server configuration change, the file may still exist at the previous location and just needs to be moved (or the lesson's video/document re-uploaded) to the path above.
+      </p>
+    </div>
+  <% } %>
 <% } %>
 
 <%- include('partials/foot') %>
