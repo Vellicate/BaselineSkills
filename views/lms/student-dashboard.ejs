@@ -66,6 +66,7 @@
             <div class="card">
               <h3 style="margin:0 0 4px"><%= s.course.title %></h3>
               <p style="font-size:.85rem;color:var(--muted);margin:0 0 10px">Completed <%= new Date(s.completedAt).toLocaleDateString() %></p>
+              <a href="/student/lms/courses/<%= s.course.id %>" class="btn btn-navy btn-sm">Review Course</a>
               <% if (s.certificate) { %>
                 <a href="/account/certificates/<%= s.certificate.id %>/download" class="btn btn-outline btn-sm" target="_blank" rel="noopener">Certificate</a>
                 <a href="/account/certificates/<%= s.certificate.id %>/badge" class="btn btn-outline btn-sm" target="_blank" rel="noopener">Badge</a>

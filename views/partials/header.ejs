@@ -99,6 +99,9 @@
         <li><a href="/teach-with-us" class="<%= typeof currentPath !== 'undefined' && currentPath === '/teach-with-us' ? 'active' : '' %>"><span>Teach with us</span></a></li>
         <li><a href="/about" class="<%= typeof currentPath !== 'undefined' && currentPath === '/about' ? 'active' : '' %>"><span><%= t('nav_about') %></span></a></li>
         <li><a href="/contact" class="<%= typeof currentPath !== 'undefined' && currentPath === '/contact' ? 'active' : '' %>"><span><%= t('nav_contact') %></span></a></li>
+        <% if (typeof isLoggedInLearner !== 'undefined' && isLoggedInLearner) { %>
+          <li><a href="/student/lms" class="<%= typeof currentPath !== 'undefined' && currentPath.startsWith('/student/lms') ? 'active' : '' %>"><span><%= t('nav_my_learning') %></span></a></li>
+        <% } %>
         <li><a href="<%= typeof isLoggedInLearner !== 'undefined' && isLoggedInLearner ? '/account' : '/login' %>"><span><%= typeof isLoggedInLearner !== 'undefined' && isLoggedInLearner ? t('nav_account') : t('nav_login') %></span></a></li>
       </ul>
     </nav>
