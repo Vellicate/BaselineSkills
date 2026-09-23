@@ -17,6 +17,24 @@ const lessonToShow = activeLesson || firstLesson;
       <span class="pill" style="background:#FFF6DF;color:#7a4e02;margin-bottom:8px;display:inline-block">Teacher preview &mdash; not the enrolled-student view</span>
     <% } %>
     <h1 style="font-size:1.6rem;margin:0"><%= course.title %></h1>
+    <p style="font-size:.85rem;color:var(--muted);margin:6px 0 0"><%= course.lmsDeliveryMode.replace('_',' ') %></p>
+
+    <% if (typeof liveSession !== 'undefined' && liveSession) { %>
+      <!-- Part G: live-session info for LIVE_ONLINE/HYBRID -- this
+           learner's own registered session, not just "a" session on the
+           course, since a course can run more than one. -->
+      <div class="card" style="margin-top:16px;background:var(--bg-soft,#F1F5F9)">
+        <h3 style="margin-top:0;font-size:1rem">Live session</h3>
+        <p style="margin:0 0 4px"><strong><%= new Date(liveSession.startDate).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) %></strong>
+          <% if (liveSession.timeFrom) { %> &middot; <%= liveSession.timeFrom %><% if (liveSession.timeTo) { %>&ndash;<%= liveSession.timeTo %><% } %><% } %>
+        </p>
+        <% if (liveSession.location && liveSession.location.startsWith('http')) { %>
+          <a href="<%= liveSession.location %>" class="btn btn-navy btn-sm" target="_blank" rel="noopener" style="margin-top:8px">Join meeting</a>
+        <% } else if (liveSession.location) { %>
+          <p style="margin:0;font-size:.9rem;color:var(--muted)"><%= liveSession.location %></p>
+        <% } %>
+      </div>
+    <% } %>
   </div>
 </section>
 

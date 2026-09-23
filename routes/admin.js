@@ -656,6 +656,7 @@ function courseFromForm(body, existing, uploadedFiles) {
   const sessionTimeFroms = Array.isArray(body.sessionTimeFrom) ? body.sessionTimeFrom : [body.sessionTimeFrom].filter(Boolean);
   const sessionTimeTos = Array.isArray(body.sessionTimeTo) ? body.sessionTimeTo : [body.sessionTimeTo].filter(Boolean);
   const sessionModes = Array.isArray(body.sessionMode) ? body.sessionMode : [body.sessionMode].filter(Boolean);
+  const sessionLocations = Array.isArray(body.sessionLocation) ? body.sessionLocation : [body.sessionLocation].filter(Boolean);
   const sessionSeats = Array.isArray(body.sessionSeats) ? body.sessionSeats : [body.sessionSeats].filter(Boolean);
   const sessions = sessionStarts
     .map((startDate, i) => ({
@@ -665,6 +666,10 @@ function courseFromForm(body, existing, uploadedFiles) {
       timeFrom: sessionTimeFroms[i] || "",
       timeTo: sessionTimeTos[i] || "",
       mode: sessionModes[i] || deliveryModes[0] || "Live Online",
+      // Optional (Section: meeting link visible only to registered
+      // students) -- a plain URL or physical address, same field either
+      // way; blank is fine, this isn't required for every session.
+      location: sessionLocations[i] || "",
       seatsLeft: sessionSeats[i] ? Number(sessionSeats[i]) : null,
     }))
     .filter((s) => s.startDate);

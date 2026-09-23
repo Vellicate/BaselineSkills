@@ -254,17 +254,23 @@ document.addEventListener('DOMContentLoaded', () => {
     <p style="color:#b91c1c;font-size:.82rem;margin:4px 0"><%= e.message %></p>
   <% }) %>
   <div id="sessions-wrap">
-    <% const sessions = (course && course.sessions && course.sessions.length) ? course.sessions : [{startDate:'',endDate:'',timeFrom:'',timeTo:'',mode:'Live Online',seatsLeft:''}]; %>
+    <% const sessions = (course && course.sessions && course.sessions.length) ? course.sessions : [{startDate:'',endDate:'',timeFrom:'',timeTo:'',mode:'Live Online',location:'',seatsLeft:''}]; %>
     <% sessions.forEach(s => { %>
-      <div class="form-row session-row" style="grid-template-columns:1fr 1fr 90px 90px 1fr 80px auto;align-items:end">
-        <input type="hidden" name="sessionId" value="<%= s.id || '' %>">
-        <div class="form-field"><label>Start date</label><input type="text" name="sessionStartDate" placeholder="2026-09-11 or 'On Demand'" value="<%= s.startDate %>"></div>
-        <div class="form-field"><label>End date</label><input type="text" name="sessionEndDate" placeholder="2026-09-14" value="<%= s.endDate || '' %>"></div>
-        <div class="form-field"><label>Time from</label><input type="time" name="sessionTimeFrom" value="<%= s.timeFrom || '' %>"></div>
-        <div class="form-field"><label>Time to</label><input type="time" name="sessionTimeTo" value="<%= s.timeTo || '' %>"></div>
-        <div class="form-field"><label>Mode</label><input type="text" name="sessionMode" value="<%= s.mode %>"></div>
-        <div class="form-field"><label>Seats</label><input type="number" name="sessionSeats" value="<%= s.seatsLeft==null ? '' : s.seatsLeft %>"></div>
-        <button type="button" class="btn btn-outline btn-sm" onclick="this.closest('.session-row').remove()" style="margin-bottom:18px">Remove</button>
+      <div class="session-group" style="margin-bottom:10px">
+        <div class="form-row session-row" style="grid-template-columns:1fr 1fr 90px 90px 1fr 80px auto;align-items:end">
+          <input type="hidden" name="sessionId" value="<%= s.id || '' %>">
+          <div class="form-field"><label>Start date</label><input type="text" name="sessionStartDate" placeholder="2026-09-11 or 'On Demand'" value="<%= s.startDate %>"></div>
+          <div class="form-field"><label>End date</label><input type="text" name="sessionEndDate" placeholder="2026-09-14" value="<%= s.endDate || '' %>"></div>
+          <div class="form-field"><label>Time from</label><input type="time" name="sessionTimeFrom" value="<%= s.timeFrom || '' %>"></div>
+          <div class="form-field"><label>Time to</label><input type="time" name="sessionTimeTo" value="<%= s.timeTo || '' %>"></div>
+          <div class="form-field"><label>Mode</label><input type="text" name="sessionMode" value="<%= s.mode %>"></div>
+          <div class="form-field"><label>Seats</label><input type="number" name="sessionSeats" value="<%= s.seatsLeft==null ? '' : s.seatsLeft %>"></div>
+          <button type="button" class="btn btn-outline btn-sm" onclick="this.closest('.session-group').remove()" style="margin-bottom:18px">Remove</button>
+        </div>
+        <div class="form-field">
+          <label>Meeting link / location (optional -- visible only to students registered for this session)</label>
+          <input type="text" name="sessionLocation" placeholder="https://zoom.us/j/... or a physical address" value="<%= s.location || '' %>">
+        </div>
       </div>
     <% }) %>
   </div>
@@ -428,20 +434,25 @@ function carryCourseFieldsInto(targetForm) {
 <script>
 function addSessionRow(){
   const wrap = document.getElementById('sessions-wrap');
-  const row = document.createElement('div');
-  row.className = 'form-row session-row';
-  row.style.gridTemplateColumns = '1fr 1fr 90px 90px 1fr 80px auto';
-  row.style.alignItems = 'end';
-  row.innerHTML = `
-    <input type="hidden" name="sessionId" value="">
-    <div class="form-field"><label>Start date</label><input type="text" name="sessionStartDate" placeholder="2026-09-11 or 'On Demand'"></div>
-    <div class="form-field"><label>End date</label><input type="text" name="sessionEndDate" placeholder="2026-09-14"></div>
-    <div class="form-field"><label>Time from</label><input type="time" name="sessionTimeFrom"></div>
-    <div class="form-field"><label>Time to</label><input type="time" name="sessionTimeTo"></div>
-    <div class="form-field"><label>Mode</label><input type="text" name="sessionMode" value="Live Online"></div>
-    <div class="form-field"><label>Seats</label><input type="number" name="sessionSeats"></div>
-    <button type="button" class="btn btn-outline btn-sm" onclick="this.closest('.session-row').remove()" style="margin-bottom:18px">Remove</button>`;
-  wrap.appendChild(row);
+  const group = document.createElement('div');
+  group.className = 'session-group';
+  group.style.marginBottom = '10px';
+  group.innerHTML = `
+    <div class="form-row session-row" style="grid-template-columns:1fr 1fr 90px 90px 1fr 80px auto;align-items:end">
+      <input type="hidden" name="sessionId" value="">
+      <div class="form-field"><label>Start date</label><input type="text" name="sessionStartDate" placeholder="2026-09-11 or 'On Demand'"></div>
+      <div class="form-field"><label>End date</label><input type="text" name="sessionEndDate" placeholder="2026-09-14"></div>
+      <div class="form-field"><label>Time from</label><input type="time" name="sessionTimeFrom"></div>
+      <div class="form-field"><label>Time to</label><input type="time" name="sessionTimeTo"></div>
+      <div class="form-field"><label>Mode</label><input type="text" name="sessionMode" value="Live Online"></div>
+      <div class="form-field"><label>Seats</label><input type="number" name="sessionSeats"></div>
+      <button type="button" class="btn btn-outline btn-sm" onclick="this.closest('.session-group').remove()" style="margin-bottom:18px">Remove</button>
+    </div>
+    <div class="form-field">
+      <label>Meeting link / location (optional -- visible only to students registered for this session)</label>
+      <input type="text" name="sessionLocation" placeholder="https://zoom.us/j/... or a physical address">
+    </div>`;
+  wrap.appendChild(group);
 }
 </script>
 

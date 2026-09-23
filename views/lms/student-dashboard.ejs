@@ -9,28 +9,84 @@
 
 <section class="section">
   <div class="container">
-    <% if (courseSummaries.length === 0) { %>
+    <% if (active.length === 0 && upcoming.length === 0 && completed.length === 0 && expired.length === 0) { %>
       <div class="card" style="text-align:center;padding:48px 24px">
-        <p class="lead" style="color:var(--muted);margin:0">You don't have any courses with online learning content yet.</p>
+        <p class="lead" style="color:var(--muted);margin:0">You don't have any active courses yet.</p>
         <a href="/courses" class="btn btn-navy" style="margin-top:16px">Browse courses</a>
       </div>
     <% } else { %>
-      <div class="why-grid" style="grid-template-columns:repeat(2,1fr);gap:20px">
-        <% courseSummaries.forEach(s => { %>
-          <div class="card">
-            <h3 style="margin:0 0 8px"><%= s.course.title %></h3>
-            <% if (s.totalLessons === 0) { %>
-              <p style="color:var(--muted);font-size:.9rem">This course's learning content is being prepared.</p>
-            <% } else { %>
-              <div style="background:var(--line);border-radius:999px;height:8px;overflow:hidden;margin-bottom:6px">
-                <div style="background:var(--navy);height:100%;width:<%= s.progressPercent %>%"></div>
-              </div>
-              <p style="font-size:.85rem;color:var(--muted);margin:0 0 16px"><%= s.completedLessons %> of <%= s.totalLessons %> lessons complete (<%= s.progressPercent %>%)</p>
-            <% } %>
-            <a href="/student/lms/courses/<%= s.course.id %>" class="btn btn-navy btn-sm"><%= s.completedLessons > 0 ? 'Continue' : 'Start learning' %></a>
-          </div>
-        <% }) %>
-      </div>
+
+      <% if (active.length > 0) { %>
+        <h2 style="font-size:1.3rem;margin-bottom:16px">Active learning</h2>
+        <div class="why-grid" style="grid-template-columns:repeat(2,1fr);gap:20px;margin-bottom:36px">
+          <% active.forEach(s => { %>
+            <div class="card">
+              <h3 style="margin:0 0 4px"><%= s.course.title %></h3>
+              <p style="font-size:.8rem;color:var(--muted);margin:0 0 10px"><%= s.course.lmsDeliveryMode.replace('_',' ') %></p>
+              <% if (s.progressPercent != null) { %>
+                <div style="background:var(--line);border-radius:999px;height:8px;overflow:hidden;margin-bottom:6px">
+                  <div style="background:var(--navy);height:100%;width:<%= s.progressPercent %>%"></div>
+                </div>
+                <p style="font-size:.85rem;color:var(--muted);margin:0 0 10px"><%= s.progressPercent %>% complete</p>
+              <% } else { %>
+                <p style="color:var(--muted);font-size:.9rem;margin:0 0 10px">This course's learning content is being prepared.</p>
+              <% } %>
+              <% if (s.nextLesson) { %>
+                <p style="font-size:.85rem;margin:0 0 4px"><strong>Next:</strong> <%= s.nextLesson.title %></p>
+              <% } %>
+              <% if (s.lastActivity) { %>
+                <p style="font-size:.78rem;color:var(--muted);margin:0 0 10px">Last activity: <%= new Date(s.lastActivity).toLocaleDateString() %></p>
+              <% } %>
+              <% if (s.endDate) { %>
+                <p style="font-size:.78rem;color:var(--muted);margin:0 0 12px">Access until <%= new Date(s.endDate).toLocaleDateString() %></p>
+              <% } %>
+              <a href="/student/lms/courses/<%= s.course.id %>" class="btn btn-navy btn-sm">Continue Learning</a>
+            </div>
+          <% }) %>
+        </div>
+      <% } %>
+
+      <% if (upcoming.length > 0) { %>
+        <h2 style="font-size:1.3rem;margin-bottom:16px">Upcoming</h2>
+        <div class="why-grid" style="grid-template-columns:repeat(2,1fr);gap:20px;margin-bottom:36px">
+          <% upcoming.forEach(s => { %>
+            <div class="card">
+              <h3 style="margin:0 0 4px"><%= s.course.title %></h3>
+              <p style="font-size:.8rem;color:var(--muted);margin:0 0 10px"><%= s.course.lmsDeliveryMode.replace('_',' ') %></p>
+              <p style="font-size:.85rem;margin:0">Becomes available <%= new Date(s.startDate).toLocaleDateString() %></p>
+            </div>
+          <% }) %>
+        </div>
+      <% } %>
+
+      <% if (completed.length > 0) { %>
+        <h2 style="font-size:1.3rem;margin-bottom:16px">Completed</h2>
+        <div class="why-grid" style="grid-template-columns:repeat(2,1fr);gap:20px;margin-bottom:36px">
+          <% completed.forEach(s => { %>
+            <div class="card">
+              <h3 style="margin:0 0 4px"><%= s.course.title %></h3>
+              <p style="font-size:.85rem;color:var(--muted);margin:0 0 10px">Completed <%= new Date(s.completedAt).toLocaleDateString() %></p>
+              <% if (s.certificate) { %>
+                <a href="/account/certificates/<%= s.certificate.id %>/download" class="btn btn-outline btn-sm" target="_blank" rel="noopener">Certificate</a>
+                <a href="/account/certificates/<%= s.certificate.id %>/badge" class="btn btn-outline btn-sm" target="_blank" rel="noopener">Badge</a>
+              <% } %>
+            </div>
+          <% }) %>
+        </div>
+      <% } %>
+
+      <% if (expired.length > 0) { %>
+        <h2 style="font-size:1.3rem;margin-bottom:16px">Expired</h2>
+        <div class="why-grid" style="grid-template-columns:repeat(2,1fr);gap:20px">
+          <% expired.forEach(s => { %>
+            <div class="card">
+              <h3 style="margin:0 0 4px"><%= s.course.title %></h3>
+              <p style="font-size:.85rem;color:var(--muted);margin:0">Access ended <%= new Date(s.endDate).toLocaleDateString() %></p>
+            </div>
+          <% }) %>
+        </div>
+      <% } %>
+
     <% } %>
   </div>
 </section>

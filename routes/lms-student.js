@@ -9,9 +9,31 @@ const security = require("./../lib/security");
 const discounts = require("./../lib/discounts");
 const { newId } = require("./../lib/id");
 const lmsAccess = require("./../lib/lms-content-access");
+const completionLib = require("./../lib/lms-completion");
 const { LMS_SUBMISSION_DIR } = require("./../lib/lms-submission-storage");
 
 const lmsCfg = discounts.loadConfig().security;
+
+// Same signal set as lib/lms-analytics.js's lastActivityForLearner (Section
+// 57: derive from timestamps already being written, no new activity-log
+// table), but its own lean single-learner/single-course version -- that
+// one takes a precomputed, whole-course dataset built for looping over
+// every enrolled student at once, which isn't the shape this dashboard
+// needs for one learner's own handful of courses.
+function lastActivityForLearner(courseId, learnerId) {
+  const modules = store.readAll("lms_modules").filter((m) => m.courseId === courseId);
+  const moduleIds = new Set(modules.map((m) => m.id));
+  const lessonIds = new Set(store.readAll("lms_lessons").filter((l) => moduleIds.has(l.moduleId)).map((l) => l.id));
+  const quizIds = new Set(store.readAll("lms_quizzes").filter((q) => lessonIds.has(q.lessonId)).map((q) => q.id));
+  const assignmentIds = new Set(store.readAll("lms_assignments").filter((a) => lessonIds.has(a.lessonId)).map((a) => a.id));
+  const timestamps = [
+    ...store.readAll("lms_lesson_completions").filter((c) => c.learnerId === learnerId && lessonIds.has(c.lessonId)).map((c) => c.completedAt),
+    ...store.readAll("lms_video_progress").filter((p) => p.learnerId === learnerId && lessonIds.has(p.lessonId)).map((p) => p.updatedAt),
+    ...store.readAll("lms_quiz_attempts").filter((a) => a.learnerId === learnerId && quizIds.has(a.quizId)).map((a) => a.submittedAt || a.startedAt),
+    ...store.readAll("lms_assignment_submissions").filter((s) => s.learnerId === learnerId && assignmentIds.has(s.assignmentId)).map((s) => s.submittedAt),
+  ].filter(Boolean);
+  return timestamps.length ? timestamps.sort().slice(-1)[0] : null;
+}
 
 router.use(security.requireSameOrigin);
 
@@ -86,20 +108,60 @@ router.get("/student/lms", auth.requireLearner, (req, res) => {
   const courseIds = new Set(registrations.map((r) => r.courseId));
   const lmsCourses = store.readAll("courses").filter((c) => courseIds.has(c.id) && c.lmsDeliveryMode);
 
-  const courseSummaries = lmsCourses.map((course) => {
-    const modules = modulesWithLessons(course.id);
-    const publishedLessons = modules.flatMap((m) => m.lessons.filter((l) => l.isPublished));
-    const completions = store.readAll("lms_lesson_completions").filter((c) =>
-      c.learnerId === learner.id && publishedLessons.some((l) => l.id === c.lessonId)
+  // Part D: categorized, not a flat list -- each course goes into exactly
+  // one bucket, decided server-side from real records (enrollment_progress
+  // for completion, the same date-window logic the access-control layer
+  // itself uses for "not yet open"/"closed", never trusted from the
+  // client). A completed course is checked first: a course a student
+  // finished before its access window closed should still show as
+  // Completed, not Expired, once they're done with it.
+  const active = [], upcoming = [], completed = [], expired = [];
+  lmsCourses.forEach((course) => {
+    const progress = completionLib.courseProgressForLearner(learner.id, course.id);
+    const progressRow = store.findOne("enrollment_progress", (p) =>
+      p.learnerId === learner.id && p.courseId === course.id && !p.moduleId && p.completedAt
     );
-    const progressPercent = publishedLessons.length
-      ? Math.round((completions.length / publishedLessons.length) * 100)
-      : 0;
-    return { course, totalLessons: publishedLessons.length, completedLessons: completions.length, progressPercent };
+    const windowStatus = lmsAccess.courseAccessWindowStatus(course);
+    const lastActivity = lastActivityForLearner(course.id, learner.id);
+
+    if (progressRow) {
+      const certificate = store.findOne("certificates", (c) => c.learnerId === learner.id && c.courseId === course.id);
+      completed.push({ course, completedAt: progressRow.completedAt, certificate });
+    } else if (windowStatus === "not_started") {
+      upcoming.push({ course, startDate: course.lmsAccessStartDate });
+    } else if (windowStatus === "ended") {
+      expired.push({ course, endDate: course.lmsAccessEndDate });
+    } else {
+      active.push({
+        course, progressPercent: progress.percentComplete,
+        nextLesson: progress.nextLesson, lastActivity, endDate: course.lmsAccessEndDate,
+      });
+    }
   });
 
-  res.render("lms/student-dashboard", { title: "My Learning — Baseline Skills", courseSummaries });
+  res.render("lms/student-dashboard", { title: "My Learning — Baseline Skills", active, upcoming, completed, expired });
 });
+
+// Part G: live-session info for LIVE_ONLINE/HYBRID courses, shown on the
+// course-player page -- date, time, and "meeting access" (reusing the
+// existing sessions.location field, which already serves as either a
+// meeting link or a physical address depending on session.mode; no new
+// field invented for this). Matched against *this* learner's own
+// registration (which session they actually registered into), not just
+// the course's first/soonest session, since a course can run multiple
+// sessions and a student should see the one they're actually enrolled in.
+function liveSessionInfoForLearner(learnerId, course) {
+  if (!["LIVE_ONLINE", "HYBRID"].includes(course.lmsDeliveryMode)) return null;
+  const learner = store.findOne("learners", (l) => l.id === learnerId);
+  if (!learner) return null;
+  const registration = store.readAll("registrations")
+    .filter((r) => r.courseId === course.id &&
+      (r.learnerId === learner.id || r.email.toLowerCase() === learner.email.toLowerCase()) &&
+      (r.status === "confirmed" || r.status === "invoice_pending"))
+    .sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""))[0];
+  if (!registration || !registration.sessionStartDate) return null;
+  return store.findOne("sessions", (s) => s.courseId === course.id && s.startDate === registration.sessionStartDate);
+}
 
 router.get("/student/lms/courses/:courseId", loadAccessibleCourse, (req, res) => {
   const learnerId = req.session.learnerId || null;
@@ -120,6 +182,7 @@ router.get("/student/lms/courses/:courseId", loadAccessibleCourse, (req, res) =>
     title: `${req.lmsCourse.title} — Baseline Skills`,
     course: req.lmsCourse, modules, isTeacherPreview: false, activeLesson: null, completedLessonIds,
     videoResumePosition: progress ? progress.lastPositionSeconds : 0,
+    liveSession: learnerId ? liveSessionInfoForLearner(learnerId, req.lmsCourse) : null,
   });
 });
 
@@ -153,6 +216,7 @@ router.get("/student/lms/courses/:courseId/lessons/:lessonId", loadAccessibleCou
     title: `${lesson.title} — ${req.lmsCourse.title}`,
     course: req.lmsCourse, modules, isTeacherPreview: false, activeLesson: lesson, completedLessonIds,
     videoResumePosition: progress ? progress.lastPositionSeconds : 0,
+    liveSession: learnerId ? liveSessionInfoForLearner(learnerId, req.lmsCourse) : null,
   });
 });
 
@@ -177,7 +241,7 @@ function loadViewableLesson(req) {
   return { lesson, course };
 }
 
-router.post("/student/lms/lessons/:lessonId/complete", auth.requireLearner, (req, res) => {
+router.post("/student/lms/lessons/:lessonId/complete", auth.requireLearner, async (req, res) => {
   const result = loadViewableLesson(req);
   if (result.error) return res.status(result.error).json({ error: result.message });
   const already = store.findOne("lms_lesson_completions", (c) =>
@@ -188,6 +252,13 @@ router.post("/student/lms/lessons/:lessonId/complete", auth.requireLearner, (req
       lessonId: result.lesson.id, learnerId: req.session.learnerId, completedAt: new Date().toISOString(),
     });
   }
+  // Part M/Y: completing a lesson is one of the events that can newly
+  // complete a course -- checked here regardless of `already`, since the
+  // service itself is cheap and idempotent, and this is simpler and
+  // safer than trying to predict in advance whether this specific
+  // completion is "the last one needed."
+  const completionLib = require("./../lib/lms-completion");
+  await completionLib.checkAndProcessCompletion(req.session.learnerId, result.course.id, `${req.protocol}://${req.get("host")}`);
   res.json({ ok: true, alreadyCompleted: !!already });
 });
 
@@ -362,7 +433,7 @@ router.post("/student/lms/attempts/:attemptId/answers", auth.requireLearner, (re
 // not a gap -- the answers already saved before the deadline still
 // count; expiry blocks *further* answering (enforced above), not the
 // final scoring of what was legitimately saved in time.
-router.post("/student/lms/attempts/:attemptId/submit", auth.requireLearner, (req, res) => {
+router.post("/student/lms/attempts/:attemptId/submit", auth.requireLearner, async (req, res) => {
   const result = loadOwnAttempt(req);
   if (result.error) return res.status(result.error).json({ error: "Not found." });
   // EXPIRED is not a terminal state here -- it's set as a side effect by
@@ -398,6 +469,14 @@ router.post("/student/lms/attempts/:attemptId/submit", auth.requireLearner, (req
   // needs to grade).
   if (isLate && scoredAttempt.status === "SUBMITTED") {
     store.update("lms_quiz_attempts", result.attempt.id, { status: "EXPIRED" });
+  }
+  // Only worth checking when this attempt actually passed -- a failed or
+  // still-pending-grading attempt can't be the thing that completes the
+  // course, so this skips the (still cheap, but not free) completion
+  // check on every failed retake.
+  if (scoredAttempt.passed === true) {
+    const completionLib = require("./../lib/lms-completion");
+    await completionLib.checkAndProcessCompletion(req.session.learnerId, result.course.id, `${req.protocol}://${req.get("host")}`);
   }
   res.json({ ok: true, resultUrl: `/student/lms/attempts/${result.attempt.id}/result` });
 });
@@ -501,7 +580,7 @@ router.post("/student/lms/lessons/:lessonId/assignment/submit", auth.requireLear
     return res.status(403).send("This assignment doesn't allow resubmission, and you've already submitted.");
   }
 
-  submissionUpload.single("submissionFile")(req, res, (err) => {
+  submissionUpload.single("submissionFile")(req, res, async (err) => {
     if (err) return res.status(400).send(err.message);
     if (!req.file) return res.status(400).send("A file is required.");
     if (req.file.size > preCheck.assignment.maxFileSizeMB * 1024 * 1024) {
@@ -515,6 +594,12 @@ router.post("/student/lms/lessons/:lessonId/assignment/submit", auth.requireLear
       storageKey: req.file.filename, originalFilename: req.file.originalname,
       mimeType: req.file.mimetype, sizeBytes: req.file.size,
     });
+    // Part M: an assignment counts toward completion the moment a
+    // submission exists (grading isn't a completion gate -- a student
+    // who submitted on time shouldn't be blocked from "complete" status
+    // just because the teacher hasn't graded it yet).
+    const completionLib = require("./../lib/lms-completion");
+    await completionLib.checkAndProcessCompletion(req.session.learnerId, preCheck.course.id, `${req.protocol}://${req.get("host")}`);
     res.redirect(`/student/lms/lessons/${preCheck.lesson.id}/assignment`);
   });
 });
