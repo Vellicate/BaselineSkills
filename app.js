@@ -38,6 +38,15 @@ app.use((req, res, next) => {
   // per-render wiring this app doesn't have yet; this is still a real
   // improvement over no CSP at all, blocking arbitrary third-party script
   // injection, framing, and plugin/object embedding.
+  //
+  // frame-src includes 'self' specifically for the LMS course player,
+  // which embeds a PDF lesson's own /lms/content/:id/stream URL in a same-
+  // origin <iframe> to display it inline — found as a real bug, not a
+  // theoretical gap: frame-src (once set explicitly) overrides default-src
+  // for framing regardless of origin, so a policy naming only the PayPal
+  // checkout frame silently blocked the site's own same-origin PDF viewer
+  // too, surfacing to the student as a browser-level "content is blocked"
+  // page with no indication it was a CSP header, not a real access denial.
   res.setHeader("Content-Security-Policy", [
     "default-src 'self'",
     "script-src 'self' 'unsafe-inline' https://cdn.paddle.com https://www.paypal.com https://cdnjs.cloudflare.com",
@@ -45,7 +54,7 @@ app.use((req, res, next) => {
     "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com",
     "img-src 'self' data: https:",
     "connect-src 'self' https://cdn.paddle.com https://www.paypal.com",
-    "frame-src https://www.paypal.com",
+    "frame-src 'self' https://www.paypal.com",
     "object-src 'none'",
     "frame-ancestors 'self'",
     "base-uri 'self'",
