@@ -1,0 +1,54 @@
+<%- include('partials/head') %>
+
+<div style="margin-bottom:20px">
+  <h1 style="font-size:1.6rem;margin:0">LMS Access Check</h1>
+  <p style="color:var(--muted);font-size:.9rem;margin:4px 0 0">Checks every condition a student's course access actually depends on, for one email and one course, and reports exactly which one is failing -- for tickets like "this student can't see their course."</p>
+</div>
+
+<form method="GET" action="/admin/lms-access-check" class="card" style="margin-bottom:24px;padding:20px">
+  <div class="form-row">
+    <div class="form-field"><label>Student email</label><input type="email" name="email" value="<%= email %>" required placeholder="student@example.com"></div>
+    <div class="form-field">
+      <label>Course</label>
+      <select name="course" required>
+        <option value="">Select a course…</option>
+        <% allCourses.forEach(c => { %><option value="<%= c.id %>" <%= courseQuery === c.id ? 'selected' : '' %>><%= c.title %></option><% }) %>
+      </select>
+    </div>
+  </div>
+  <button type="submit" class="btn btn-navy">Check Access</button>
+</form>
+
+<% if (report) { %>
+  <% const checks = []; %>
+  <% checks.push({ label: 'Course found', pass: report.courseFound, detail: report.courseFound ? report.course.title : 'No course matches this selection.' }); %>
+  <% checks.push({ label: 'Learner account exists for this email', pass: report.learnerFound, detail: report.learnerFound ? report.learner.id : 'No learner account found for this exact email address -- check for a typo, or that they registered with this email.' }); %>
+  <% checks.push({ label: 'A registration exists for this email + course', pass: report.registrations.length > 0, detail: report.registrations.length ? `${report.registrations.length} registration(s) found` : 'No registration ties this email to this course at all -- the purchase may be under a different email, or for a different course.' }); %>
+  <% if (report.registrations.length > 0) { %>
+    <% report.registrations.forEach((r, i) => { %>
+      <% checks.push({ label: `Registration ${i+1}: payment status is confirmed or invoice-pending`, pass: r.status === 'confirmed' || r.status === 'invoice_pending', detail: `status: ${r.status}` }); %>
+      <% checks.push({ label: `Registration ${i+1}: grants LMS access (not a non-attending purchaser)`, pass: r.grantsAccess !== 0, detail: r.grantsAccess === 0 ? 'This row is marked as a purchaser who is not personally attending -- see Part 15 of the group-registration design. If this person should have access, they need their own attending-participant registration.' : 'grantsAccess: 1' }); %>
+    <% }) %>
+  <% } %>
+  <% if (report.courseFound) { %>
+    <% checks.push({ label: 'Course has an LMS delivery mode set (appears on the student dashboard)', pass: !!report.course.lmsDeliveryMode, detail: report.course.lmsDeliveryMode || 'lmsDeliveryMode is not set on this course at all -- it will never appear on any student\'s LMS dashboard regardless of registration status. Set it from the course\'s LMS builder (Recorded/Live Online/Hybrid).' }); %>
+    <% checks.push({ label: 'Course access window is currently open', pass: report.windowStatus === 'open', detail: `window status: ${report.windowStatus}` + (report.windowStatus === 'not_started' ? ' -- lmsAccessStartDate is in the future.' : report.windowStatus === 'ended' ? ' -- lmsAccessEndDate has passed.' : '') }); %>
+    <% checks.push({ label: 'Course has at least one module', pass: report.modulesCount > 0, detail: `${report.modulesCount} module(s)` }); %>
+    <% checks.push({ label: 'Course has at least one published lesson', pass: report.publishedLessonsCount > 0, detail: `${report.publishedLessonsCount} published of ${report.lessonsCount} total lesson(s)` + (report.lessonsCount > 0 && report.publishedLessonsCount === 0 ? ' -- lessons exist but none are published yet.' : '') }); %>
+  <% } %>
+  <% checks.push({ label: 'Final verdict: isEnrolled() (the actual function every LMS route checks)', pass: report.isEnrolledResult, detail: report.isEnrolledResult ? 'This student has LMS access to this course.' : 'This student does NOT have LMS access to this course -- see whichever check above failed.' }); %>
+
+  <div class="card" style="padding:0;overflow:hidden">
+    <table style="width:100%;border-collapse:collapse">
+      <% checks.forEach(c => { %>
+        <tr style="border-bottom:1px solid var(--line)">
+          <td style="padding:12px 16px;width:28px;text-align:center;font-size:1.1rem"><%= c.pass ? '✅' : '❌' %></td>
+          <td style="padding:12px 16px;font-weight:600;white-space:nowrap"><%= c.label %></td>
+          <td style="padding:12px 16px;color:var(--muted);font-size:.9rem"><%= c.detail %></td>
+        </tr>
+      <% }) %>
+    </table>
+  </div>
+<% } %>
+
+<%- include('partials/foot') %>

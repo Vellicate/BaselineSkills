@@ -4,6 +4,7 @@ const path = require("path");
 const store = require("../lib/db");
 const auth = require("../lib/auth");
 const { finalizeRegistration } = require("./registration");
+const lmsAccess = require("../lib/lms-content-access");
 const security = require("../lib/security");
 const certificates = require("../lib/certificates");
 const payoutsLib = require("../lib/payouts");
@@ -1250,6 +1251,49 @@ router.post("/registrations/:id/mark-paid", (req, res, next) => {
   }
   await finalizeRegistration(reg.id, {});
   res.redirect("/admin/registrations?success=Registration+marked+as+paid+—+confirmation+sent");
+});
+
+// ==================== LMS Access Diagnostic ====================
+// A support tool for exactly this kind of ticket -- "this student can't
+// see their course" -- checking every condition isEnrolled() and the LMS
+// dashboard/course-player routes actually depend on, in one place, rather
+// than an admin (or Claude, working from a support message with no direct
+// database access) having to reason through the access-control chain by
+// hand each time. Read-only; changes nothing.
+router.get("/lms-access-check", auth.requireSuperAdmin, (req, res) => {
+  const email = (req.query.email || "").trim();
+  const courseQuery = (req.query.course || "").trim();
+  const allCourses = store.readAll("courses").sort((a, b) => a.title.localeCompare(b.title));
+
+  let report = null;
+  if (email && courseQuery) {
+    const course = store.findOne("courses", (c) => c.id === courseQuery || c.slug === courseQuery)
+      || allCourses.find((c) => c.title.toLowerCase() === courseQuery.toLowerCase());
+    const learner = store.findOne("learners", (l) => l.email.toLowerCase() === email.toLowerCase());
+    const registrations = store.readAll("registrations").filter((r) =>
+      course && (r.courseId === course.id) &&
+      (r.email.toLowerCase() === email.toLowerCase() || (learner && r.learnerId === learner.id))
+    );
+    const modules = course ? store.readAll("lms_modules").filter((m) => m.courseId === course.id) : [];
+    const moduleIds = new Set(modules.map((m) => m.id));
+    const lessons = store.readAll("lms_lessons").filter((l) => moduleIds.has(l.moduleId));
+    const publishedLessons = lessons.filter((l) => l.isPublished);
+    const windowStatus = course ? lmsAccess.courseAccessWindowStatus(course) : null;
+    const isEnrolledResult = learner && course ? lmsAccess.isEnrolled(learner.id, course.id) : false;
+
+    report = {
+      courseFound: !!course, course,
+      learnerFound: !!learner, learner,
+      registrations,
+      modulesCount: modules.length, lessonsCount: lessons.length, publishedLessonsCount: publishedLessons.length,
+      windowStatus, isEnrolledResult,
+    };
+  }
+
+  res.render("admin/lms-access-check", {
+    title: "LMS Access Check — Baseline Skills",
+    allCourses, email, courseQuery, report,
+  });
 });
 
 // ==================== Trainer & Affiliate Applications ====================
