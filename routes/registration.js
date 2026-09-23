@@ -6,6 +6,8 @@ const { sendMail, escapeHtml } = require("../lib/mailer");
 const { newId } = require("../lib/id");
 const payments = require("../lib/payments");
 const discounts = require("../lib/discounts");
+const pricing = require("../lib/pricing");
+const { currencySymbol } = require("../lib/currency");
 const auth = require("../lib/auth");
 const invoices = require("../lib/invoices");
 const createRateLimiter = require("../lib/rate-limiter");
@@ -52,13 +54,33 @@ router.get("/courses/:slug/register", (req, res) => {
   const examProduct = store.findOne("certification_exams", (e) => e.courseId === course.id);
   const examDiscountPercent = discounts.effectiveDiscountPercent(course, sessionStartDate, couponValidation && couponValidation.valid ? couponCode : null);
   const examFinalPriceCents = examProduct ? Math.round(examProduct.priceCents * (1 - examDiscountPercent / 100)) : null;
+  // Part 19: a course-detail comparison-table link carries ?mode=<mode> so
+  // the right delivery mode is preselected here rather than defaulting to
+  // whichever mode happens to be listed first.
+  const publicModes = course.deliveryModes.filter((m) => !["Corporate On-site", "Private Cohort"].includes(m));
+  const selectedDeliveryMode = publicModes.includes(req.query.mode) ? req.query.mode : (publicModes[0] || "");
   res.render("register", {
     title: `Register — ${course.title}`, course,
     finalPrice: discounts.finalPriceCentsForSession(course, sessionStartDate, couponValidation && couponValidation.valid ? couponCode : null),
-    discountInfo, selectedSessionStartDate: sessionStartDate,
+    discountInfo, selectedSessionStartDate: sessionStartDate, selectedDeliveryMode,
     examProduct, examFinalPriceCents,
     couponCode, couponValidation,
   });
+});
+
+// ---- Live pricing preview (Part 18): the browser never computes or
+// trusts its own arithmetic for the displayed price, only for the amount
+// actually charged -- both come from the same lib/pricing.js call. GET,
+// not POST: read-only, no state change, and simpler to call from a plain
+// fetch() without a CSRF token dance for something that changes nothing.
+router.get("/courses/:slug/register/pricing-preview", (req, res) => {
+  const course = store.findOne("courses", (c) => c.slug === req.params.slug && c.published);
+  if (!course) return res.status(404).json({ error: "Course not found" });
+  const participantCount = Math.max(1, Math.min(50, parseInt(req.query.participantCount, 10) || 1));
+  const deliveryMode = req.query.deliveryMode || course.deliveryModes[0];
+  const sessionStartDate = req.query.sessionStartDate || (course.sessions[0] && course.sessions[0].startDate) || null;
+  const result = pricing.calculatePricing({ course, deliveryMode, participantCount, sessionStartDate, couponCode: null });
+  res.json({ ...result, currencySymbol: currencySymbol(result.currency) });
 });
 
 // ---- Submit registration ----
@@ -68,164 +90,211 @@ router.post("/courses/:slug/register", regRateLimiter, async (req, res) => {
 
   const { name, email, phone, address, company, role, sessionStartDate, deliveryMode, notes, addExam, couponCode } = req.body;
   const resolvedSessionStartDate = sessionStartDate || (course.sessions[0] && course.sessions[0].startDate) || "";
+  const resolvedDeliveryMode = deliveryMode || (course.sessions[0] && course.sessions[0].mode) || "";
   const couponValidation = couponCode ? discounts.validateCouponCode(couponCode, course.id, resolvedSessionStartDate) : null;
   const validCoupon = couponValidation && couponValidation.valid ? couponCode : null;
-  if (couponCode && !validCoupon) {
-    const discountInfo = discounts.earlyBirdForSession(resolvedSessionStartDate);
-    const examProduct = store.findOne("certification_exams", (e) => e.courseId === course.id);
-    return res.status(400).render("register", {
-      title: `Register — ${course.title}`, course,
-      finalPrice: discounts.finalPriceCentsForSession(course, resolvedSessionStartDate),
-      discountInfo, selectedSessionStartDate: resolvedSessionStartDate,
-      examProduct, examFinalPriceCents: examProduct ? Math.round(examProduct.priceCents * (1 - discounts.effectiveDiscountPercent(course, resolvedSessionStartDate) / 100)) : null,
-      couponCode, couponValidation,
-      error: couponValidation.reason,
-    });
-  }
   const discountInfo = discounts.earlyBirdForSession(resolvedSessionStartDate);
-  const finalPrice = discounts.finalPriceCentsForSession(course, resolvedSessionStartDate, validCoupon);
   const examProduct = store.findOne("certification_exams", (e) => e.courseId === course.id);
   const examDiscountPercent = discounts.effectiveDiscountPercent(course, resolvedSessionStartDate, validCoupon);
   const examFinalPriceCents = examProduct ? Math.round(examProduct.priceCents * (1 - examDiscountPercent / 100)) : null;
   const examSelected = !!addExam && !!examProduct;
 
-  if (!name || !email) {
-    return res.status(400).render("register", {
-      title: `Register — ${course.title}`, course, finalPrice, discountInfo, selectedSessionStartDate: resolvedSessionStartDate,
-      examProduct, examFinalPriceCents,
-      error: "Name and email are required.", form: req.body,
-    });
+  // Re-rendering the form on any validation failure needs the same shape
+  // of data the GET route builds — kept as one local helper rather than
+  // repeating this object at every early-return below.
+  const rerender = (status, error) => res.status(status).render("register", {
+    title: `Register — ${course.title}`, course,
+    finalPrice: pricing.calculatePricing({ course, deliveryMode: resolvedDeliveryMode, participantCount: 1, sessionStartDate: resolvedSessionStartDate, couponCode: validCoupon }).finalTotalCents,
+    discountInfo, selectedSessionStartDate: resolvedSessionStartDate, selectedDeliveryMode: resolvedDeliveryMode,
+    examProduct, examFinalPriceCents, couponCode, couponValidation,
+    error, form: req.body,
+  });
+
+  // Part 1E/1F/23: Corporate On-site and Private Cohort must never enter
+  // the normal payment flow, full stop -- not a UI-layer courtesy that a
+  // direct POST could route around. Checked here, before any pricing or
+  // registration logic runs at all, against the same allowlist the
+  // course-detail page and the corporate-training inquiry route both use,
+  // so a request that names either mode is rejected outright rather than
+  // silently priced at 0 (null coerces to 0 in the total, which is
+  // exactly the free-registration bypass this check exists to close).
+  // Redirected to the real inquiry flow, pre-filled, rather than a bare
+  // error -- the visitor still gets somewhere useful.
+  if (["Corporate On-site", "Private Cohort"].includes(resolvedDeliveryMode)) {
+    return res.redirect(`/corporate-training?course=${encodeURIComponent(course.slug)}&mode=${encodeURIComponent(resolvedDeliveryMode)}`);
   }
 
-  // Duplicate-registration check: the same email registering again for the
-  // same course AND the same specific session is treated as an accidental
-  // resubmission (double-click, back-button) and blocked — but a different
-  // session of the same course is a genuinely different registration and
-  // is allowed. A prior registration that's since been cancelled/refunded
-  // doesn't count as a block, since re-registering after cancelling is a
-  // legitimate case (the status values don't exist yet in this phase, but
-  // the check is written to already handle them correctly once they do,
-  // rather than needing rework later).
-  const existingRegistration = store.findOne("registrations", (r) =>
-    r.courseId === course.id &&
-    r.email.toLowerCase() === email.toLowerCase() &&
-    r.sessionStartDate === resolvedSessionStartDate &&
-    r.status !== "cancelled" && r.status !== "refunded"
+  if (couponCode && !validCoupon) return rerender(400, couponValidation.reason);
+  if (!name || !email) return rerender(400, "Name and email are required.");
+
+  // Part 6/23: participant details, validated server-side regardless of
+  // what the client-side stepper showed — a tampered or scripted request
+  // could submit any count/array shape, so the array lengths and each
+  // participant's required fields are checked here, not assumed from the
+  // stepper's last known value.
+  const participantNames = Array.isArray(req.body.participantName) ? req.body.participantName : [req.body.participantName].filter((v) => v !== undefined);
+  const participantEmails = Array.isArray(req.body.participantEmail) ? req.body.participantEmail : [req.body.participantEmail].filter((v) => v !== undefined);
+  const participantPhones = Array.isArray(req.body.participantPhone) ? req.body.participantPhone : [req.body.participantPhone].filter((v) => v !== undefined);
+  const participants = participantNames.map((n, i) => ({
+    name: (n || "").trim(), email: (participantEmails[i] || "").trim(), phone: (participantPhones[i] || "").trim(),
+  }));
+
+  if (participants.length === 0 || participants.length > 50) return rerender(400, "At least one participant is required.");
+  if (participants.some((p) => !p.name || !p.email)) return rerender(400, "Every participant needs a name and email address.");
+  const emailValidator = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (participants.some((p) => !emailValidator.test(p.email))) return rerender(400, "One of the participant email addresses doesn't look valid.");
+  const lowerEmails = participants.map((p) => p.email.toLowerCase());
+  if (new Set(lowerEmails).size !== lowerEmails.length) return rerender(400, "Each participant needs a different email address — two participants have the same one.");
+
+  const participantCount = participants.length;
+  const purchaserEmailLower = email.toLowerCase();
+  const purchaserIndex = participants.findIndex((p) => p.email.toLowerCase() === purchaserEmailLower);
+  const purchaserIsParticipant = purchaserIndex !== -1;
+
+  // Duplicate-registration check, extended to every person in the group —
+  // same reasoning as the original single-person check (an accidental
+  // resubmission for the same course+session is blocked; a different
+  // session is a genuinely new registration and allowed), now run once
+  // per participant email plus the purchaser's own if they aren't one.
+  const emailsToCheck = purchaserIsParticipant ? lowerEmails : [...lowerEmails, purchaserEmailLower];
+  const alreadyRegistered = emailsToCheck.filter((e) =>
+    store.findOne("registrations", (r) =>
+      r.courseId === course.id && r.email.toLowerCase() === e &&
+      r.sessionStartDate === resolvedSessionStartDate && r.status !== "cancelled" && r.status !== "refunded"
+    )
   );
-  if (existingRegistration) {
-    return res.status(400).render("register", {
-      title: `Register — ${course.title}`, course, finalPrice, discountInfo, selectedSessionStartDate: resolvedSessionStartDate,
-      examProduct, examFinalPriceCents,
-      error: `You're already registered for this session (${resolvedSessionStartDate}) with this email address. If you need to change or cancel your existing registration, please contact us.`,
-      form: req.body,
-    });
+  if (alreadyRegistered.length > 0) {
+    return rerender(400, `${alreadyRegistered.length === 1 ? "One of these people is" : "Some of these people are"} already registered for this session (${resolvedSessionStartDate}). If you need to change or cancel an existing registration, please contact us.`);
   }
 
-  // Seat-availability check, done as the very last validation before any
-  // record is written — an atomic UPDATE ... WHERE seatsLeft > 0 rather
-  // than a separate read-then-write, so two learners racing for the last
-  // seat can't both pass a check that reads stale data (the same class of
-  // bug the certificate-numbering race condition testing elsewhere in this
-  // codebase was written to catch). A session with seatsLeft left NULL is
-  // treated as unlimited capacity and skips this entirely, rather than
-  // failing closed on data that was never meant to be capacity-tracked.
+  // Seat-availability check for the whole group at once, same atomic
+  // UPDATE ... WHERE pattern as the original single-seat check (a
+  // read-then-write here would let two groups racing for the last few
+  // seats both pass a check against stale data) — just decrementing and
+  // requiring participantCount seats instead of exactly one.
   const sessionRow = resolvedSessionStartDate
     ? course.sessions.find((s) => s.startDate === resolvedSessionStartDate)
     : null;
   if (sessionRow && sessionRow.seatsLeft !== null && sessionRow.seatsLeft !== undefined) {
     const seatResult = store.raw
-      .prepare(`UPDATE sessions SET seatsLeft = seatsLeft - 1 WHERE id = ? AND seatsLeft > 0`)
-      .run(sessionRow.id);
+      .prepare(`UPDATE sessions SET seatsLeft = seatsLeft - ? WHERE id = ? AND seatsLeft >= ?`)
+      .run(participantCount, sessionRow.id, participantCount);
     if (seatResult.changes === 0) {
-      return res.status(400).render("register", {
-        title: `Register — ${course.title}`, course, finalPrice, discountInfo, selectedSessionStartDate: resolvedSessionStartDate,
-        examProduct, examFinalPriceCents,
-        error: "This session is sold out. Please register for another session.",
-        form: req.body,
-      });
+      return rerender(400, participantCount === 1
+        ? "This session is sold out. Please register for another session."
+        : `Only ${sessionRow.seatsLeft} seat${sessionRow.seatsLeft === 1 ? "" : "s"} left in this session — not enough for ${participantCount} participants. Please register for another session or reduce your group size.`);
     }
   }
 
-  // Anonymous registration auto-creates a real learner profile (Master
-  // Prompt Section 12) rather than leaving learnerId null until Phase 2's
-  // signup flow is used separately — an anonymous visitor should never be
-  // asked to sign up again for something they already gave their name and
-  // email for. If an account for this email already exists (they registered
-  // before, or signed up separately), link to it instead of creating a
-  // second one, which the email UNIQUE constraint wouldn't allow anyway.
-  let effectiveLearnerId = req.session.learnerId || null;
-  let newAccountCreated = false;
-  let passwordSetToken = null;
+  // Part 10: the one server-side pricing calculation, using the real
+  // participant count — never the browser's own arithmetic, which only
+  // ever drove the live preview, not this.
+  const priceResult = pricing.calculatePricing({ course, deliveryMode: resolvedDeliveryMode, participantCount, sessionStartDate: resolvedSessionStartDate, couponCode: validCoupon });
 
-  if (!effectiveLearnerId) {
-    const existingLearner = store.findOne("learners", (l) => l.email.toLowerCase() === email.toLowerCase());
-    if (existingLearner) {
-      effectiveLearnerId = existingLearner.id;
-    } else {
-      passwordSetToken = crypto.randomBytes(32).toString("hex");
-      const newLearner = store.insert("learners", {
-        id: newId("learner"),
-        email: email.toLowerCase(),
-        passwordHash: null,
-        name, country: "", phone: "",
-        passwordResetToken: passwordSetToken,
-        passwordResetExpires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-        createdAt: new Date().toISOString(),
-      });
-      effectiveLearnerId = newLearner.id;
-      newAccountCreated = true;
-    }
+  const groupRegistrationId = participantCount > 1 || !purchaserIsParticipant ? newId("group") : null;
+  const nowIso = new Date().toISOString();
+
+  // Part 15: each participant gets (or reuses) their own learner account,
+  // exactly the logic the original single-person flow already used —
+  // extracted here so it runs once per participant instead of being
+  // duplicated inline.
+  function findOrCreateLearner(personName, personEmail) {
+    const existingSessionLearnerId = personEmail.toLowerCase() === purchaserEmailLower ? (req.session.learnerId || null) : null;
+    if (existingSessionLearnerId) return { learnerId: existingSessionLearnerId, passwordSetToken: null };
+    const existingLearner = store.findOne("learners", (l) => l.email.toLowerCase() === personEmail.toLowerCase());
+    if (existingLearner) return { learnerId: existingLearner.id, passwordSetToken: null };
+    const passwordSetToken = crypto.randomBytes(32).toString("hex");
+    const newLearner = store.insert("learners", {
+      id: newId("learner"), email: personEmail.toLowerCase(), passwordHash: null,
+      name: personName, country: "", phone: "",
+      passwordResetToken: passwordSetToken,
+      passwordResetExpires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      createdAt: nowIso,
+    });
+    return { learnerId: newLearner.id, passwordSetToken };
   }
 
-  const registration = {
-    id: newId("reg"),
-    courseId: course.id,
-    courseTitle: course.title,
-    learnerId: effectiveLearnerId,
-    name, email, phone: phone || "", address: address || "", company: company || "", role: role || "",
-    sessionStartDate: resolvedSessionStartDate,
-    deliveryMode: deliveryMode || (course.sessions[0] && course.sessions[0].mode) || "",
-    notes: notes || "",
-    priceCentsCharged: finalPrice + (examSelected ? examFinalPriceCents : 0),
-    certificationExamId: examSelected ? examProduct.id : null,
-    examPriceCentsCharged: examSelected ? examFinalPriceCents : null,
-    currency: course.currency,
-    status: "pending_payment",
-    createdAt: new Date().toISOString(),
-  };
+  const refCodeRow = req.session.refCode ? store.findOne("referral_codes", (r) => r.code === req.session.refCode) : null;
 
-  // Referral attribution — last-touch, per the referral design in the
-  // Pricing & Commissions work: whichever code is currently in the
-  // session at the moment of registration gets the credit.
-  if (req.session.refCode) {
-    const refCodeRow = store.findOne("referral_codes", (r) => r.code === req.session.refCode);
-    if (refCodeRow) {
-      registration.referredById = refCodeRow.ownerId;
-      registration.referralType = refCodeRow.ownerType;
-    }
+  const createdRegistrations = [];
+  participants.forEach((p, i) => {
+    const isThisThePurchaser = purchaserIsParticipant && i === purchaserIndex;
+    const { learnerId, passwordSetToken } = findOrCreateLearner(p.name, p.email);
+    const reg = {
+      id: newId("reg"),
+      courseId: course.id, courseTitle: course.title, learnerId,
+      name: p.name, email: p.email, phone: p.phone || "",
+      address: isThisThePurchaser ? (address || "") : "", company: isThisThePurchaser ? (company || "") : "", role: isThisThePurchaser ? (role || "") : "",
+      sessionStartDate: resolvedSessionStartDate, deliveryMode: resolvedDeliveryMode, notes: isThisThePurchaser ? (notes || "") : "",
+      // The group's pricing/exam charge lives once, on the purchaser's
+      // row only (Part 14) — every other participant's row charges
+      // nothing individually, since the purchaser paid for the group.
+      priceCentsCharged: isThisThePurchaser ? (priceResult.finalTotalCents + (examSelected ? examFinalPriceCents : 0)) : 0,
+      certificationExamId: isThisThePurchaser && examSelected ? examProduct.id : null,
+      examPriceCentsCharged: isThisThePurchaser && examSelected ? examFinalPriceCents : null,
+      currency: course.currency,
+      status: "pending_payment",
+      groupRegistrationId, isPurchaser: isThisThePurchaser ? 1 : 0,
+      participantCount: isThisThePurchaser ? participantCount : 1,
+      baseTotalCents: isThisThePurchaser ? priceResult.baseTotalCents : null,
+      groupDiscountPercent: isThisThePurchaser ? priceResult.discountPercent : 0,
+      groupDiscountAmountCents: isThisThePurchaser ? priceResult.discountAmountCents : 0,
+      grantsAccess: 1,
+      createdAt: nowIso,
+      _passwordSetToken: passwordSetToken, // consumed for the email below, not a real column
+    };
+    if (refCodeRow) { reg.referredById = refCodeRow.ownerId; reg.referralType = refCodeRow.ownerType; }
+    createdRegistrations.push(reg);
+  });
+
+  // Part 15: a purchaser who isn't attending still needs a row -- it
+  // anchors the group and carries the payment -- but grantsAccess is 0,
+  // so isEnrolled() and every access check that respects it (previous
+  // commit) correctly never grants them course access on the strength of
+  // this row alone.
+  let purchaserReg;
+  if (purchaserIsParticipant) {
+    purchaserReg = createdRegistrations[purchaserIndex];
+  } else {
+    const { learnerId, passwordSetToken } = findOrCreateLearner(name, email);
+    purchaserReg = {
+      id: newId("reg"),
+      courseId: course.id, courseTitle: course.title, learnerId,
+      name, email, phone: phone || "", address: address || "", company: company || "", role: role || "",
+      sessionStartDate: resolvedSessionStartDate, deliveryMode: resolvedDeliveryMode, notes: notes || "",
+      priceCentsCharged: priceResult.finalTotalCents + (examSelected ? examFinalPriceCents : 0),
+      certificationExamId: examSelected ? examProduct.id : null,
+      examPriceCentsCharged: examSelected ? examFinalPriceCents : null,
+      currency: course.currency,
+      status: "pending_payment",
+      groupRegistrationId, isPurchaser: 1,
+      participantCount, baseTotalCents: priceResult.baseTotalCents,
+      groupDiscountPercent: priceResult.discountPercent, groupDiscountAmountCents: priceResult.discountAmountCents,
+      grantsAccess: 0,
+      createdAt: nowIso,
+      _passwordSetToken: passwordSetToken,
+    };
+    if (refCodeRow) { purchaserReg.referredById = refCodeRow.ownerId; purchaserReg.referralType = refCodeRow.ownerType; }
+    createdRegistrations.push(purchaserReg);
   }
 
-  await store.insert("registrations", registration);
+  createdRegistrations.forEach((r) => {
+    const { _passwordSetToken, ...row } = r;
+    store.insert("registrations", row);
+  });
 
   const available = payments.availableProviders();
 
   if (available.length === 0) {
-    // No live payment credentials configured for either provider — fall
-    // back to an "invoice pending" path so the rest of the pipeline (file
-    // storage + emails) still runs fully end to end.
-    await finalizeRegistration(registration.id, { viaFallback: true });
-    return res.redirect(`/register/success?reg=${registration.id}`);
+    await finalizeRegistration(purchaserReg.id, { viaFallback: true });
+    return res.redirect(`/register/success?reg=${purchaserReg.id}`);
   }
 
   if (available.length > 1) {
-    // Both configured — let the learner choose, rather than silently
-    // picking one for them (Master Prompt Section 12 explicitly asks for
-    // this to be a real choice, not just "Paddle, with PayPal as a
-    // theoretical alternative nobody can actually pick").
-    return res.redirect(`/register/choose-payment?reg=${registration.id}`);
+    return res.redirect(`/register/choose-payment?reg=${purchaserReg.id}`);
   }
 
-  return startCheckout(res, available[0], course, registration);
+  return startCheckout(res, available[0], course, purchaserReg);
 });
 
 async function startCheckout(res, providerName, course, registration) {
@@ -279,10 +348,25 @@ async function finalizeRegistration(registrationId, opts = {}) {
   if (reg.status === "confirmed") return reg; // already finalized — don't double-send emails
 
   const course = store.findOne("courses", (c) => c.id === reg.courseId);
-  const updated = await store.update("registrations", registrationId, {
-    status: opts.viaFallback ? "invoice_pending" : "confirmed",
-    confirmedAt: new Date().toISOString(),
-  });
+  const newStatus = opts.viaFallback ? "invoice_pending" : "confirmed";
+  const confirmedAt = new Date().toISOString();
+  const updated = await store.update("registrations", registrationId, { status: newStatus, confirmedAt });
+
+  // Part 13: idempotent webhook confirmation, extended to a group -- every
+  // sibling row sharing this groupRegistrationId is confirmed together in
+  // the same call, not just the purchaser's own row, so a participant's
+  // access doesn't depend on a second, separate webhook ever arriving for
+  // their individual row (there isn't one; only the purchaser's row is
+  // tied to the actual payment transaction). Every sibling update reuses
+  // the same "already confirmed, skip" guard as the top of this function,
+  // so a retried webhook delivery still can't double-process or double-
+  // email anyone in the group.
+  const groupSiblings = reg.groupRegistrationId
+    ? store.readAll("registrations").filter((r) => r.groupRegistrationId === reg.groupRegistrationId && r.id !== reg.id && r.status !== "confirmed")
+    : [];
+  for (const sibling of groupSiblings) {
+    await store.update("registrations", sibling.id, { status: newStatus, confirmedAt });
+  }
 
   // Only generate an invoice for a genuinely confirmed (webhook-verified)
   // payment — "invoice_pending" is explicitly not a completed payment (it's
@@ -297,14 +381,15 @@ async function finalizeRegistration(registrationId, opts = {}) {
   }
 
   // Purchase-stage feedback prompt (Section 14/15) — created here, once,
-  // at the moment of confirmed purchase, so the learner has something real
-  // to fill in from their account page rather than a stage that exists
-  // in the schema but nothing ever populates.
-  if (reg.learnerId) {
-    const existingPurchaseFeedback = store.findOne("feedback", (f) => f.learnerId === reg.learnerId && f.courseId === reg.courseId && f.stage === "purchase");
+  // at the moment of confirmed purchase, for the purchaser and, for a
+  // group, every attending participant too (each has their own real
+  // course experience to give feedback on).
+  const feedbackTargets = [reg, ...groupSiblings].filter((r) => r.learnerId && r.grantsAccess !== 0);
+  for (const target of feedbackTargets) {
+    const existingPurchaseFeedback = store.findOne("feedback", (f) => f.learnerId === target.learnerId && f.courseId === target.courseId && f.stage === "purchase");
     if (!existingPurchaseFeedback) {
       store.insert("feedback", {
-        id: newId("feedback"), learnerId: reg.learnerId, courseId: reg.courseId,
+        id: newId("feedback"), learnerId: target.learnerId, courseId: target.courseId,
         sessionId: null, moduleId: null, stage: "purchase",
         rating: null, comment: null, structuredAnswers: null, createdAt: new Date().toISOString(),
       });
@@ -318,52 +403,96 @@ async function finalizeRegistration(registrationId, opts = {}) {
 
   const courseTitle = escapeHtml(course ? course.title : reg.courseTitle);
 
-  // If this registration is tied to a learner account with no password set
-  // yet (created automatically for an anonymous registrant, per Section
-  // 12), include a set-password link in their confirmation email — looked
-  // up here directly rather than threaded through as a parameter, since
-  // this function runs from both the immediate fallback path and the async
-  // Paddle webhook, and only the learner record itself reliably carries
-  // this state across both.
-  let setPasswordNote = "";
-  if (reg.learnerId) {
-    const learner = store.findOne("learners", (l) => l.id === reg.learnerId);
+  function setPasswordNoteFor(registration) {
+    if (!registration.learnerId) return "";
+    const learner = store.findOne("learners", (l) => l.id === registration.learnerId);
     if (learner && !learner.passwordHash && learner.passwordResetToken) {
       const setPasswordUrl = `${process.env.APP_BASE_URL || "https://www.baselineskills.com"}/set-password?token=${learner.passwordResetToken}`;
-      setPasswordNote = `<p>We've set up an account for you so you can track this registration — <a href="${setPasswordUrl}">set a password</a> to log in any time.</p>`;
+      return `<p>We've set up an account for you so you can track this registration — <a href="${setPasswordUrl}">set a password</a> to log in any time.</p>`;
     }
+    return "";
   }
 
   await sendMail({
     to: process.env.ADMIN_EMAIL || "admin@baselineskills.example",
     subject: `New registration — ${courseTitle.replace(/[\r\n]/g, "")} (${escapeHtml(reg.name).replace(/[\r\n]/g, "")})`,
     html: `<h2>New course registration</h2>
-      <p><strong>${escapeHtml(reg.name)}</strong> (${escapeHtml(reg.email)}) registered for <strong>${courseTitle}</strong>.</p>
+      <p><strong>${escapeHtml(reg.name)}</strong> (${escapeHtml(reg.email)}) registered for <strong>${courseTitle}</strong>${reg.participantCount > 1 ? ` &mdash; group of ${reg.participantCount}` : ""}.</p>
       <ul>
         <li>Company: ${escapeHtml(reg.company) || "n/a"}</li>
         <li>Role: ${escapeHtml(reg.role) || "n/a"}</li>
         <li>Session: ${escapeHtml(reg.sessionStartDate)} (${escapeHtml(reg.deliveryMode)})</li>
-        <li>Amount: ${escapeHtml(reg.currency)} ${priceDisplay}</li>
+        <li>Amount: ${escapeHtml(reg.currency)} ${priceDisplay}${reg.groupDiscountPercent ? ` (${reg.groupDiscountPercent}% group discount applied)` : ""}</li>
         <li>Status: ${escapeHtml(updated.status)}</li>
       </ul>
+      ${groupSiblings.length ? `<p>Participants: ${groupSiblings.map((s) => escapeHtml(s.name)).join(", ")}${reg.grantsAccess === 0 ? " (purchaser not attending)" : ""}</p>` : ""}
       ${paymentNote}`,
   });
 
-  await sendMail({
-    to: reg.email,
-    subject: `You're registered — ${courseTitle.replace(/[\r\n]/g, "")}`,
-    html: `<h2>Thanks for registering, ${escapeHtml(reg.name)}!</h2>
-      <p>You're booked on <strong>${courseTitle}</strong>.</p>
-      <ul>
-        <li>Session: ${escapeHtml(reg.sessionStartDate)}</li>
-        <li>Delivery mode: ${escapeHtml(reg.deliveryMode)}</li>
-        <li>Amount: ${escapeHtml(reg.currency)} ${priceDisplay}</li>
-      </ul>
-      ${paymentNote}
-      ${setPasswordNote}
-      <p>We'll be in touch with joining instructions closer to the session date.</p>
-      <p>— The Baseline Skills team</p>`,
-  });
+  if (reg.groupRegistrationId && (groupSiblings.length > 0 || reg.grantsAccess === 0)) {
+    // Part 16: a consolidated confirmation to the purchaser (course,
+    // delivery mode, participants, base price, participant count, group
+    // discount, discount amount, final amount, payment status, next
+    // steps) rather than the single-registration email, which wouldn't
+    // mention anyone but the purchaser themself.
+    const attendingParticipants = [reg, ...groupSiblings].filter((r) => r.grantsAccess !== 0);
+    await sendMail({
+      to: reg.email,
+      subject: `You're registered — ${courseTitle.replace(/[\r\n]/g, "")} (${reg.participantCount} participants)`,
+      html: `<h2>Thanks for registering, ${escapeHtml(reg.name)}!</h2>
+        <p>Your group is booked on <strong>${courseTitle}</strong>.</p>
+        <ul>
+          <li>Session: ${escapeHtml(reg.sessionStartDate)}</li>
+          <li>Delivery mode: ${escapeHtml(reg.deliveryMode)}</li>
+          <li>Participants (${attendingParticipants.length}): ${attendingParticipants.map((p) => escapeHtml(p.name)).join(", ") || "none — you registered this group without attending yourself"}</li>
+          <li>Base price: ${escapeHtml(reg.currency)} ${((reg.baseTotalCents || 0) / 100).toFixed(2)}</li>
+          ${reg.groupDiscountPercent ? `<li>Group discount: ${reg.groupDiscountPercent}% (&minus;${escapeHtml(reg.currency)} ${((reg.groupDiscountAmountCents || 0) / 100).toFixed(2)})</li>` : ""}
+          <li><strong>Total: ${escapeHtml(reg.currency)} ${priceDisplay}</strong></li>
+          <li>Payment status: ${escapeHtml(updated.status)}</li>
+        </ul>
+        ${paymentNote}
+        ${reg.grantsAccess !== 0 ? setPasswordNoteFor(reg) : ""}
+        <p>Each attending participant will receive their own email with course access details.</p>
+        <p>We'll be in touch with joining instructions closer to the session date.</p>
+        <p>— The Baseline Skills team</p>`,
+    });
+
+    // Part 16: each attending participant (other than the purchaser, who
+    // already received the consolidated email above) gets their own
+    // course-access notification.
+    for (const participant of attendingParticipants) {
+      if (participant.id === reg.id) continue;
+      await sendMail({
+        to: participant.email,
+        subject: `You're enrolled — ${courseTitle.replace(/[\r\n]/g, "")}`,
+        html: `<h2>Hi ${escapeHtml(participant.name)},</h2>
+          <p>${escapeHtml(reg.name)} has registered you for <strong>${courseTitle}</strong>.</p>
+          <ul>
+            <li>Session: ${escapeHtml(participant.sessionStartDate)}</li>
+            <li>Delivery mode: ${escapeHtml(participant.deliveryMode)}</li>
+          </ul>
+          ${setPasswordNoteFor(participant)}
+          <p>We'll be in touch with joining instructions closer to the session date.</p>
+          <p>— The Baseline Skills team</p>`,
+      });
+    }
+  } else {
+    await sendMail({
+      to: reg.email,
+      subject: `You're registered — ${courseTitle.replace(/[\r\n]/g, "")}`,
+      html: `<h2>Thanks for registering, ${escapeHtml(reg.name)}!</h2>
+        <p>You're booked on <strong>${courseTitle}</strong>.</p>
+        <ul>
+          <li>Session: ${escapeHtml(reg.sessionStartDate)}</li>
+          <li>Delivery mode: ${escapeHtml(reg.deliveryMode)}</li>
+          <li>Amount: ${escapeHtml(reg.currency)} ${priceDisplay}</li>
+        </ul>
+        ${paymentNote}
+        ${setPasswordNoteFor(reg)}
+        <p>We'll be in touch with joining instructions closer to the session date.</p>
+        <p>— The Baseline Skills team</p>`,
+    });
+  }
 
   return updated;
 }

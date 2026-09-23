@@ -57,12 +57,30 @@
         <div class="alert alert-success">Thanks — we've received your inquiry and will be in touch shortly.</div>
       <% } %>
       <% if (typeof error !== 'undefined' && error) { %><div class="alert alert-error"><%= error %></div><% } %>
+      <% if (typeof prefilledCourse !== 'undefined' && prefilledCourse) { %>
+        <div class="alert" style="background:var(--bg-soft,#F1F5F9);color:var(--navy);margin-bottom:16px">
+          Inquiring about <strong><%= prefilledCourse.title %></strong><% if (typeof prefilledMode !== 'undefined' && prefilledMode) { %> &mdash; <%= prefilledMode %><% } %>
+        </div>
+      <% } %>
       <form method="POST" action="/corporate-training/inquiry">
         <div class="form-field"><label>Full name *</label><input type="text" name="name" required></div>
         <div class="form-field"><label>Company *</label><input type="text" name="company" required></div>
         <div class="form-field"><label>Work email *</label><input type="email" name="email" required></div>
         <div class="form-field"><label>Phone</label><input type="text" name="phone"></div>
-        <div class="form-field"><label>Approximate team size</label><input type="text" name="teamSize" placeholder="e.g. 15-20"></div>
+        <% if (typeof prefilledCourse !== 'undefined' && prefilledCourse) { %>
+          <div class="form-field">
+            <label>Course</label>
+            <input type="text" name="courseInterest" value="<%= prefilledCourse.title %>">
+          </div>
+          <div class="form-field">
+            <label>Delivery mode</label>
+            <input type="text" name="deliveryMode" value="<%= typeof prefilledMode !== 'undefined' && prefilledMode ? prefilledMode : '' %>" readonly>
+          </div>
+        <% } else { %>
+          <div class="form-field"><label>Course of interest (optional)</label><input type="text" name="courseInterest" placeholder="e.g. IREB CPRE Foundation Level"></div>
+        <% } %>
+        <div class="form-field"><label>Expected number of participants</label><input type="text" name="teamSize" placeholder="e.g. 15-20"></div>
+        <div class="form-field"><label>Preferred dates (optional)</label><input type="text" name="preferredDates" placeholder="e.g. Q1 2027, or a specific week"></div>
         <div class="form-field"><label>What are you looking to achieve?</label><textarea name="message" rows="3"></textarea></div>
         <button type="submit" class="btn btn-navy btn-block">Request Proposal</button>
       </form>

@@ -9,6 +9,8 @@ const createRateLimiter = require("../lib/rate-limiter");
 const auth = require("../lib/auth");
 const security = require("../lib/security");
 const discounts = require("../lib/discounts");
+const pricing = require("../lib/pricing");
+const { currencySymbol } = require("../lib/currency");
 const { MATERIAL_DIR } = require("../lib/materials");
 
 // CSRF protection for every state-changing request on the public site —
@@ -150,6 +152,63 @@ function courseCardViewModel(course) {
     availabilityLabel,
     pricing: { originalPriceCents: course.priceCents, finalPriceCents, discountPercent },
   };
+}
+
+const INQUIRY_ONLY_MODES = ["Corporate On-site", "Private Cohort"];
+
+// Part 19/20: one row per delivery mode the course is *actually*
+// configured for (course.deliveryModes), never a fabricated row for a
+// mode nobody set up. Each row's schedule/price/CTA follows the specific
+// rule for that mode (Part 1) rather than one generic template stretched
+// across all six -- Recorded is never given a fake "Starts: —"/"Seats:
+// Unlimited" line, Hybrid never has invented dates, and Corporate/Private
+// never show a purchase price or a payment CTA at all.
+function deliveryModeOfferings(course) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  return (course.deliveryModes || []).map((mode) => {
+    if (INQUIRY_ONLY_MODES.includes(mode)) {
+      return {
+        mode, schedule: "Custom", priceLabel: "Pricing available on request",
+        ctaLabel: mode === "Private Cohort" ? "Request a Private Cohort" : "Request Corporate Training",
+        ctaUrl: `/corporate-training?course=${encodeURIComponent(course.slug)}&mode=${encodeURIComponent(mode)}`,
+        isInquiry: true,
+      };
+    }
+
+    const modeSessions = (course.sessions || []).filter((s) => s.mode === mode);
+    let schedule;
+    if (mode === "Recorded") {
+      schedule = "Self-paced &middot; Available immediately";
+    } else {
+      const upcoming = modeSessions
+        .filter((s) => s.startDate && s.startDate !== "On Demand" && new Date(s.startDate) >= today)
+        .sort((a, b) => new Date(a.startDate) - new Date(b.startDate))[0];
+      if (upcoming) {
+        schedule = upcoming.endDate ? `${upcoming.startDate} &ndash; ${upcoming.endDate}` : upcoming.startDate;
+      } else if (mode === "Hybrid") {
+        // Part 1D: Hybrid dates are optional -- no invented placeholder
+        // date, an honest "not yet scheduled" state instead.
+        schedule = "Flexible schedule &mdash; dates confirmed separately";
+      } else {
+        schedule = "No sessions currently scheduled";
+      }
+    }
+
+    const priceResult = pricing.calculatePricing({
+      course, deliveryMode: mode, participantCount: 1,
+      sessionStartDate: modeSessions[0] ? modeSessions[0].startDate : null, couponCode: null,
+    });
+    const priceLabel = `${currencySymbol(course.currency)}${Math.round(priceResult.finalTotalCents / 100)}`;
+
+    return {
+      mode, schedule, priceLabel,
+      ctaLabel: mode === "Recorded" ? "Start learning" : "Register",
+      ctaUrl: `/courses/${course.slug}/register?mode=${encodeURIComponent(mode)}`,
+      isInquiry: false,
+    };
+  });
 }
 
 router.get("/set-language/:lang", (req, res) => {
@@ -384,7 +443,7 @@ router.get("/courses/:slug", (req, res) => {
     const qualifies = learner && store.findOne("registrations", (r) =>
       r.courseId === course.id &&
       (r.learnerId === learner.id || r.email.toLowerCase() === learner.email.toLowerCase()) &&
-      (r.status === "confirmed" || r.status === "invoice_pending")
+      (r.status === "confirmed" || r.status === "invoice_pending") && r.grantsAccess !== 0
     );
     canReview = !!qualifies && !alreadyReviewed;
     hasAccessToMaterials = !!qualifies;
@@ -392,7 +451,9 @@ router.get("/courses/:slug", (req, res) => {
 
   const mapping = store.findOne("course_standards_mapping", (m) => m.courseId === course.id);
   const certificationBody = mapping ? store.findOne("standards_bodies", (b) => b.id === mapping.standardsBodyId) : null;
-  res.render("course-detail", { title: `${course.title} — Baseline Skills`, metaDescription: course.summary, course, related, trainer, faqs, reviews, avgRating, reviewCount, ratingDistribution, canReview, materials, hasAccessToMaterials, certificationBody, cardData: courseCardViewModel(course) });
+  const deliveryOfferings = deliveryModeOfferings(course);
+  const inquiryOnlyCourse = course.published && deliveryOfferings.length === 1 && deliveryOfferings[0].isInquiry;
+  res.render("course-detail", { title: `${course.title} — Baseline Skills`, metaDescription: course.summary, course, related, trainer, faqs, reviews, avgRating, reviewCount, ratingDistribution, canReview, materials, hasAccessToMaterials, certificationBody, cardData: courseCardViewModel(course), deliveryOfferings, inquiryOnlyCourse });
 });
 
 // Emails a link to the brochure rather than downloading it directly, so we
@@ -513,16 +574,35 @@ router.get("/course-outline/:filename", (req, res) => {
 });
 
 router.get("/corporate-training", (req, res) => {
-  res.render("corporate-training", { title: "Corporate Training — Baseline Skills", metaDescription: "Upskill your engineering, product, and business analysis teams with corporate requirements engineering and systems engineering training programs." });
+  // Part 1E/1F: a course-detail page can link here with ?course=<slug>
+  // and &mode=Corporate On-site|Private Cohort to pre-fill exactly which
+  // course/mode this inquiry is about -- looked up by slug (never trusting
+  // a raw title string from the query) so an invalid/tampered slug just
+  // results in no prefill rather than a mismatched or fabricated course
+  // name being silently stored later.
+  const prefilledCourse = req.query.course ? store.findOne("courses", (c) => c.slug === req.query.course) : null;
+  const prefilledMode = ["Corporate On-site", "Private Cohort"].includes(req.query.mode) ? req.query.mode : null;
+  res.render("corporate-training", {
+    title: "Corporate Training — Baseline Skills",
+    metaDescription: "Upskill your engineering, product, and business analysis teams with corporate requirements engineering and systems engineering training programs.",
+    prefilledCourse, prefilledMode,
+  });
 });
 
 router.post("/corporate-training/inquiry", formRateLimiter, (req, res) => {
-  const { name, company, email, phone, teamSize, message } = req.body;
+  const { name, company, email, phone, teamSize, message, courseInterest, preferredDates } = req.body;
+  // Never trust an arbitrary string for deliveryMode -- constrained to
+  // exactly the two inquiry-only modes this form exists for, same
+  // allowlist as the course-detail page's own prefill check, so a
+  // tampered value can't end up stored as something that looks like a
+  // real, validated delivery mode elsewhere in the admin UI.
+  const deliveryMode = ["Corporate On-site", "Private Cohort"].includes(req.body.deliveryMode) ? req.body.deliveryMode : "";
   if (!name || !company || !email) {
     return res.status(400).render("corporate-training", {
       title: "Corporate Training — Baseline Skills",
+      metaDescription: "Upskill your engineering, product, and business analysis teams with corporate requirements engineering and systems engineering training programs.",
       error: "Name, company, and email are required.",
-      form: req.body,
+      form: req.body, prefilledCourse: null, prefilledMode: null,
     });
   }
 
@@ -530,6 +610,7 @@ router.post("/corporate-training/inquiry", formRateLimiter, (req, res) => {
     id: newId("inq"),
     type: "corporate-training",
     name, company, email, phone: phone || "", teamSize: teamSize || "",
+    courseInterest: courseInterest || "", deliveryMode, preferredDates: preferredDates || "",
     message: message || "",
     createdAt: new Date().toISOString(),
   };
@@ -539,11 +620,13 @@ router.post("/corporate-training/inquiry", formRateLimiter, (req, res) => {
     to: process.env.ADMIN_EMAIL || "admin@baselineskills.example",
     subject: `New corporate training inquiry — ${company.replace(/[\r\n]/g, "")}`,
     html: `<p><strong>${escapeHtml(name)}</strong> at <strong>${escapeHtml(company)}</strong> (${escapeHtml(email)}, ${escapeHtml(phone) || "no phone given"}) requested corporate training info.</p>
+           ${courseInterest ? `<p>Course: ${escapeHtml(courseInterest)}${deliveryMode ? ` (${escapeHtml(deliveryMode)})` : ""}</p>` : ""}
            <p>Team size: ${escapeHtml(teamSize) || "not specified"}</p>
+           ${preferredDates ? `<p>Preferred dates: ${escapeHtml(preferredDates)}</p>` : ""}
            <p>Message: ${escapeHtml(message) || "(none)"}</p>`,
   });
 
-  res.render("corporate-training", { title: "Corporate Training — Baseline Skills", metaDescription: "Upskill your engineering, product, and business analysis teams with corporate requirements engineering and systems engineering training programs.", success: true });
+  res.render("corporate-training", { title: "Corporate Training — Baseline Skills", metaDescription: "Upskill your engineering, product, and business analysis teams with corporate requirements engineering and systems engineering training programs.", success: true, prefilledCourse: null, prefilledMode: null });
 });
 
 // For Teams — a corporate group nominating participants into an EXISTING
@@ -813,7 +896,7 @@ router.post("/courses/:slug/review", reviewRateLimiter, auth.requireLearner, (re
   const qualifyingRegistration = store.findOne("registrations", (r) =>
     r.courseId === course.id &&
     (r.learnerId === learner.id || r.email.toLowerCase() === learner.email.toLowerCase()) &&
-    (r.status === "confirmed" || r.status === "invoice_pending")
+    (r.status === "confirmed" || r.status === "invoice_pending") && r.grantsAccess !== 0
   );
   if (!qualifyingRegistration) {
     return res.status(403).send("You need a confirmed registration for this course before you can leave a review.");
@@ -851,7 +934,7 @@ router.get("/courses/:slug/materials/:materialId/download", auth.requireLearner,
   const qualifies = store.findOne("registrations", (r) =>
     r.courseId === course.id &&
     (r.learnerId === learner.id || r.email.toLowerCase() === learner.email.toLowerCase()) &&
-    (r.status === "confirmed" || r.status === "invoice_pending")
+    (r.status === "confirmed" || r.status === "invoice_pending") && r.grantsAccess !== 0
   );
   if (!qualifies) return res.status(403).send("You need a confirmed registration for this course to access its materials.");
 

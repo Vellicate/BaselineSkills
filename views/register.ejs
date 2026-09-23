@@ -13,13 +13,14 @@
     <% if (typeof error !== 'undefined' && error) { %><div class="alert alert-error"><%= error %></div><% } %>
 
     <div class="grid-2 register-grid" style="align-items:start">
-      <form method="POST" action="/courses/<%= course.slug %>/register" class="card" style="grid-column:1">
+      <form method="POST" action="/courses/<%= course.slug %>/register" class="card" style="grid-column:1" id="registerForm">
+        <h3 style="margin-top:0;font-size:1.05rem">Your details (purchaser / contact)</h3>
         <div class="form-row">
-          <div class="form-field"><label>Full name *</label><input type="text" name="name" required value="<%= typeof form!=='undefined' ? form.name||'' : '' %>"></div>
-          <div class="form-field"><label>Email *</label><input type="email" name="email" required value="<%= typeof form!=='undefined' ? form.email||'' : '' %>"></div>
+          <div class="form-field"><label>Full name *</label><input type="text" name="name" id="purchaserName" required value="<%= typeof form!=='undefined' ? form.name||'' : '' %>"></div>
+          <div class="form-field"><label>Email *</label><input type="email" name="email" id="purchaserEmail" required value="<%= typeof form!=='undefined' ? form.email||'' : '' %>"></div>
         </div>
         <div class="form-row">
-          <div class="form-field"><label>Phone</label><input type="tel" name="phone" value="<%= typeof form!=='undefined' ? form.phone||'' : '' %>"></div>
+          <div class="form-field"><label>Phone</label><input type="tel" name="phone" id="purchaserPhone" value="<%= typeof form!=='undefined' ? form.phone||'' : '' %>"></div>
           <div class="form-field"><label>Address</label><input type="text" name="address" value="<%= typeof form!=='undefined' ? form.address||'' : '' %>"></div>
         </div>
         <div class="form-row">
@@ -29,17 +30,36 @@
         <div class="form-row">
           <div class="form-field">
             <label>Preferred session</label>
-            <select name="sessionStartDate" onchange="window.location.href='/courses/<%= course.slug %>/register?session='+encodeURIComponent(this.value)">
+            <select name="sessionStartDate" id="sessionStartDateSelect" onchange="changeSession(this.value)">
               <% course.sessions.forEach(s => { const soldOut = s.seatsLeft !== null && s.seatsLeft !== undefined && s.seatsLeft <= 0; %><option value="<%= s.startDate %>" <%= s.startDate === selectedSessionStartDate ? 'selected' : '' %>><%= s.startDate %> — <%= s.mode %><%= soldOut ? ' (Sold out)' : '' %></option><% }) %>
             </select>
           </div>
           <div class="form-field">
             <label>Delivery mode</label>
-            <select name="deliveryMode">
-              <% course.deliveryModes.forEach(m => { %><option value="<%= m %>"><%= m %></option><% }) %>
+            <select name="deliveryMode" id="deliveryModeSelect">
+              <% course.deliveryModes.filter(m => !["Corporate On-site","Private Cohort"].includes(m)).forEach(m => { %><option value="<%= m %>" <%= (typeof selectedDeliveryMode !== 'undefined' && selectedDeliveryMode === m) ? 'selected' : '' %>><%= m %></option><% }) %>
             </select>
           </div>
         </div>
+
+        <div class="form-field" style="border:1px solid var(--line);border-radius:8px;padding:14px;margin-top:6px;background:var(--bg-soft,#F8FAFC)">
+          <div class="form-row" style="grid-template-columns:1fr auto;align-items:center">
+            <label style="margin:0">Number of participants</label>
+            <div style="display:flex;align-items:center;gap:10px">
+              <button type="button" class="btn btn-outline btn-sm" onclick="stepParticipants(-1)" aria-label="Decrease">&minus;</button>
+              <input type="number" name="participantCount" id="participantCount" min="1" max="50" value="1" style="width:60px;text-align:center" onchange="renderParticipantBlocks()">
+              <button type="button" class="btn btn-outline btn-sm" onclick="stepParticipants(1)" aria-label="Increase">&plus;</button>
+            </div>
+          </div>
+          <div class="checkbox-row" style="margin-top:10px">
+            <input type="checkbox" id="purchaserAttending" checked onchange="renderParticipantBlocks()">
+            <label style="margin:0;font-weight:400" for="purchaserAttending">I am also attending this course</label>
+          </div>
+          <p id="groupDiscountNote" class="form-hint" style="margin-top:8px;display:none"></p>
+        </div>
+
+        <div id="participantsWrap" style="margin-top:10px"></div>
+
         <div class="form-field"><label>Notes (optional)</label><textarea name="notes" rows="3"></textarea></div>
 
         <div class="form-field">
@@ -59,7 +79,7 @@
           <label style="display:flex;align-items:start;gap:10px;cursor:pointer">
             <input type="checkbox" name="addExam" value="1" style="margin-top:4px">
             <span>
-              <strong>Add the <%= examProduct.certificationName %> certification exam</strong> (<%= examProduct.certificationBody %>) — <%= currencySymbol(course.currency) %><%= (examFinalPriceCents/100).toFixed(2) %>
+              <strong>Add the <%= examProduct.certificationName %> certification exam</strong> (<%= examProduct.certificationBody %>) — <%= currencySymbol(course.currency) %><%= (examFinalPriceCents/100).toFixed(2) %> per participant
               <br><span style="color:var(--muted);font-size:.85rem;white-space:pre-line"><%= examProduct.description %></span>
             </span>
           </label>
@@ -73,12 +93,11 @@
       <div class="sticky-card" style="grid-column:2">
         <h4 style="margin-top:0"><%= course.title %></h4>
         <p style="font-size:.85rem;color:var(--muted)"><%= course.durationDays %> day<%= course.durationDays>1?'s':'' %> &middot; <%= course.category %></p>
-        <div class="price-row" style="margin-top:16px">
-          <div class="price-now"><%= currencySymbol(course.currency) %><%= (finalPrice/100).toFixed(2) %></div>
-          <% if(finalPrice < course.priceCents){ %>
-            <div class="price-was"><%= currencySymbol(course.currency) %><%= (course.priceCents/100).toFixed(2) %></div>
-            <div class="price-savings" style="color:#16847B;font-size:.85rem;font-weight:600">You save <%= currencySymbol(course.currency) %><%= ((course.priceCents-finalPrice)/100).toFixed(2) %></div>
-          <% } %>
+        <div id="pricingPreview">
+          <div class="price-row" style="margin-top:16px">
+            <div class="price-now" id="previewFinalTotal"><%= currencySymbol(course.currency) %><%= (finalPrice/100).toFixed(2) %></div>
+          </div>
+          <p class="form-hint" id="previewBreakdown" style="margin-top:6px"></p>
         </div>
         <% if (discountInfo.tierLabel === 'Very Early Bird' || discountInfo.tierLabel === 'Early Bird') { %>
           <span class="discount-badge"><%= discountInfo.tierLabel %> — save on this session</span>
@@ -92,14 +111,97 @@
         <% } %>
         <% if (examProduct) { %>
         <p style="font-size:.85rem;color:var(--muted);margin-top:14px;border-top:1px solid var(--line);padding-top:10px">
-          Course fee: <%= currencySymbol(course.currency) %><%= (finalPrice/100).toFixed(2) %><br>
-          + Exam (if added): <%= currencySymbol(course.currency) %><%= (examFinalPriceCents/100).toFixed(2) %><br>
-          <strong>Total with exam: <%= currencySymbol(course.currency) %><%= ((finalPrice+examFinalPriceCents)/100).toFixed(2) %></strong>
+          Exam add-on (if selected): <%= currencySymbol(course.currency) %><%= (examFinalPriceCents/100).toFixed(2) %> per participant
         </p>
         <% } %>
       </div>
     </div>
   </div>
 </section>
+
+<script>
+const courseSlug = <%- JSON.stringify(course.slug) %>;
+const sessionStartDate = <%- JSON.stringify(selectedSessionStartDate) %>;
+
+function changeSession(newSessionStartDate) {
+  const mode = document.getElementById('deliveryModeSelect').value;
+  window.location.href = '/courses/' + courseSlug + '/register?session=' + encodeURIComponent(newSessionStartDate) + '&mode=' + encodeURIComponent(mode);
+}
+
+function stepParticipants(delta) {
+  const input = document.getElementById('participantCount');
+  const next = Math.max(1, Math.min(50, (parseInt(input.value, 10) || 1) + delta));
+  input.value = next;
+  renderParticipantBlocks();
+}
+
+// Purchaser counts as participant 1 when attending -- their block is
+// auto-filled and locked (edited via the purchaser fields above, not
+// duplicated as a separately-editable copy) so there's exactly one place
+// to change that person's details, not two that could drift apart.
+function renderParticipantBlocks() {
+  const count = Math.max(1, parseInt(document.getElementById('participantCount').value, 10) || 1);
+  const purchaserAttending = document.getElementById('purchaserAttending').checked;
+  const wrap = document.getElementById('participantsWrap');
+  wrap.innerHTML = '';
+
+  const startIndex = purchaserAttending ? 2 : 1;
+  if (purchaserAttending) {
+    const p1 = document.createElement('div');
+    p1.className = 'form-field';
+    p1.style.cssText = 'border:1px solid var(--line);border-radius:8px;padding:10px 14px;margin-bottom:8px;background:#F8FAFC';
+    p1.innerHTML = '<strong style="font-size:.85rem">Participant 1 (you)</strong><input type="hidden" name="participantName" value="' + escapeAttr(document.getElementById('purchaserName').value) + '"><input type="hidden" name="participantEmail" value="' + escapeAttr(document.getElementById('purchaserEmail').value) + '"><input type="hidden" name="participantPhone" value="' + escapeAttr(document.getElementById('purchaserPhone').value) + '">';
+    wrap.appendChild(p1);
+  }
+  for (let i = startIndex; i <= count; i++) {
+    const block = document.createElement('div');
+    block.className = 'form-row';
+    block.style.cssText = 'grid-template-columns:1fr 1fr 1fr;margin-bottom:8px';
+    block.innerHTML =
+      '<div class="form-field"><label>Participant ' + i + ' name *</label><input type="text" name="participantName" required></div>' +
+      '<div class="form-field"><label>Email *</label><input type="email" name="participantEmail" required></div>' +
+      '<div class="form-field"><label>Phone</label><input type="text" name="participantPhone"></div>';
+    wrap.appendChild(block);
+  }
+  refreshPricingPreview();
+}
+function escapeAttr(s) { return (s || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+
+// Live pricing preview (Part 18): re-synced from the server on every
+// count change, never computed client-side, since the browser is never
+// the authority for a displayed price any more than for the charged one.
+let previewDebounce = null;
+function refreshPricingPreview() {
+  clearTimeout(previewDebounce);
+  previewDebounce = setTimeout(() => {
+    const count = Math.max(1, parseInt(document.getElementById('participantCount').value, 10) || 1);
+    const mode = document.getElementById('deliveryModeSelect').value;
+    fetch('/courses/' + courseSlug + '/register/pricing-preview?participantCount=' + count + '&deliveryMode=' + encodeURIComponent(mode) + '&sessionStartDate=' + encodeURIComponent(sessionStartDate || ''))
+      .then(r => r.json())
+      .then(data => {
+        if (data.requiresInquiry) return;
+        document.getElementById('previewFinalTotal').textContent = data.currencySymbol + (data.finalTotalCents/100).toFixed(2);
+        const note = document.getElementById('groupDiscountNote');
+        const breakdown = document.getElementById('previewBreakdown');
+        if (count > 1) {
+          breakdown.textContent = count + ' participants \u00b7 base ' + data.currencySymbol + (data.baseTotalCents/100).toFixed(2) + (data.discountPercent > 0 ? ' \u2212 ' + data.discountPercent + '% group discount' : '');
+          if (data.discountPercent > 0) {
+            note.style.display = 'block';
+            note.textContent = 'Group discount: ' + data.discountPercent + '% (\u2212' + data.currencySymbol + (data.discountAmountCents/100).toFixed(2) + ') \u00b7 ' + data.currencySymbol + (data.finalTotalCents/100/count).toFixed(2) + ' per participant after discount';
+          } else {
+            note.style.display = 'none';
+          }
+        } else {
+          breakdown.textContent = '';
+          note.style.display = 'none';
+        }
+      })
+      .catch(() => {});
+  }, 250);
+}
+
+document.getElementById('deliveryModeSelect').addEventListener('change', refreshPricingPreview);
+renderParticipantBlocks();
+</script>
 
 <%- include('partials/footer') %>

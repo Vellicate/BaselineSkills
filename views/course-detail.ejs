@@ -7,11 +7,13 @@
   "name": course.title,
   "description": course.summary,
   "provider": { "@type": "Organization", "name": "Baseline Skills", "sameAs": "https://www.baselineskills.com" },
-  "hasCourseInstance": course.sessions.map(s => ({
-    "@type": "CourseInstance",
-    "courseMode": s.mode,
-    "startDate": s.startDate,
-  })),
+  "hasCourseInstance": course.sessions
+    .filter(s => s.startDate && s.startDate !== "On Demand" && !isNaN(new Date(s.startDate).getTime()) && !["Corporate On-site", "Private Cohort"].includes(s.mode))
+    .map(s => ({
+      "@type": "CourseInstance",
+      "courseMode": s.mode,
+      "startDate": s.startDate,
+    })),
   ...(reviewCount ? { "aggregateRating": { "@type": "AggregateRating", "ratingValue": avgRating.toFixed(1), "reviewCount": reviewCount } } : {}),
 }) %>
 </script>
@@ -58,7 +60,9 @@
       <% } %>
     </div>
     <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:18px">
-      <% if (course.published) { %>
+      <% if (inquiryOnlyCourse) { %>
+        <a href="<%= deliveryOfferings[0].ctaUrl %>" class="btn btn-gold btn-lg"><%= deliveryOfferings[0].ctaLabel %></a>
+      <% } else if (course.published) { %>
         <a href="/courses/<%= course.slug %>/register" class="btn btn-gold btn-lg">Register Now</a>
       <% } else { %>
         <button type="button" class="btn btn-gold btn-lg" onclick="document.getElementById('interest-modal').style.display='flex'">I am interested</button>
@@ -287,8 +291,42 @@
   </div>
 
   <div>
+    <% if (course.published && deliveryOfferings.length > 1) { %>
+      <!-- Part 19: only shown when the course actually has more than one
+           configured delivery mode -- a single-mode course already has a
+           clear price in the card below, and a one-row "comparison" table
+           would just be visual noise on top of it. -->
+      <div class="card" style="margin-bottom:20px;padding:20px">
+        <h3 style="margin-top:0;font-size:1.05rem">Choose how you'd like to learn</h3>
+        <table style="width:100%;font-size:.9rem;border-collapse:collapse">
+          <thead>
+            <tr style="text-align:left;color:var(--muted);border-bottom:1px solid var(--line)">
+              <th style="padding:8px 4px">Delivery</th><th style="padding:8px 4px">Schedule</th><th style="padding:8px 4px">Price</th><th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% deliveryOfferings.forEach(o => { %>
+              <tr style="border-bottom:1px solid var(--line)">
+                <td style="padding:10px 4px;font-weight:600"><%= o.mode %></td>
+                <td style="padding:10px 4px;color:var(--muted)"><%- o.schedule %></td>
+                <td style="padding:10px 4px"><%= o.priceLabel %></td>
+                <td style="padding:10px 4px;text-align:right"><a href="<%= o.ctaUrl %>" class="btn <%= o.isInquiry ? 'btn-outline' : 'btn-navy' %> btn-sm"><%= o.ctaLabel %></a></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
     <div class="sticky-card" id="sessions">
-      <% if (course.published) { %>
+      <% if (inquiryOnlyCourse) { %>
+        <!-- Part 1E/1F: this course's only configured delivery mode is
+             Corporate On-site or Private Cohort -- no purchase price, no
+             payment CTA at all, ever, not even a single-mode "shortcut"
+             around the comparison table above (which doesn't render for
+             a single-mode course in the first place). -->
+        <p style="color:var(--muted);font-size:.9rem;margin-top:0">Pricing available on request &mdash; handled through our Corporate Training team, not online payment.</p>
+        <a href="<%= deliveryOfferings[0].ctaUrl %>" class="btn btn-gold btn-block"><%= deliveryOfferings[0].ctaLabel %></a>
+      <% } else if (course.published) { %>
         <div class="price-row">
           <div class="price-now"><%= currencySymbol(course.currency) %><%= (cardData.pricing.finalPriceCents/100).toFixed(0) %></div>
           <% if(cardData.pricing.discountPercent > 0){ %>
@@ -303,7 +341,7 @@
         <p style="color:var(--muted);font-size:.9rem;margin-top:0">This course is being finalized — pricing and scheduling aren't confirmed yet. Let us know you're interested and we'll be in touch as soon as it's ready.</p>
         <button type="button" class="btn btn-gold btn-block" onclick="document.getElementById('interest-modal').style.display='flex'">I am interested</button>
       <% } %>
-      <a href="/contact" class="btn btn-outline btn-block" style="margin-top:10px">Corporate Inquiry</a>
+      <a href="/corporate-training?course=<%= course.slug %>" class="btn btn-outline btn-block" style="margin-top:10px">Corporate Inquiry</a>
       <% if (course.brochureFilename) { %>
         <button type="button" class="btn btn-outline btn-block" style="margin-top:10px" onclick="document.getElementById('brochure-modal').style.display='flex'">Download Brochure</button>
       <% } %>

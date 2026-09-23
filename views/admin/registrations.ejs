@@ -54,6 +54,7 @@
           <th>Course</th>
           <th>Session</th>
           <th>Company</th>
+          <th>Participants</th>
           <th>Amount</th>
           <th>Status</th>
           <th>Registered</th>
@@ -78,7 +79,7 @@
 
                 <span class="person-details">
                   <strong><%= r.name %></strong>
-                  <small><%= r.email %></small>
+                  <small><%= r.email %><% if (r.groupRegistrationId && r.grantsAccess === 0) { %> · purchaser, not attending<% } %></small>
                 </span>
               </div>
             </td>
@@ -102,11 +103,24 @@
               <span class="company-text"><%= r.company || '—' %></span>
             </td>
 
+            <td data-label="Participants">
+              <% if (r.participantCount > 1) { %>
+                <span class="company-text" data-popup="<%= [r.grantsAccess !== 0 ? r.name : null, ...r.groupParticipants.map(p => p.name)].filter(Boolean).join(', ') %>" tabindex="0">
+                  <%= r.participantCount %> people
+                </span>
+              <% } else { %>
+                <span style="color:var(--muted)">1</span>
+              <% } %>
+            </td>
+
             <td data-label="Amount">
               <strong class="amount-value">
                 <%= r.currency %>
                 <%= (r.priceCentsCharged / 100).toFixed(2) %>
               </strong>
+              <% if (r.groupDiscountPercent > 0) { %>
+                <div style="font-size:.78rem;color:var(--muted)">base <%= (r.baseTotalCents/100).toFixed(2) %> &middot; &minus;<%= r.groupDiscountPercent %>%</div>
+              <% } %>
             </td>
 
             <td data-label="Status">
@@ -137,7 +151,7 @@
 
         <% if (registrations.length === 0) { %>
           <tr>
-            <td colspan="8" class="empty-state">
+            <td colspan="9" class="empty-state">
               No registrations recorded yet.
             </td>
           </tr>

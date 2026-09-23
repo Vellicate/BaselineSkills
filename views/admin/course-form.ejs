@@ -230,19 +230,61 @@ document.addEventListener('DOMContentLoaded', () => {
   </div>
 
   <div class="form-field">
-    <label>Delivery modes</label>
-    <% ["Live Online","Classroom","Corporate On-site","Private Cohort","Recorded","Hybrid"].forEach(m => { %>
-      <div class="checkbox-row"><input type="checkbox" name="deliveryModes" value="<%= m %>" <%= course && course.deliveryModes && course.deliveryModes.includes(m) ? 'checked' : '' %>> <label style="margin:0;font-weight:400"><%= m %></label></div>
-    <% }) %>
+    <label>Delivery modes &amp; pricing</label>
+    <p class="form-hint" style="margin-top:-4px">Check each mode this course is actually offered through, and set that mode's own price. Recorded, Hybrid, Corporate On-site, and Private Cohort each have independent pricing -- none of them are derived from another mode's price.</p>
+    <div id="delivery-modes-wrap">
+      <% const publicModes = ["Live Online","Classroom","Recorded","Hybrid"]; %>
+      <% const inquiryModes = ["Corporate On-site","Private Cohort"]; %>
+      <% [...publicModes, ...inquiryModes].forEach(m => { %>
+        <% const existingOption = (course && course.deliveryOptions) ? course.deliveryOptions.find(o => o.deliveryMode === m) : null; %>
+        <% const isChecked = course && course.deliveryModes && course.deliveryModes.includes(m); %>
+        <div class="form-row delivery-mode-row" style="grid-template-columns:200px 1fr;align-items:center;margin-bottom:8px">
+          <div class="checkbox-row" style="margin:0">
+            <input type="checkbox" name="deliveryModes" value="<%= m %>" class="delivery-mode-checkbox" data-mode="<%= m %>" <%= isChecked ? 'checked' : '' %>>
+            <label style="margin:0;font-weight:400"><%= m %></label>
+          </div>
+          <% if (inquiryModes.includes(m)) { %>
+            <span style="font-size:.85rem;color:var(--muted)">Pricing on request &mdash; handled via the Corporate Training inquiry flow, not online payment.</span>
+          <% } else { %>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:.85rem;color:var(--muted)"><%= currencySymbol(course ? course.currency : null) %></span>
+              <input type="number" step="0.01" min="0" name="deliveryPrice_<%= m.replace(/[^a-zA-Z]/g,'') %>"
+                     placeholder="<%= m === 'Recorded' ? 'e.g. self-paced price' : 'Uses base price below if left blank' %>"
+                     value="<%= existingOption && existingOption.priceCents != null ? (existingOption.priceCents/100).toFixed(2) : '' %>"
+                     style="max-width:160px">
+            </div>
+          <% } %>
+        </div>
+      <% }) %>
+    </div>
   </div>
 
   <div class="form-row">
     <div class="form-field">
-      <label>Price (€, before discount) * <span style="font-weight:400;color:var(--muted)">(number, 0 or greater)</span></label>
+      <label>Base price (€, before discount) * <span style="font-weight:400;color:var(--muted)">(number, 0 or greater)</span></label>
       <input type="number" step="0.01" min="0" name="price" required value="<%= course ? (course.priceCents/100).toFixed(2) : '' %>">
+      <p class="form-hint">Used for any checked mode above that's left blank -- and for anything reading this course's price before per-mode pricing existed.</p>
       <% if (fieldError('price')) { %><p style="color:#b91c1c;font-size:.82rem;margin-top:4px"><%= fieldError('price') %></p><% } %>
     </div>
 
+  </div>
+
+  <div class="form-field">
+    <label>Group discount slabs</label>
+    <p class="form-hint" style="margin-top:-4px">How much a group of participants saves off the base rate, by group size. Leave empty to use the site default (3&ndash;5 = 15%, 6&ndash;9 = 20%, 10+ = 25%).</p>
+    <div id="group-discount-wrap">
+      <% const groupRules = (course && course.groupDiscountRules) ? course.groupDiscountRules : []; %>
+      <% groupRules.forEach(r => { %>
+        <div class="form-row group-discount-row" style="grid-template-columns:1fr 1fr 1fr auto;align-items:end;margin-bottom:8px">
+          <input type="hidden" name="groupRuleId" value="<%= r.id %>">
+          <div class="form-field"><label>Min participants</label><input type="number" min="1" name="groupRuleMin" value="<%= r.minParticipants %>"></div>
+          <div class="form-field"><label>Max (blank = and above)</label><input type="number" min="1" name="groupRuleMax" value="<%= r.maxParticipants == null ? '' : r.maxParticipants %>"></div>
+          <div class="form-field"><label>Discount %</label><input type="number" min="0" max="100" step="0.1" name="groupRulePercent" value="<%= r.discountPercent %>"></div>
+          <button type="button" class="btn btn-outline btn-sm" onclick="this.closest('.group-discount-row').remove()" style="margin-bottom:18px">Remove</button>
+        </div>
+      <% }) %>
+    </div>
+    <button type="button" class="btn btn-outline btn-sm" onclick="addGroupDiscountRow()">+ Add slab</button>
   </div>
 
   <div class="checkbox-row" style="margin-bottom:14px"><input type="checkbox" name="certification" <%= course && course.certification ? 'checked' : '' %>> <label style="margin:0;font-weight:400">Leads to a certification</label></div>
@@ -453,6 +495,22 @@ function addSessionRow(){
       <input type="text" name="sessionLocation" placeholder="https://zoom.us/j/... or a physical address">
     </div>`;
   wrap.appendChild(group);
+}
+
+function addGroupDiscountRow(){
+  const wrap = document.getElementById('group-discount-wrap');
+  const row = document.createElement('div');
+  row.className = 'form-row group-discount-row';
+  row.style.gridTemplateColumns = '1fr 1fr 1fr auto';
+  row.style.alignItems = 'end';
+  row.style.marginBottom = '8px';
+  row.innerHTML = `
+    <input type="hidden" name="groupRuleId" value="">
+    <div class="form-field"><label>Min participants</label><input type="number" min="1" name="groupRuleMin"></div>
+    <div class="form-field"><label>Max (blank = and above)</label><input type="number" min="1" name="groupRuleMax"></div>
+    <div class="form-field"><label>Discount %</label><input type="number" min="0" max="100" step="0.1" name="groupRulePercent"></div>
+    <button type="button" class="btn btn-outline btn-sm" onclick="this.closest('.group-discount-row').remove()" style="margin-bottom:18px">Remove</button>`;
+  wrap.appendChild(row);
 }
 </script>
 

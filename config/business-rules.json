@@ -6,13 +6,12 @@
     "EARLY_BIRD_1_DISCOUNT_PERCENT": 15,
     "EARLY_BIRD_2_DAYS": 30,
     "EARLY_BIRD_2_DISCOUNT_PERCENT": 10,
-    "GROUP_TIER_1_MIN_SEATS": 3,
-    "GROUP_TIER_1_DISCOUNT_PERCENT": 10,
-    "GROUP_TIER_2_MIN_SEATS": 5,
-    "GROUP_TIER_2_DISCOUNT_PERCENT": 15,
-    "GROUP_TIER_3_MIN_SEATS": 10,
-    "GROUP_TIER_3_DISCOUNT_PERCENT": 20,
-    "MAX_COMBINED_DISCOUNT_PERCENT": 25
+    "MAX_COMBINED_DISCOUNT_PERCENT": 25,
+    "GROUP_DISCOUNT_DEFAULT_SLABS": [
+      { "min": 3, "max": 5, "percent": 15 },
+      { "min": 6, "max": 9, "percent": 20 },
+      { "min": 10, "max": null, "percent": 25 }
+    ]
   },
 
   "commissions": {

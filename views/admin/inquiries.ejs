@@ -36,6 +36,7 @@
           <th>Sender</th>
           <th>Type</th>
           <th>Company</th>
+          <th>Course / Mode</th>
           <th>Message</th>
           <th>Received</th>
         </tr>
@@ -73,8 +74,23 @@
               <span class="company-text"><%= inq.company || '—' %></span>
             </td>
 
+            <td data-label="Course / Mode">
+              <% if (inq.courseInterest || inq.deliveryMode) { %>
+                <span class="company-text"><%= inq.courseInterest || '—' %><% if (inq.deliveryMode) { %><br><span style="font-size:.78rem;color:var(--muted)"><%= inq.deliveryMode %></span><% } %></span>
+              <% } else { %>
+                <span style="color:var(--muted)">—</span>
+              <% } %>
+            </td>
+
             <td data-label="Message">
               <div class="message-preview message-preview-full"><%= inq.message %></div>
+              <% if (inq.teamSize || inq.preferredDates) { %>
+                <div style="font-size:.78rem;color:var(--muted);margin-top:4px">
+                  <% if (inq.teamSize) { %>Participants: <%= inq.teamSize %><% } %>
+                  <% if (inq.teamSize && inq.preferredDates) { %> &middot; <% } %>
+                  <% if (inq.preferredDates) { %>Preferred dates: <%= inq.preferredDates %><% } %>
+                </div>
+              <% } %>
             </td>
 
             <td data-label="Received">
@@ -87,7 +103,7 @@
 
         <% if (inquiries.length === 0) { %>
           <tr>
-            <td colspan="5" class="empty-state">
+            <td colspan="6" class="empty-state">
               No inquiries received yet.
             </td>
           </tr>

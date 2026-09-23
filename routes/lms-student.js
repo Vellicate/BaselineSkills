@@ -103,7 +103,8 @@ router.get("/student/lms", auth.requireLearner, (req, res) => {
   const learner = store.findOne("learners", (l) => l.id === req.session.learnerId);
   const registrations = store.readAll("registrations").filter((r) =>
     (r.learnerId === learner.id || r.email.toLowerCase() === learner.email.toLowerCase()) &&
-    (r.status === "confirmed" || r.status === "invoice_pending")
+    (r.status === "confirmed" || r.status === "invoice_pending") &&
+    r.grantsAccess !== 0
   );
   const courseIds = new Set(registrations.map((r) => r.courseId));
   const lmsCourses = store.readAll("courses").filter((c) => courseIds.has(c.id) && c.lmsDeliveryMode);
@@ -157,7 +158,7 @@ function liveSessionInfoForLearner(learnerId, course) {
   const registration = store.readAll("registrations")
     .filter((r) => r.courseId === course.id &&
       (r.learnerId === learner.id || r.email.toLowerCase() === learner.email.toLowerCase()) &&
-      (r.status === "confirmed" || r.status === "invoice_pending"))
+      (r.status === "confirmed" || r.status === "invoice_pending") && r.grantsAccess !== 0)
     .sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""))[0];
   if (!registration || !registration.sessionStartDate) return null;
   return store.findOne("sessions", (s) => s.courseId === course.id && s.startDate === registration.sessionStartDate);

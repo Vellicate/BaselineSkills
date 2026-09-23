@@ -380,9 +380,15 @@ router.get("/export/:type", (req, res) => {
     // none, consistent with the dashboard's inquiryCount being 0 for them.
     if (auth.visibleCourseIdsFor(req) !== null) return res.status(403).send("Inquiries are not scoped to a course and aren't available to a course-scoped admin.");
     const data = store.readAll("inquiries");
-    let csv = "ID,Name,Email,Subject,Message,Created At\n";
+    // Every field an inquiry can actually carry (Part 17: admin should be
+    // able to inspect the full context) -- the previous version of this
+    // export referenced i.subject, a field that has never existed on this
+    // table, and omitted company/type/courseInterest/deliveryMode/
+    // teamSize/preferredDates entirely despite all of them being real,
+    // populated columns.
+    let csv = "ID,Type,Name,Email,Company,Phone,Course,Delivery Mode,Participants,Preferred Dates,Message,Created At\n";
     data.forEach((i) => {
-      csv += `"${i.id}","${i.name || ""}","${i.email || ""}","${i.subject || ""}","${(i.message || "").replace(/"/g, '""')}","${i.createdAt}"\n`;
+      csv += `"${i.id}","${i.type || ""}","${i.name || ""}","${i.email || ""}","${i.company || ""}","${i.phone || ""}","${i.courseInterest || ""}","${i.deliveryMode || ""}","${i.teamSize || ""}","${i.preferredDates || ""}","${(i.message || "").replace(/"/g, '""')}","${i.createdAt}"\n`;
     });
     res.setHeader("Content-Type", "text/csv");
     res.setHeader("Content-Disposition", 'attachment; filename="inquiries.csv"');
@@ -674,6 +680,42 @@ function courseFromForm(body, existing, uploadedFiles) {
     }))
     .filter((s) => s.startDate);
 
+  // Part 1/3: one delivery-option row per checked mode, priced
+  // independently. Public modes read their own deliveryPrice_<Mode> field
+  // (sanitized the same way the form names it -- see the EJS template);
+  // left blank, priceCents is null here, and lib/pricing.js's own
+  // fallback to the flat course price takes over at read time, rather
+  // than this route needing to duplicate that fallback logic. Corporate
+  // On-site/Private Cohort never read a price field at all -- Part 4 is
+  // explicit that these have no public purchase price, so priceCents is
+  // unconditionally null for them regardless of what might be posted.
+  const inquiryOnlyModes = ["Corporate On-site", "Private Cohort"];
+  const deliveryOptions = deliveryModes.map((mode) => {
+    if (inquiryOnlyModes.includes(mode)) {
+      return { deliveryMode: mode, priceCents: null, currency: body.currency || "EUR" };
+    }
+    const fieldName = `deliveryPrice_${mode.replace(/[^a-zA-Z]/g, "")}`;
+    const raw = (body[fieldName] || "").toString().trim();
+    return { deliveryMode: mode, priceCents: raw ? Math.round(Number(raw) * 100) : null, currency: body.currency || "EUR" };
+  });
+
+  // Part 8/9: the group-discount slab editor -- same array-of-parallel-
+  // fields convention as sessions above. A row with no minParticipants
+  // value is a blank "+ Add slab" row nobody filled in; dropped rather
+  // than saved as a meaningless 0-to-0 slab.
+  const groupRuleIds = Array.isArray(body.groupRuleId) ? body.groupRuleId : (body.groupRuleId !== undefined ? [body.groupRuleId] : []);
+  const groupRuleMins = Array.isArray(body.groupRuleMin) ? body.groupRuleMin : (body.groupRuleMin !== undefined ? [body.groupRuleMin] : []);
+  const groupRuleMaxes = Array.isArray(body.groupRuleMax) ? body.groupRuleMax : (body.groupRuleMax !== undefined ? [body.groupRuleMax] : []);
+  const groupRulePercents = Array.isArray(body.groupRulePercent) ? body.groupRulePercent : (body.groupRulePercent !== undefined ? [body.groupRulePercent] : []);
+  const groupDiscountRules = groupRuleMins
+    .map((min, i) => ({
+      id: groupRuleIds[i] || undefined,
+      minParticipants: min,
+      maxParticipants: groupRuleMaxes[i] || null,
+      discountPercent: groupRulePercents[i],
+    }))
+    .filter((r) => r.minParticipants !== "" && r.minParticipants != null && r.discountPercent !== "" && r.discountPercent != null);
+
   return {
     ...existing,
     title: body.title,
@@ -693,6 +735,8 @@ function courseFromForm(body, existing, uploadedFiles) {
     currency: body.currency || "EUR",
     certification: !!body.certification,
     sessions,
+    deliveryOptions,
+    groupDiscountRules,
     corporateOnly: !!body.corporateOnly,
     published: !!body.published,
     courseOutlineUrl: body.courseOutlineUrl || "",
@@ -1108,12 +1152,32 @@ router.get("/registrations", (req, res) => {
   if (req.query.courseId) registrations = registrations.filter((r) => r.courseId === req.query.courseId);
   if (req.query.status) registrations = registrations.filter((r) => r.status === req.query.status);
 
+  // Part 17: a group registration is now several rows in this same table
+  // (one per participant) -- showing every one of them as its own line
+  // would clutter the list with rows that charged nothing and paid
+  // nobody. Collapsed here to one line per purchaser (or per standalone
+  // registration, which is just a group of one and needs no collapsing),
+  // with that group's participants attached for the view to show
+  // alongside it — never dropped, just not each given their own row.
+  const byGroupId = new Map();
+  registrations.forEach((r) => {
+    if (!r.groupRegistrationId) return;
+    if (!byGroupId.has(r.groupRegistrationId)) byGroupId.set(r.groupRegistrationId, []);
+    byGroupId.get(r.groupRegistrationId).push(r);
+  });
+  const displayRegistrations = registrations
+    .filter((r) => !r.groupRegistrationId || r.isPurchaser)
+    .map((r) => ({
+      ...r,
+      groupParticipants: r.groupRegistrationId ? (byGroupId.get(r.groupRegistrationId) || []).filter((p) => p.id !== r.id) : [],
+    }));
+
   const completedPairs = new Set(store.readAll("certificates").map(c => `${c.learnerId}|${c.courseId}`));
   const allCourses = store.readAll("courses");
   const filterCourses = isScoped ? allCourses.filter((c) => visibleCourseIds.includes(c.id)) : allCourses;
   res.render("admin/registrations", { 
     title: "Registrations — Baseline Skills", 
-    registrations,
+    registrations: displayRegistrations,
     completedPairs,
     filterCourses,
     activeCourseId: req.query.courseId || "",
