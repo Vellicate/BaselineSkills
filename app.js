@@ -47,14 +47,22 @@ app.use((req, res, next) => {
   // checkout frame silently blocked the site's own same-origin PDF viewer
   // too, surfacing to the student as a browser-level "content is blocked"
   // page with no indication it was a CSP header, not a real access denial.
+  // connect-src and frame-src list both www.paypal.com (production) and
+  // www.sandbox.paypal.com (PAYPAL_ENVIRONMENT=sandbox): PayPal's own SDK
+  // script is always loaded from www.paypal.com/sdk/js regardless of mode,
+  // but the actual checkout iframe and its background requests are served
+  // from the sandbox subdomain while testing. Without the sandbox domain
+  // here, the CSP silently blocks PayPal's own checkout frame — surfacing
+  // to the buyer as a PayPal popup stuck on a permanent loading spinner,
+  // not as an obvious CSP error, found the hard way during sandbox testing.
   res.setHeader("Content-Security-Policy", [
     "default-src 'self'",
     "script-src 'self' 'unsafe-inline' https://cdn.paddle.com https://www.paypal.com https://cdnjs.cloudflare.com",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com",
     "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com",
     "img-src 'self' data: https:",
-    "connect-src 'self' https://cdn.paddle.com https://www.paypal.com",
-    "frame-src 'self' https://www.paypal.com",
+    "connect-src 'self' https://cdn.paddle.com https://www.paypal.com https://www.sandbox.paypal.com",
+    "frame-src 'self' https://www.paypal.com https://www.sandbox.paypal.com",
     "object-src 'none'",
     "frame-ancestors 'self'",
     "base-uri 'self'",
