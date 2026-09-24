@@ -39,36 +39,29 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <!--
-  Both stylesheets below were flagged by PageSpeed/Search Console as
-  render-blocking (combined ~1.7s of estimated savings): a plain
-  <link rel="stylesheet"> forces the browser to fetch and parse the
-  CSS before it can paint anything, which delays First/Largest
-  Contentful Paint. This is the standard fix Lighthouse itself
-  recommends for exactly this flag: load each stylesheet as a
-  non-blocking preload, then swap it to an active stylesheet once it
-  arrives, via the onload handler below. The <noscript> fallback
-  covers the rare case of JavaScript being disabled, where the swap
-  script would never run.
+  style.css is intentionally a normal, render-blocking stylesheet.
 
-  Trade-off worth knowing, not just a free win: for a brief moment
-  (roughly the download time shown above, a few hundred ms) the page
-  paints before its own CSS has applied, so text may flash in an
-  unstyled or system font before snapping into the real design. That
-  flash is the mechanism by which this technique removes the render
-  block — it can't unblock the paint without also being the thing
-  that used to happen after that paint. If that flash becomes
-  noticeable or objectionable in practice, the more thorough (and
-  more involved) fix is extracting just the above-the-fold CSS to
-  inline directly in <head> and deferring only the rest — deliberately
-  not attempted here, since doing that correctly means tracing every
-  rule actually needed for first paint across every page template
-  this stylesheet serves, not just the homepage, and getting it wrong
-  risks a worse, inconsistent flash rather than a smaller one.
+  An earlier pass deferred it (preload + swap-on-load) to satisfy a
+  PageSpeed "render-blocking resources" flag, but that meant the
+  browser painted the page before this stylesheet had applied — so
+  visitors saw unstyled text first, then the real design popping in
+  a few hundred ms later (worse on slow connections, and a likely
+  cause of the "Forced reflow" Lighthouse insight, since swapping the
+  stylesheet in after first paint forces a full-page restyle). That
+  flash was reported as a bug, so we're trading a small amount of
+  render-blocking time back for a page that never shows unstyled
+  content. If render-blocking savings need to be clawed back later,
+  the correct way to do it without reintroducing the flash is to
+  inline just the above-the-fold critical CSS in <head> and defer only
+  the remainder — not to defer this file wholesale again.
+
+  The Google Fonts stylesheet below is still safely deferred: it only
+  swaps a typeface via font-display:swap, not the page's whole layout
+  and design, so it doesn't produce the same flash.
 -->
+<link rel="stylesheet" href="/css/style.css">
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&display=swap" onload="this.onload=null;this.rel='stylesheet'">
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&display=swap"></noscript>
-<link rel="preload" as="style" href="/css/style.css" onload="this.onload=null;this.rel='stylesheet'">
-<noscript><link rel="stylesheet" href="/css/style.css"></noscript>
 </head>
 <body>
 <div id="page-transition-curtain" class="page-transition-curtain"></div>
