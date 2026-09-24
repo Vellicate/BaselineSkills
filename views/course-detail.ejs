@@ -328,13 +328,18 @@
         <a href="<%= deliveryOfferings[0].ctaUrl %>" class="btn btn-gold btn-block"><%= deliveryOfferings[0].ctaLabel %></a>
       <% } else if (course.published) { %>
         <div class="price-row">
-          <div class="price-now"><%= currencySymbol(course.currency) %><%= (cardData.pricing.finalPriceCents/100).toFixed(0) %></div>
-          <% if(cardData.pricing.discountPercent > 0){ %>
-            <div class="price-was"><%= currencySymbol(course.currency) %><%= (cardData.pricing.originalPriceCents/100).toFixed(0) %></div>
-            <div class="price-savings" style="color:#16847B;font-size:.85rem;font-weight:600">You save <%= currencySymbol(course.currency) %><%= ((cardData.pricing.originalPriceCents-cardData.pricing.finalPriceCents)/100).toFixed(0) %></div>
+          <% if (cardData.pricing.isFromPrice) { %>
+            <div style="font-size:.8rem;color:var(--muted)">From</div>
+            <div class="price-now"><%= currencySymbol(course.currency) %><%= (cardData.pricing.lowestModePriceCents/100).toFixed(0) %></div>
+          <% } else { %>
+            <div class="price-now"><%= currencySymbol(course.currency) %><%= (cardData.pricing.finalPriceCents/100).toFixed(0) %></div>
+            <% if(cardData.pricing.discountPercent > 0){ %>
+              <div class="price-was"><%= currencySymbol(course.currency) %><%= (cardData.pricing.originalPriceCents/100).toFixed(0) %></div>
+              <div class="price-savings" style="color:#16847B;font-size:.85rem;font-weight:600">You save <%= currencySymbol(course.currency) %><%= ((cardData.pricing.originalPriceCents-cardData.pricing.finalPriceCents)/100).toFixed(0) %></div>
+            <% } %>
           <% } %>
         </div>
-        <% if(cardData.pricing.discountPercent > 0){ %><span class="discount-badge"><%= cardData.pricing.discountPercent %>% OFF</span><% } %>
+        <% if(!cardData.pricing.isFromPrice && cardData.pricing.discountPercent > 0){ %><span class="discount-badge"><%= cardData.pricing.discountPercent %>% OFF</span><% } %>
         <p class="form-hint" style="margin-top:10px">per person &middot; <%= course.currency %></p>
         <a href="/courses/<%= course.slug %>/register" class="btn btn-gold btn-block" style="margin-top:14px">Register Now</a>
       <% } else { %>

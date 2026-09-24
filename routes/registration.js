@@ -7,6 +7,8 @@ const { newId } = require("../lib/id");
 const payments = require("../lib/payments");
 const discounts = require("../lib/discounts");
 const pricing = require("../lib/pricing");
+const vat = require("../lib/vat");
+const { COUNTRIES } = require("../lib/countries");
 const { currencySymbol } = require("../lib/currency");
 const auth = require("../lib/auth");
 const invoices = require("../lib/invoices");
@@ -67,7 +69,7 @@ router.get("/courses/:slug/register", (req, res) => {
     finalPrice: discounts.finalPriceCentsForSession(course, sessionStartDate, couponValidation && couponValidation.valid ? couponCode : null),
     discountInfo, selectedSessionStartDate: sessionStartDate, selectedDeliveryMode,
     examProduct, examFinalPriceCents,
-    couponCode, couponValidation,
+    couponCode, couponValidation, countries: COUNTRIES,
   });
 });
 
@@ -83,7 +85,22 @@ router.get("/courses/:slug/register/pricing-preview", (req, res) => {
   const deliveryMode = req.query.deliveryMode || course.deliveryModes[0];
   const sessionStartDate = deliveryMode === "Recorded" ? null : (req.query.sessionStartDate || (course.sessions[0] && course.sessions[0].startDate) || null);
   const result = pricing.calculatePricing({ course, deliveryMode, participantCount, sessionStartDate, couponCode: null });
-  res.json({ ...result, currencySymbol: currencySymbol(result.currency) });
+
+  // Part 1: the exam add-on and VAT are both real, separate line items in
+  // the breakdown the registration page shows -- the preview mirrors the
+  // exact same calculation the real submission uses (below), so what the
+  // visitor sees before submitting is never a different number from what
+  // they're actually charged.
+  const examProduct = store.findOne("certification_exams", (e) => e.courseId === course.id);
+  const examSelected = req.query.addExam === "true" && !!examProduct;
+  const examDiscountPercent = discounts.effectiveDiscountPercent(course, sessionStartDate, null);
+  const examPriceCents = examSelected ? Math.round(examProduct.priceCents * (1 - examDiscountPercent / 100)) : 0;
+
+  const taxableAmountCents = (result.finalTotalCents || 0) + examPriceCents;
+  const { rate: vatRatePercent, vatAmountCents } = vat.calculateVat(taxableAmountCents, req.query.country || null);
+  const grandTotalCents = taxableAmountCents + vatAmountCents;
+
+  res.json({ ...result, examPriceCents, vatRatePercent, vatAmountCents, grandTotalCents, currencySymbol: currencySymbol(result.currency) });
 });
 
 // ---- Submit registration ----
@@ -114,7 +131,7 @@ router.post("/courses/:slug/register", regRateLimiter, async (req, res) => {
     title: `Register — ${course.title}`, course,
     finalPrice: pricing.calculatePricing({ course, deliveryMode: resolvedDeliveryMode, participantCount: 1, sessionStartDate: resolvedSessionStartDate, couponCode: validCoupon }).finalTotalCents,
     discountInfo, selectedSessionStartDate: resolvedSessionStartDate, selectedDeliveryMode: resolvedDeliveryMode,
-    examProduct, examFinalPriceCents, couponCode, couponValidation,
+    examProduct, examFinalPriceCents, couponCode, couponValidation, countries: COUNTRIES,
     error, form: req.body,
   });
 
@@ -203,6 +220,16 @@ router.post("/courses/:slug/register", regRateLimiter, async (req, res) => {
   // ever drove the live preview, not this.
   const priceResult = pricing.calculatePricing({ course, deliveryMode: resolvedDeliveryMode, participantCount, sessionStartDate: resolvedSessionStartDate, couponCode: validCoupon });
 
+  // VAT: computed on the actual taxable amount (the discounted training
+  // total plus the exam fee if selected), from the purchaser's own
+  // billing country -- never trusted from the client as a rate or amount,
+  // only the country code itself is client-supplied, and even that is
+  // just a lookup key into the admin-managed vat_rates table, not a
+  // number the client could inflate or zero out directly.
+  const purchaserCountry = (req.body.country || "").trim().toUpperCase();
+  const taxableAmountCents = priceResult.finalTotalCents + (examSelected ? examFinalPriceCents : 0);
+  const { rate: vatRatePercent, vatAmountCents } = vat.calculateVat(taxableAmountCents, purchaserCountry);
+
   const groupRegistrationId = participantCount > 1 || !purchaserIsParticipant ? newId("group") : null;
   const nowIso = new Date().toISOString();
 
@@ -241,9 +268,14 @@ router.post("/courses/:slug/register", regRateLimiter, async (req, res) => {
       // The group's pricing/exam charge lives once, on the purchaser's
       // row only (Part 14) — every other participant's row charges
       // nothing individually, since the purchaser paid for the group.
-      priceCentsCharged: isThisThePurchaser ? (priceResult.finalTotalCents + (examSelected ? examFinalPriceCents : 0)) : 0,
+      // VAT is included in the actual amount charged -- Paddle/PayPal
+      // both charge whatever priceCentsCharged says, so it must already
+      // be VAT-inclusive, not a separate amount the payment provider
+      // would need to add itself.
+      priceCentsCharged: isThisThePurchaser ? (priceResult.finalTotalCents + (examSelected ? examFinalPriceCents : 0) + vatAmountCents) : 0,
       certificationExamId: isThisThePurchaser && examSelected ? examProduct.id : null,
       examPriceCentsCharged: isThisThePurchaser && examSelected ? examFinalPriceCents : null,
+      vatAmountCents: isThisThePurchaser ? vatAmountCents : 0, vatCountry: isThisThePurchaser ? (purchaserCountry || null) : null,
       currency: course.currency,
       status: "pending_payment",
       groupRegistrationId, isPurchaser: isThisThePurchaser ? 1 : 0,
@@ -274,9 +306,10 @@ router.post("/courses/:slug/register", regRateLimiter, async (req, res) => {
       courseId: course.id, courseTitle: course.title, learnerId,
       name, email, phone: phone || "", address: address || "", company: company || "", role: role || "",
       sessionStartDate: resolvedSessionStartDate, deliveryMode: resolvedDeliveryMode, notes: notes || "",
-      priceCentsCharged: priceResult.finalTotalCents + (examSelected ? examFinalPriceCents : 0),
+      priceCentsCharged: priceResult.finalTotalCents + (examSelected ? examFinalPriceCents : 0) + vatAmountCents,
       certificationExamId: examSelected ? examProduct.id : null,
       examPriceCentsCharged: examSelected ? examFinalPriceCents : null,
+      vatAmountCents, vatCountry: purchaserCountry || null,
       currency: course.currency,
       status: "pending_payment",
       groupRegistrationId, isPurchaser: 1,

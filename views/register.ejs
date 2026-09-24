@@ -27,6 +27,16 @@
           <div class="form-field"><label>Company</label><input type="text" name="company"></div>
           <div class="form-field"><label>Role</label><input type="text" name="role"></div>
         </div>
+        <div class="form-row">
+          <div class="form-field">
+            <label>Billing country *</label>
+            <select name="country" id="purchaserCountry" required onchange="refreshPricingPreview()">
+              <option value="">Select your country…</option>
+              <% countries.forEach(([code, name]) => { %><option value="<%= code %>"><%= name %></option><% }) %>
+            </select>
+            <p class="form-hint">Used to calculate VAT, where applicable.</p>
+          </div>
+        </div>
         <div class="form-field" id="sessionFieldWrap">
           <label>Preferred session</label>
           <select name="sessionStartDate" id="sessionStartDateSelect" onchange="changeSession(this.value)" style="width:100%">
@@ -92,9 +102,13 @@
       <div class="sticky-card" style="grid-column:2">
         <h4 style="margin-top:0"><%= course.title %></h4>
         <p style="font-size:.85rem;color:var(--muted)"><%= course.durationDays %> day<%= course.durationDays>1?'s':'' %> &middot; <%= course.category %></p>
-        <div id="pricingPreview">
-          <div class="price-row" style="margin-top:16px">
-            <div class="price-now" id="previewFinalTotal"><%= currencySymbol(course.currency) %><%= (finalPrice/100).toFixed(2) %></div>
+        <div id="pricingPreview" style="margin-top:16px;font-size:.92rem">
+          <div style="display:flex;justify-content:space-between;padding:4px 0"><span>Training</span><span id="lineTraining"><%= currencySymbol(course.currency) %><%= (finalPrice/100).toFixed(2) %></span></div>
+          <div style="display:flex;justify-content:space-between;padding:4px 0;display:none" id="lineExamRow"><span>Certification exam</span><span id="lineExam"></span></div>
+          <div style="display:none;justify-content:space-between;padding:4px 0;color:#16847B" id="lineDiscountRow"><span id="lineDiscountLabel">Group discount</span><span id="lineDiscount"></span></div>
+          <div style="display:none;justify-content:space-between;padding:4px 0;color:var(--muted)" id="lineVatRow"><span id="lineVatLabel">VAT</span><span id="lineVat"></span></div>
+          <div style="display:flex;justify-content:space-between;padding-top:10px;margin-top:6px;border-top:1px solid var(--line);font-weight:700;font-size:1.15rem">
+            <span>Total</span><span id="previewFinalTotal"><%= currencySymbol(course.currency) %><%= (finalPrice/100).toFixed(2) %></span>
           </div>
           <p class="form-hint" id="previewBreakdown" style="margin-top:6px"></p>
         </div>
@@ -107,11 +121,6 @@
           </p>
         <% } else if (course.discountPercent) { %>
           <span class="discount-badge"><%= course.discountPercent %>% OFF applied</span>
-        <% } %>
-        <% if (examProduct) { %>
-        <p style="font-size:.85rem;color:var(--muted);margin-top:14px;border-top:1px solid var(--line);padding-top:10px">
-          Exam add-on (if selected): <%= currencySymbol(course.currency) %><%= (examFinalPriceCents/100).toFixed(2) %> per participant
-        </p>
         <% } %>
       </div>
     </div>
@@ -218,18 +227,58 @@ function refreshPricingPreview() {
   previewDebounce = setTimeout(() => {
     const count = Math.max(1, parseInt(document.getElementById('participantCount').value, 10) || 1);
     const mode = document.getElementById('deliveryModeSelect').value;
-    fetch('/courses/' + courseSlug + '/register/pricing-preview?participantCount=' + count + '&deliveryMode=' + encodeURIComponent(mode) + '&sessionStartDate=' + encodeURIComponent(sessionStartDate || ''))
+    const country = document.getElementById('purchaserCountry').value;
+    const examCheckbox = document.querySelector('input[name="addExam"]');
+    const addExam = examCheckbox && examCheckbox.checked;
+    const url = '/courses/' + courseSlug + '/register/pricing-preview'
+      + '?participantCount=' + count
+      + '&deliveryMode=' + encodeURIComponent(mode)
+      + '&sessionStartDate=' + encodeURIComponent(sessionStartDate || '')
+      + '&country=' + encodeURIComponent(country || '')
+      + '&addExam=' + (addExam ? 'true' : 'false');
+    fetch(url)
       .then(r => r.json())
       .then(data => {
         if (data.requiresInquiry) return;
-        document.getElementById('previewFinalTotal').textContent = data.currencySymbol + (data.finalTotalCents/100).toFixed(2);
+        const cur = data.currencySymbol;
+
+        document.getElementById('lineTraining').textContent = cur + (data.baseTotalCents/100).toFixed(2);
+
+        const examRow = document.getElementById('lineExamRow');
+        if (data.examPriceCents > 0) {
+          examRow.style.display = 'flex';
+          document.getElementById('lineExam').textContent = cur + (data.examPriceCents/100).toFixed(2);
+        } else {
+          examRow.style.display = 'none';
+        }
+
+        const discountRow = document.getElementById('lineDiscountRow');
+        if (data.discountPercent > 0) {
+          discountRow.style.display = 'flex';
+          document.getElementById('lineDiscountLabel').textContent = count > 1 ? 'Group discount (' + data.discountPercent + '%)' : 'Discount (' + data.discountPercent + '%)';
+          document.getElementById('lineDiscount').textContent = '\u2212' + cur + (data.discountAmountCents/100).toFixed(2);
+        } else {
+          discountRow.style.display = 'none';
+        }
+
+        const vatRow = document.getElementById('lineVatRow');
+        if (data.vatAmountCents > 0) {
+          vatRow.style.display = 'flex';
+          document.getElementById('lineVatLabel').textContent = 'VAT (' + data.vatRatePercent + '%)';
+          document.getElementById('lineVat').textContent = cur + (data.vatAmountCents/100).toFixed(2);
+        } else {
+          vatRow.style.display = 'none';
+        }
+
+        document.getElementById('previewFinalTotal').textContent = cur + (data.grandTotalCents/100).toFixed(2);
+
         const note = document.getElementById('groupDiscountNote');
         const breakdown = document.getElementById('previewBreakdown');
         if (count > 1) {
-          breakdown.textContent = count + ' participants \u00b7 base ' + data.currencySymbol + (data.baseTotalCents/100).toFixed(2) + (data.discountPercent > 0 ? ' \u2212 ' + data.discountPercent + '% group discount' : '');
+          breakdown.textContent = count + ' participants';
           if (data.discountPercent > 0) {
             note.style.display = 'block';
-            note.textContent = 'Group discount: ' + data.discountPercent + '% (\u2212' + data.currencySymbol + (data.discountAmountCents/100).toFixed(2) + ') \u00b7 ' + data.currencySymbol + (data.finalTotalCents/100/count).toFixed(2) + ' per participant after discount';
+            note.textContent = cur + (data.grandTotalCents/100/count).toFixed(2) + ' per participant after discount';
           } else {
             note.style.display = 'none';
           }
@@ -241,6 +290,11 @@ function refreshPricingPreview() {
       .catch(() => {});
   }, 250);
 }
+
+document.getElementById('purchaserCountry').addEventListener('change', refreshPricingPreview);
+document.addEventListener('change', function (e) {
+  if (e.target && e.target.name === 'addExam') refreshPricingPreview();
+});
 
 renderParticipantBlocks();
 onDeliveryModeChange(); // apply the Recorded-hides-session rule to whatever mode loaded pre-selected

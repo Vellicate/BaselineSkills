@@ -144,13 +144,31 @@ function courseCardViewModel(course) {
   const discountPercent = discounts.effectiveDiscountPercent(course, nextSession ? nextSession.startDate : null);
   const finalPriceCents = discounts.finalPriceCentsForSession(course, nextSession ? nextSession.startDate : null);
 
+  // Part 20: a course's price is no longer necessarily one flat number --
+  // Recorded, Hybrid etc. can each have their own price (course_delivery_
+  // options). The card must not just show whatever the next scheduled
+  // (typically Live Online/Classroom) session happens to cost when a
+  // cheaper mode exists; it shows the lowest price across every publicly
+  // purchasable mode the course actually offers, tagged "From" only when
+  // that's genuinely the cheapest of more than one differently-priced
+  // option -- not shown at all for a single-mode course, and not
+  // misleadingly implying a range when every mode costs the same.
+  const publicModes = (course.deliveryModes || []).filter((m) => !INQUIRY_ONLY_MODES.includes(m));
+  const modePrices = publicModes.map((mode) => {
+    const modeSessions = (course.sessions || []).filter((s) => s.mode === mode);
+    const sessionDate = mode === "Recorded" ? null : (modeSessions[0] ? modeSessions[0].startDate : null);
+    return pricing.calculatePricing({ course, deliveryMode: mode, participantCount: 1, sessionStartDate: sessionDate, couponCode: null }).finalTotalCents;
+  }).filter((p) => p != null);
+  const lowestModePriceCents = modePrices.length > 0 ? Math.min(...modePrices) : finalPriceCents;
+  const isFromPrice = modePrices.length > 1 && lowestModePriceCents < Math.max(...modePrices);
+
   return {
     certifyingBodyLabel: certifyingBodyLabel(course),
     nextSession,
     reviewCount,
     avgRating,
     availabilityLabel,
-    pricing: { originalPriceCents: course.priceCents, finalPriceCents, discountPercent },
+    pricing: { originalPriceCents: course.priceCents, finalPriceCents, discountPercent, lowestModePriceCents, isFromPrice },
   };
 }
 
@@ -190,7 +208,7 @@ function deliveryModeOfferings(course) {
       } else if (mode === "Hybrid") {
         // Part 1D: Hybrid dates are optional -- no invented placeholder
         // date, an honest "not yet scheduled" state instead.
-        schedule = "Flexible schedule &mdash; dates confirmed separately";
+        schedule = "Self-paced learning with live sessions";
       } else {
         schedule = "No sessions currently scheduled";
       }

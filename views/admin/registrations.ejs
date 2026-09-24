@@ -150,6 +150,9 @@
             <td data-label="Completion">
               <% if (completedPairs.has(`${r.learnerId}|${r.courseId}`)) { %>
                 <span class="status-badge status-published"><span class="status-dot"></span>Certified</span>
+                <form method="POST" action="/admin/registrations/<%= r.id %>/regenerate-certificate" onsubmit="return confirm('Regenerate this certificate and badge from the current design? This overwrites the existing files.')" style="margin-top:6px">
+                  <button type="submit" class="btn btn-outline btn-sm">Regenerate</button>
+                </form>
               <% } else if (r.status === "confirmed" || r.status === "invoice_pending") { %>
                 <form method="POST" action="/admin/registrations/<%= r.id %>/complete" onsubmit="return confirm('Mark this course complete and issue a certificate?')">
                   <button type="submit" class="btn btn-outline btn-sm">Mark Complete</button>

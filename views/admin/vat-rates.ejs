@@ -1,0 +1,52 @@
+<%- include('partials/head') %>
+
+<div style="margin-bottom:20px">
+  <h1 style="font-size:1.6rem;margin:0">VAT Rates</h1>
+  <p style="color:var(--muted);font-size:.9rem;margin:4px 0 0">One rate per country, applied automatically at registration based on the purchaser's billing country. A country with no rate listed here charges no VAT.</p>
+</div>
+
+<% if (typeof error !== 'undefined' && error) { %>
+  <div class="alert alert-error" style="margin-bottom:16px"><%= error %></div>
+<% } %>
+<% if (typeof success !== 'undefined' && success) { %>
+  <div class="alert alert-success" style="margin-bottom:16px"><%= success %></div>
+<% } %>
+
+<form method="POST" action="/admin/vat-rates/new" class="card" style="margin-bottom:24px;padding:20px">
+  <div class="form-row">
+    <div class="form-field"><label>Country code (ISO 2-letter) *</label><input type="text" name="countryCode" placeholder="e.g. DE, FR, GB" maxlength="2" required style="text-transform:uppercase"></div>
+    <div class="form-field"><label>Rate (%) *</label><input type="number" name="rate" min="0" max="100" step="0.1" required></div>
+  </div>
+  <div class="form-row">
+    <div class="form-field">
+      <label>Type</label>
+      <select name="type">
+        <option value="standard">Standard</option>
+        <option value="reduced">Reduced</option>
+        <option value="zero">Zero-rated</option>
+      </select>
+    </div>
+    <div class="form-field"><label>Effective from</label><input type="date" name="effectiveFrom"></div>
+  </div>
+  <button type="submit" class="btn btn-gold">+ Save Rate (adding an existing country's code updates it)</button>
+</form>
+
+<table class="admin-table">
+  <thead><tr><th>Country</th><th>Rate</th><th>Type</th><th>Effective From</th><th>Actions</th></tr></thead>
+  <tbody>
+    <% rates.forEach(r => { %>
+    <tr>
+      <td><strong><%= r.countryCode %></strong></td>
+      <td><%= r.rate %>%</td>
+      <td style="text-transform:capitalize"><%= r.type %></td>
+      <td style="font-size:.85rem;color:var(--muted)"><%= r.effectiveFrom || '—' %></td>
+      <td class="admin-actions">
+        <form method="POST" action="/admin/vat-rates/<%= r.countryCode %>/delete" style="display:inline" onsubmit="return confirm('Remove the VAT rate for this country? Purchasers from here will then be charged no VAT.')"><button class="btn btn-outline btn-sm" type="submit" style="color:#b91c1c;border-color:#fecaca">Delete</button></form>
+      </td>
+    </tr>
+    <% }) %>
+    <% if (rates.length===0) { %><tr><td colspan="5" style="color:var(--muted)">No VAT rates configured yet — every registration currently charges zero VAT regardless of country.</td></tr><% } %>
+  </tbody>
+</table>
+
+<%- include('partials/foot') %>

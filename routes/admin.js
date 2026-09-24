@@ -930,6 +930,35 @@ router.post("/courses/:id/toggle-published", auth.requireCourseAccess(r => r.par
 
 // ==================== Course FAQs ====================
 // ==================== Coupon Codes ====================
+router.get("/vat-rates", auth.requireSuperAdmin, (req, res) => {
+  const rates = store.readAll("vat_rates").sort((a, b) => a.countryCode.localeCompare(b.countryCode));
+  res.render("admin/vat-rates", { title: "VAT Rates — Baseline Skills", rates, ...getAlerts(req) });
+});
+
+router.post("/vat-rates/new", auth.requireSuperAdmin, (req, res) => {
+  const countryCode = (req.body.countryCode || "").trim().toUpperCase();
+  const rate = Number(req.body.rate);
+  const type = (req.body.type || "standard").trim();
+  if (!/^[A-Z]{2}$/.test(countryCode)) {
+    return res.redirect("/admin/vat-rates?error=Country+code+must+be+a+2-letter+ISO+code+(e.g.+DE,+FR,+GB)");
+  }
+  if (!Number.isFinite(rate) || rate < 0 || rate > 100) {
+    return res.redirect("/admin/vat-rates?error=Rate+must+be+a+percentage+between+0+and+100");
+  }
+  // countryCode is this table's own primary key -- an INSERT OR REPLACE
+  // lets adding a rate for a country that already has one simply update
+  // it, matching what an admin editing an existing rate actually expects,
+  // rather than a duplicate-key error.
+  store.raw.prepare(`INSERT OR REPLACE INTO vat_rates (countryCode, rate, type, effectiveFrom) VALUES (?, ?, ?, ?)`)
+    .run(countryCode, rate, type, req.body.effectiveFrom || new Date().toISOString().slice(0, 10));
+  res.redirect("/admin/vat-rates?success=VAT+rate+saved");
+});
+
+router.post("/vat-rates/:countryCode/delete", auth.requireSuperAdmin, (req, res) => {
+  store.raw.prepare(`DELETE FROM vat_rates WHERE countryCode = ?`).run(req.params.countryCode.toUpperCase());
+  res.redirect("/admin/vat-rates?success=VAT+rate+removed");
+});
+
 router.get("/coupons", (req, res) => {
   const coupons = store.readAll("coupon_codes").sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
   const courses = store.readAll("courses");
@@ -1228,6 +1257,22 @@ router.post("/registrations/:id/complete", (req, res, next) => {
   }
 
   res.redirect("/admin/registrations?success=Course+marked+complete+—+certificate+issued");
+});
+
+// Force-regenerates an already-issued certificate + badge from the current
+// layout code -- for exactly the case backfillCertificates deliberately
+// never touches: a real, existing PDF from before a later design fix.
+router.post("/registrations/:id/regenerate-certificate", (req, res, next) => {
+  const reg = store.findOne("registrations", (r) => r.id === req.params.id);
+  if (!reg) return res.status(404).send("Registration not found");
+  return auth.requireCourseAccess(() => reg.courseId)(req, res, next);
+}, async (req, res) => {
+  const reg = store.findOne("registrations", (r) => r.id === req.params.id);
+  if (!reg) return res.status(404).send("Registration not found");
+  const cert = store.findOne("certificates", (c) => c.learnerId === reg.learnerId && c.courseId === reg.courseId);
+  if (!cert) return res.redirect("/admin/registrations?error=No+certificate+has+been+issued+for+this+registration+yet");
+  await certificates.regenerateCertificateFiles(cert.id, `${req.protocol}://${req.get("host")}`);
+  res.redirect("/admin/registrations?success=Certificate+and+badge+regenerated");
 });
 
 // Invoice-pending → confirmed, for when a registration was recorded via

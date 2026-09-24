@@ -98,11 +98,16 @@
           <% if (c.published) { %>
           <div class="mini-price-row">
             <div class="price-val-wrap">
-              <% if (cd.pricing.discountPercent > 0) { %>
-                <span class="price-was" style="text-decoration:line-through;opacity:.55;font-size:.8em;margin-right:4px"><%= currencySymbol(c.currency) %><%= (cd.pricing.originalPriceCents/100).toFixed(0) %></span>
+              <% if (cd.pricing.isFromPrice) { %>
+                <span style="font-size:.75em;color:var(--muted);margin-right:2px">From</span>
+                <span class="price-current"><%= currencySymbol(c.currency) %><%= (cd.pricing.lowestModePriceCents/100).toFixed(0) %></span>
+              <% } else { %>
+                <% if (cd.pricing.discountPercent > 0) { %>
+                  <span class="price-was" style="text-decoration:line-through;opacity:.55;font-size:.8em;margin-right:4px"><%= currencySymbol(c.currency) %><%= (cd.pricing.originalPriceCents/100).toFixed(0) %></span>
+                <% } %>
+                <span class="price-current"><%= currencySymbol(c.currency) %><%= (cd.pricing.finalPriceCents/100).toFixed(0) %></span>
+                <% if(cd.pricing.discountPercent > 0){ %><span class="price-discount-pill"><%= cd.pricing.discountPercent %>% OFF</span><% } %>
               <% } %>
-              <span class="price-current"><%= currencySymbol(c.currency) %><%= (cd.pricing.finalPriceCents/100).toFixed(0) %></span>
-              <% if(cd.pricing.discountPercent > 0){ %><span class="price-discount-pill"><%= cd.pricing.discountPercent %>% OFF</span><% } %>
             </div>
             <% if (cd.availabilityLabel) { %>
               <div class="seats-status-pill">
