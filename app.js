@@ -1,8 +1,10 @@
 require("dotenv").config();
 const express = require("express");
 const session = require("express-session");
+const FileStore = require("session-file-store")(session);
 const bodyParser = require("body-parser");
 const path = require("path");
+const { DATA_DIR } = require("./lib/db");
 
 // Creates the SQLite database + tables if they don't exist yet, then
 // imports existing JSON data (or bundled seeds on a completely fresh
@@ -96,8 +98,39 @@ app.use(express.static(path.join(__dirname, "public")));
 // this app, so this MUST be enabled for admin login to work in production.
 app.set("trust proxy", 1);
 
+// Sessions previously used express-session's default MemoryStore, which
+// Express itself warns against in production: it leaks memory over time,
+// and every redeploy wipes all active sessions since they only ever
+// existed in that one process's RAM (logging out any admin mid-session).
+// Stored as flat files under DATA_DIR instead — the same persistent-disk
+// location the database and uploads already use — so sessions survive a
+// redeploy too, and a fresh session file is just as easy to garbage
+// collect as an expired DB row. Deliberately a pure-JS package (no native
+// compilation) rather than a SQLite-backed session store, to avoid
+// reintroducing the exact node-gyp/Python/Visual-Studio build hassle this
+// project already went through once for better-sqlite3 — a contributor
+// on Windows would hit that same wall again for a second native package
+// otherwise.
+if (!process.env.SESSION_SECRET) {
+  // Not fatal on its own — refusing to boot over this would be a harsher
+  // failure mode than the risk warrants, and could take a working site
+  // down over a config gap discovered after the fact — but this MUST be
+  // visible in the server's own logs, not just documentation, since the
+  // fallback below is a fixed, publicly-readable string sitting directly
+  // in this file: anyone who reads this codebase knows it, which means
+  // session cookies signed with it aren't meaningfully protected against
+  // forgery in a way that matters for a live, real-money site.
+  console.warn(
+    "[security] SESSION_SECRET is not set — falling back to a hardcoded " +
+    "default that is visible to anyone who reads this codebase. Set a " +
+    "real, random SESSION_SECRET in your environment before handling " +
+    "real user sessions (e.g.: node -e \"console.log(require('crypto').randomBytes(48).toString('hex'))\")."
+  );
+}
+
 app.use(
   session({
+    store: new FileStore({ path: path.join(DATA_DIR, "sessions"), logFn: () => {} }),
     secret: process.env.SESSION_SECRET || "baseline-skills-dev-secret-change-me",
     resave: false,
     saveUninitialized: false,
