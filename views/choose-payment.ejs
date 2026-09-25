@@ -1,0 +1,26 @@
+<%- include('partials/header') %>
+
+<section class="section">
+  <div class="container" style="max-width:520px;text-align:center">
+    <h1 style="font-size:1.6rem">Choose a payment method</h1>
+    <p class="lead">for <%= registration.courseTitle %></p>
+
+    <% if (typeof error !== 'undefined' && error) { %><div class="alert alert-error"><%= error %></div><% } %>
+
+    <div class="card" style="text-align:left;margin-top:20px">
+      <% providers.forEach((providerName) => { %>
+        <form method="POST" action="/register/choose-payment" style="margin-bottom:10px">
+          <input type="hidden" name="reg" value="<%= registration.id %>">
+          <input type="hidden" name="provider" value="<%= providerName %>">
+          <button type="submit" class="btn btn-outline btn-block btn-lg">
+            <%= providerName === "paypal" ? "PayPal" : providerName === "paddle" ? "Credit / Debit Card" : providerName %>
+          </button>
+        </form>
+      <% }) %>
+    </div>
+
+    <p class="form-hint" style="margin-top:16px"><a href="/register/cancel?reg=<%= registration.id %>">Cancel and go back</a></p>
+  </div>
+</section>
+
+<%- include('partials/footer') %>

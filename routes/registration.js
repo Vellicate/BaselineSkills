@@ -84,7 +84,16 @@ router.get("/courses/:slug/register/pricing-preview", (req, res) => {
   const participantCount = Math.max(1, Math.min(50, parseInt(req.query.participantCount, 10) || 1));
   const deliveryMode = req.query.deliveryMode || course.deliveryModes[0];
   const sessionStartDate = deliveryMode === "Recorded" ? null : (req.query.sessionStartDate || (course.sessions[0] && course.sessions[0].startDate) || null);
-  const result = pricing.calculatePricing({ course, deliveryMode, participantCount, sessionStartDate, couponCode: null });
+
+  // Coupon support (added after this preview shipped without it — the
+  // live preview never reflected a coupon at all, only the final,
+  // full-page submission did, which is why applying one here previously
+  // showed no visible price change until after clicking Continue).
+  const couponCode = (req.query.couponCode || "").trim();
+  const couponValidation = couponCode ? discounts.validateCouponCode(couponCode, course.id, sessionStartDate) : null;
+  const validCoupon = couponValidation && couponValidation.valid ? couponCode : null;
+
+  const result = pricing.calculatePricing({ course, deliveryMode, participantCount, sessionStartDate, couponCode: validCoupon });
 
   // Part 1: the exam add-on and VAT are both real, separate line items in
   // the breakdown the registration page shows -- the preview mirrors the
@@ -93,14 +102,18 @@ router.get("/courses/:slug/register/pricing-preview", (req, res) => {
   // they're actually charged.
   const examProduct = store.findOne("certification_exams", (e) => e.courseId === course.id);
   const examSelected = req.query.addExam === "true" && !!examProduct;
-  const examDiscountPercent = discounts.effectiveDiscountPercent(course, sessionStartDate, null);
+  const examDiscountPercent = discounts.effectiveDiscountPercent(course, sessionStartDate, validCoupon);
   const examPriceCents = examSelected ? Math.round(examProduct.priceCents * (1 - examDiscountPercent / 100)) : 0;
 
   const taxableAmountCents = (result.finalTotalCents || 0) + examPriceCents;
   const { rate: vatRatePercent, vatAmountCents } = vat.calculateVat(taxableAmountCents, req.query.country || null);
   const grandTotalCents = taxableAmountCents + vatAmountCents;
 
-  res.json({ ...result, examPriceCents, vatRatePercent, vatAmountCents, grandTotalCents, currencySymbol: currencySymbol(result.currency) });
+  res.json({
+    ...result, examPriceCents, vatRatePercent, vatAmountCents, grandTotalCents, currencySymbol: currencySymbol(result.currency),
+    couponValid: couponCode ? !!(couponValidation && couponValidation.valid) : null,
+    couponReason: couponValidation && !couponValidation.valid ? couponValidation.reason : null,
+  });
 });
 
 // ---- Submit registration ----
@@ -127,12 +140,13 @@ router.post("/courses/:slug/register", regRateLimiter, async (req, res) => {
   // Re-rendering the form on any validation failure needs the same shape
   // of data the GET route builds — kept as one local helper rather than
   // repeating this object at every early-return below.
-  const rerender = (status, error) => res.status(status).render("register", {
+  const rerender = (status, error, extra = {}) => res.status(status).render("register", {
     title: `Register — ${course.title}`, course,
     finalPrice: pricing.calculatePricing({ course, deliveryMode: resolvedDeliveryMode, participantCount: 1, sessionStartDate: resolvedSessionStartDate, couponCode: validCoupon }).finalTotalCents,
     discountInfo, selectedSessionStartDate: resolvedSessionStartDate, selectedDeliveryMode: resolvedDeliveryMode,
     examProduct, examFinalPriceCents, couponCode, couponValidation, countries: COUNTRIES,
-    error, form: req.body,
+    error, form: req.body, resumeUrl: null, duplicateEmails: [],
+    ...extra,
   });
 
   // Part 1E/1F/23: Corporate On-site and Private Cohort must never enter
@@ -176,24 +190,59 @@ router.post("/courses/:slug/register", regRateLimiter, async (req, res) => {
   const purchaserIndex = participants.findIndex((p) => p.email.toLowerCase() === purchaserEmailLower);
   const purchaserIsParticipant = purchaserIndex !== -1;
 
+  // Sweep abandoned pending_payment registrations before checking for
+  // duplicates — see sweepAbandonedPendingRegistrations for why this can't
+  // just be a query-time exclusion: it also releases the seat an abandoned
+  // checkout was still holding.
+  sweepAbandonedPendingRegistrations();
+
   // Duplicate-registration check, extended to every person in the group —
   // same reasoning as the original single-person check (an accidental
   // resubmission for the same course+session is blocked; a different
   // session is a genuinely new registration and allowed), now run once
   // per participant email plus the purchaser's own if they aren't one.
-  const emailsToCheck = purchaserIsParticipant ? lowerEmails : [...lowerEmails, purchaserEmailLower];
-  const alreadyRegistered = emailsToCheck.filter((e) =>
-    store.findOne("registrations", (r) =>
-      r.courseId === course.id && r.email.toLowerCase() === e &&
+  //
+  // The single-person case gets a more specific, more useful message: if
+  // the registration blocking them is their own and still pending_payment,
+  // they're offered a direct link to retry payment on it, rather than a
+  // flat "contact us" — the actual self-service answer to "I'm not sure my
+  // earlier payment went through", added because a solo registrant doesn't
+  // need the group case's hedging below (which registration would a link
+  // even point to, out of a whole group?), so there's no reason to make
+  // them go through support just to retry their own payment.
+  if (participants.length === 1 && purchaserIsParticipant) {
+    const existing = store.findOne("registrations", (r) =>
+      r.courseId === course.id && r.email.toLowerCase() === purchaserEmailLower &&
       r.sessionStartDate === resolvedSessionStartDate && r.status !== "cancelled" && r.status !== "refunded"
-    )
-  );
-  if (alreadyRegistered.length > 0) {
-    // Recorded has no real session (resolvedSessionStartDate is always
-    // "" for it), so "already registered for this session ()" would be
-    // confusing -- worded around the course itself for that case instead.
-    const sessionPhrase = resolvedSessionStartDate ? `this session (${resolvedSessionStartDate})` : "this course";
-    return rerender(400, `${alreadyRegistered.length === 1 ? "One of these people is" : "Some of these people are"} already registered for ${sessionPhrase}. If you need to change or cancel an existing registration, please contact us.`);
+    );
+    if (existing) {
+      const sessionPhrase = resolvedSessionStartDate ? `this session (${resolvedSessionStartDate})` : "this course";
+      if (existing.status === "pending_payment") {
+        return rerender(400,
+          `You already have a registration for ${sessionPhrase} that hasn't been paid yet. If your earlier payment didn't go through, you can retry it directly below instead of registering again.`,
+          { resumeUrl: `/register/resume/${existing.id}` }
+        );
+      }
+      return rerender(400, `You're already registered for ${sessionPhrase}. If you need to change or cancel your registration, please contact us.`);
+    }
+  } else {
+    const emailsToCheck = purchaserIsParticipant ? lowerEmails : [...lowerEmails, purchaserEmailLower];
+    const alreadyRegistered = emailsToCheck.filter((e) =>
+      store.findOne("registrations", (r) =>
+        r.courseId === course.id && r.email.toLowerCase() === e &&
+        r.sessionStartDate === resolvedSessionStartDate && r.status !== "cancelled" && r.status !== "refunded"
+      )
+    );
+    if (alreadyRegistered.length > 0) {
+      // Recorded has no real session (resolvedSessionStartDate is always
+      // "" for it), so "already registered for this session ()" would be
+      // confusing -- worded around the course itself for that case instead.
+      const sessionPhrase = resolvedSessionStartDate ? `this session (${resolvedSessionStartDate})` : "this course";
+      return rerender(400,
+        `${alreadyRegistered.length === 1 ? "One of these people is" : "Some of these people are"} already registered for ${sessionPhrase} — highlighted below. If you need to change or cancel an existing registration, please contact us.`,
+        { duplicateEmails: alreadyRegistered }
+      );
+    }
   }
 
   // Seat-availability check for the whole group at once, same atomic
@@ -335,6 +384,28 @@ router.post("/courses/:slug/register", regRateLimiter, async (req, res) => {
     return res.redirect(`/register/success?reg=${purchaserReg.id}`);
   }
 
+  // A real payment step is about to happen (either straight to checkout,
+  // or a choice of provider first) — send a durable "complete your
+  // registration" email right now, before any of that, so the buyer has a
+  // way back to payment even if they close the tab before ever reaching
+  // PayPal/Paddle, or close it partway through without approving.
+  // Previously nothing was emailed until/unless payment actually
+  // completed, so abandoning at any point before that left no record at
+  // all for the buyer to return to — found during testing when a
+  // registration stuck at pending_payment turned out to have no email,
+  // no page, and no link anywhere that could get back to it.
+  const resumeUrl = `${process.env.APP_BASE_URL || "https://www.baselineskills.com"}/register/resume/${purchaserReg.id}`;
+  await sendMail({
+    to: purchaserReg.email,
+    subject: `Complete your registration — ${course.title.replace(/[\r\n]/g, "")}`,
+    html: `<h2>Almost there, ${escapeHtml(purchaserReg.name)}!</h2>
+      <p>You're one step from securing your spot on <strong>${escapeHtml(course.title)}</strong>.</p>
+      <p><a href="${resumeUrl}">Complete your payment</a></p>
+      <p>If that link doesn't work, copy and paste this into your browser: ${resumeUrl}</p>
+      <p>If you didn't mean to start this registration, you can safely ignore this email — nothing is charged until payment is completed.</p>
+      <p>— The Baseline Skills team</p>`,
+  });
+
   if (available.length > 1) {
     return res.redirect(`/register/choose-payment?reg=${purchaserReg.id}`);
   }
@@ -357,6 +428,186 @@ async function startCheckout(res, providerName, course, registration) {
     return res.redirect(`/register/success?reg=${registration.id}`);
   }
 }
+
+// ---- Resume-checkout link: lets someone come back and pay for a
+// pending_payment registration without re-entering their course and
+// personal details. Before this existed, the only path to checkout was
+// the one-time redirect immediately after submitting the registration
+// form — closing that tab (or the checkout page itself) for any reason
+// left no way back in except starting the whole form over, and, worse,
+// resubmitting within PENDING_GRACE_MINUTES would now correctly be
+// blocked as a duplicate with nowhere else to go.
+//
+// Split into GET (show what's about to be charged, so the person can
+// confirm it's really them and these are still the right details before
+// anything happens) and POST (actually proceed) rather than going
+// straight to checkout on a single click — a plain link/GET request can
+// be triggered by something other than the person deliberately choosing
+// to pay (a link preview crawler, browser prefetching, or just someone
+// clicking a stale old email by accident long after they'd sorted things
+// out another way), so it shouldn't be the trigger for a real order being
+// created.
+// Reconciles a still-pending_payment registration's PREVIOUS order
+// against the payment provider directly, before letting the resume flow
+// create a brand-new one. Closes a real double-charge gap: this app
+// captures payment via its own webhook handler (CHECKOUT.ORDER.APPROVED
+// -> our own captureOrder call, further down), not the instant the buyer
+// approves on PayPal's side — so if the follow-up
+// PAYMENT.CAPTURE.COMPLETED webhook that would normally confirm that
+// capture here is lost or delayed, the registration stays stuck at
+// pending_payment even though the money has already genuinely been
+// taken. Found after exactly that happened: a customer in that state
+// retried payment and risked being charged a second time for the same
+// registration. Returns the (possibly now-confirmed) registration —
+// callers should use the returned value, not assume the one they passed
+// in is still accurate.
+async function reconcileExistingOrder(reg) {
+  const orderIdField = reg.paymentProvider === "paddle" ? "paddleTransactionId" : "paypalOrderId";
+  const existingOrderId = reg[orderIdField];
+  if (!reg.paymentProvider || !existingOrderId) return reg;
+  try {
+    const result = await payments.getOrderStatus(reg.paymentProvider, existingOrderId);
+    if (result.supported && result.captured) {
+      console.warn(`[registration] reconciled ${reg.id}: provider reports order ${existingOrderId} already captured, but our webhook confirmation never landed — confirming now instead of allowing a retry that could charge a second time.`);
+      return await finalizeRegistration(reg.id, { viaFallback: false });
+    }
+  } catch (err) {
+    // Fail open: an API hiccup checking status shouldn't itself block a
+    // legitimate retry — this check is best-effort, not a hard guarantee.
+    // See the admin "Check payment status" action for a manual fallback
+    // covering exactly this case.
+    console.error(`[registration] order status reconciliation failed for ${reg.id}:`, err.message);
+  }
+  return reg;
+}
+
+router.get("/register/resume/:regId", async (req, res) => {
+  let reg = store.findOne("registrations", (r) => r.id === req.params.regId);
+  if (!reg) return res.status(404).render("404", { title: "Registration not found" });
+  const course = store.findOne("courses", (c) => c.id === reg.courseId);
+  if (!course) return res.status(404).render("404", { title: "Course not found" });
+  if (reg.status === "pending_payment") reg = await reconcileExistingOrder(reg);
+  if (reg.status !== "pending_payment") {
+    // Already confirmed (possibly just now, by the reconciliation check
+    // above), cancelled, refunded, or invoice_pending — nothing left to
+    // resume. Send them to the page that already knows how to display
+    // whatever their actual current status is, rather than a second,
+    // different way of saying the same thing.
+    return res.redirect(`/register/success?reg=${reg.id}`);
+  }
+  res.render("resume-confirm", { title: "Confirm your details — Baseline Skills", noindex: true, registration: reg, course });
+});
+
+// Recomputes what a registration should be charged, for the resume flow's
+// coupon support — keeps everything else about the registration fixed
+// (course, session, delivery mode, participant count, exam selection),
+// only ever changing the coupon applied to it. Mirrors the exact same
+// calculatePricing/effectiveDiscountPercent/calculateVat calls the
+// original registration submission uses (see the main POST handler
+// above), so a coupon applied here produces exactly the same numbers it
+// would have if it had been entered the first time round.
+function repriceForResume(course, reg, couponCode) {
+  const couponValidation = couponCode ? discounts.validateCouponCode(couponCode, course.id, reg.sessionStartDate) : null;
+  const validCoupon = couponValidation && couponValidation.valid ? couponCode : null;
+  const examProduct = reg.certificationExamId ? store.findOne("certification_exams", (e) => e.id === reg.certificationExamId) : null;
+  const examDiscountPercent = discounts.effectiveDiscountPercent(course, reg.sessionStartDate, validCoupon);
+  const examFinalPriceCents = examProduct ? Math.round(examProduct.priceCents * (1 - examDiscountPercent / 100)) : 0;
+  const priceResult = pricing.calculatePricing({ course, deliveryMode: reg.deliveryMode, participantCount: reg.participantCount || 1, sessionStartDate: reg.sessionStartDate, couponCode: validCoupon });
+  const taxableAmountCents = priceResult.finalTotalCents + examFinalPriceCents;
+  const { rate: vatRatePercent, vatAmountCents } = vat.calculateVat(taxableAmountCents, reg.vatCountry || "");
+  const grandTotalCents = taxableAmountCents + vatAmountCents;
+  return { couponValidation, priceResult, examFinalPriceCents, vatRatePercent, vatAmountCents, grandTotalCents };
+}
+
+// Live preview for the "Apply" button on the resume-confirm page — never
+// trusted for the actual charge (that's repriceForResume, called again,
+// independently, when the POST below actually proceeds), only for showing
+// the visitor what a coupon would do before they commit to it.
+router.get("/register/resume/:regId/pricing-preview", (req, res) => {
+  const reg = store.findOne("registrations", (r) => r.id === req.params.regId);
+  if (!reg || reg.status !== "pending_payment") return res.status(404).json({ error: "Not found" });
+  const course = store.findOne("courses", (c) => c.id === reg.courseId);
+  if (!course) return res.status(404).json({ error: "Not found" });
+  const couponCode = (req.query.couponCode || "").trim();
+  const { couponValidation, priceResult, examFinalPriceCents, vatRatePercent, vatAmountCents, grandTotalCents } = repriceForResume(course, reg, couponCode);
+  res.json({
+    couponValid: couponCode ? !!(couponValidation && couponValidation.valid) : null,
+    couponReason: couponValidation && !couponValidation.valid ? couponValidation.reason : null,
+    currencySymbol: currencySymbol(course.currency),
+    baseTotalCents: priceResult.baseTotalCents,
+    discountPercent: priceResult.discountPercent,
+    discountAmountCents: priceResult.discountAmountCents,
+    examPriceCents: examFinalPriceCents,
+    vatRatePercent, vatAmountCents, grandTotalCents,
+  });
+});
+
+router.post("/register/resume/:regId", async (req, res) => {
+  let reg = store.findOne("registrations", (r) => r.id === req.params.regId);
+  if (!reg) return res.status(404).render("404", { title: "Registration not found" });
+  if (reg.status !== "pending_payment") {
+    return res.redirect(`/register/success?reg=${reg.id}`);
+  }
+  const course = store.findOne("courses", (c) => c.id === reg.courseId);
+  if (!course) return res.status(404).render("404", { title: "Course not found" });
+
+  // Safety-critical: re-check with the provider before creating any new
+  // order. See reconcileExistingOrder above — this is what actually
+  // prevents a second charge; the GET route's own check is just an early,
+  // friendlier version of the same thing, not a substitute for this one,
+  // since a GET happening earlier doesn't guarantee nothing changed
+  // (webhook arriving, say) by the time this POST actually runs.
+  reg = await reconcileExistingOrder(reg);
+  if (reg.status !== "pending_payment") {
+    return res.redirect(`/register/success?reg=${reg.id}`);
+  }
+
+  // Apply a coupon to the actual charge, not just the preview.
+  // Re-validated and recomputed here independently, from scratch — never
+  // trusting whatever total the "Apply" button's fetch call last showed
+  // the browser, the same "browser is never the authority for the charged
+  // amount" principle the original registration submission already
+  // follows. An invalid coupon here re-renders this same confirmation
+  // page with the error, rather than silently ignoring it and proceeding
+  // to charge the old price — a coupon someone deliberately entered
+  // failing silently would be a worse experience than being blocked.
+  const couponCode = (req.body.couponCode || "").trim();
+  let updatedReg = reg;
+  if (couponCode) {
+    const { couponValidation, priceResult, examFinalPriceCents, vatAmountCents, grandTotalCents } = repriceForResume(course, reg, couponCode);
+    if (!couponValidation || !couponValidation.valid) {
+      return res.render("resume-confirm", {
+        title: "Confirm your details — Baseline Skills", noindex: true, registration: reg, course,
+        couponError: couponValidation ? couponValidation.reason : "That coupon code doesn't exist.",
+        appliedCouponCode: couponCode,
+      });
+    }
+    updatedReg = store.update("registrations", reg.id, {
+      priceCentsCharged: grandTotalCents,
+      baseTotalCents: priceResult.baseTotalCents,
+      groupDiscountPercent: priceResult.discountPercent,
+      groupDiscountAmountCents: priceResult.discountAmountCents,
+      examPriceCentsCharged: reg.certificationExamId ? examFinalPriceCents : reg.examPriceCentsCharged,
+      vatAmountCents,
+    });
+  }
+
+  // Reuse whichever provider they were already on, if there was one and
+  // it's still configured, rather than making them choose again for no
+  // reason.
+  if (updatedReg.paymentProvider && payments.isConfigured(updatedReg.paymentProvider)) {
+    return startCheckout(res, updatedReg.paymentProvider, course, updatedReg);
+  }
+  const available = payments.availableProviders();
+  if (available.length === 0) {
+    // No provider configured at all right now — same invoice-pending
+    // fallback the original flow uses, rather than a dead end.
+    await finalizeRegistration(updatedReg.id, { viaFallback: true });
+    return res.redirect(`/register/success?reg=${updatedReg.id}`);
+  }
+  if (available.length > 1) return res.redirect(`/register/choose-payment?reg=${updatedReg.id}`);
+  return startCheckout(res, available[0], course, updatedReg);
+});
 
 router.get("/register/choose-payment", (req, res) => {
   const reg = store.findOne("registrations", (r) => r.id === req.query.reg);
@@ -387,6 +638,62 @@ router.get("/register/checkout/:provider", (req, res) => {
 });
 
 // ---- Shared finalize step: used by both the Paddle webhook and the no-Paddle fallback ----
+// Releases the seats a registration's own submission reserved, back onto
+// its session. Only meaningful on the purchaser's row: seats are decremented
+// exactly once per submission, using the purchaser row's participantCount
+// (see the seat-availability check above, and how each row is built) — a
+// non-purchaser participant's row always carries participantCount: 1
+// regardless of true group size, so releasing based on that row instead
+// would under- or over-release the session's seat count. Safe to call
+// on a row with no real session (sessionStartDate === "") or an
+// unlimited-seats session (seatsLeft null/undefined) — it's a no-op then.
+function releaseSeatsForRegistration(reg) {
+  if (!reg.isPurchaser || !reg.sessionStartDate) return;
+  const course = store.findOne("courses", (c) => c.id === reg.courseId);
+  const session = course && course.sessions.find((s) => s.startDate === reg.sessionStartDate);
+  if (session && session.seatsLeft !== null && session.seatsLeft !== undefined) {
+    store.raw.prepare(`UPDATE sessions SET seatsLeft = seatsLeft + ? WHERE id = ?`).run(reg.participantCount || 1, session.id);
+  }
+}
+
+// Cancels a registration. Cancelling the purchaser's row cancels the whole
+// group with it (every sibling sharing groupRegistrationId) and releases
+// the seats their shared submission reserved, since the purchaser's payment
+// covers the group as a unit — there's no partial-refund/partial-seat-
+// release concept in this codebase, so a partial cancellation would leave
+// the remaining siblings' access resting on a payment that no longer
+// reflects their actual group size. Cancelling a single non-purchaser
+// participant's row, by contrast, only removes that one person — it
+// intentionally leaves the group's seats and the purchaser's row alone.
+function cancelRegistrationGroup(registrationId) {
+  const reg = store.findOne("registrations", (r) => r.id === registrationId);
+  if (!reg) return null;
+  if (reg.status === "cancelled" || reg.status === "refunded") return reg; // already released — don't double-release seats
+
+  if (reg.isPurchaser) {
+    releaseSeatsForRegistration(reg);
+    const siblings = reg.groupRegistrationId
+      ? store.readAll("registrations").filter((r) => r.groupRegistrationId === reg.groupRegistrationId && r.id !== reg.id && r.status !== "cancelled" && r.status !== "refunded")
+      : [];
+    for (const sibling of siblings) store.update("registrations", sibling.id, { status: "cancelled" });
+  }
+  return store.update("registrations", registrationId, { status: "cancelled" });
+}
+
+// Lazily sweeps registrations abandoned before ever completing payment —
+// run on the next registration attempt rather than a background job, since
+// this app has no scheduler. Only ever touches a purchaser's row still
+// stuck in pending_payment past PENDING_GRACE_MINUTES: cancelling it here
+// (rather than just excluding it from the duplicate check, as an earlier,
+// narrower version of this fix did) also releases the seat it reserved, so
+// an abandoned checkout doesn't quietly starve a session's real capacity.
+const PENDING_GRACE_MINUTES = 30;
+function sweepAbandonedPendingRegistrations() {
+  const graceThresholdIso = new Date(Date.now() - PENDING_GRACE_MINUTES * 60 * 1000).toISOString();
+  const stale = store.readAll("registrations").filter((r) => r.isPurchaser && r.status === "pending_payment" && r.createdAt < graceThresholdIso);
+  for (const reg of stale) cancelRegistrationGroup(reg.id);
+}
+
 async function finalizeRegistration(registrationId, opts = {}) {
   const reg = store.findOne("registrations", (r) => r.id === registrationId);
   if (!reg) return null;
@@ -663,3 +970,4 @@ router.post("/webhooks/paypal", express.json(), async (req, res) => {
 
 module.exports = router;
 module.exports.finalizeRegistration = finalizeRegistration;
+module.exports.cancelRegistrationGroup = cancelRegistrationGroup;

@@ -10,22 +10,50 @@
 
 <section class="section">
   <div class="container" style="max-width:980px">
+    <%
+      // Prefill data for a re-rendered form after a validation error.
+      // Without this, every dynamically-added participant row (2 and up)
+      // rebuilt itself empty from scratch on load, since
+      // renderParticipantBlocks() had no way to know what was previously
+      // typed there — only the purchaser's own fields survived an error,
+      // because those are plain server-rendered <input value="..."> ones,
+      // not JS-generated. Computed once here, right after the container
+      // opens, so both the purchaserAttending checkbox's initial state
+      // below and the script injection further down can both read from
+      // it without duplicating this logic.
+      const hasForm = typeof form !== "undefined" && form;
+      const prefillNames = hasForm && form.participantName ? (Array.isArray(form.participantName) ? form.participantName : [form.participantName]) : [];
+      const prefillEmailsArr = hasForm && form.participantEmail ? (Array.isArray(form.participantEmail) ? form.participantEmail : [form.participantEmail]) : [];
+      const prefillPhonesArr = hasForm && form.participantPhone ? (Array.isArray(form.participantPhone) ? form.participantPhone : [form.participantPhone]) : [];
+      const prefillParticipantsData = prefillNames.map((n, i) => ({ name: n || "", email: (prefillEmailsArr[i] || "").trim(), phone: prefillPhonesArr[i] || "" }));
+      const prefillPurchaserEmailLower = (hasForm ? (form.email || "") : "").trim().toLowerCase();
+      // Defaults to true (matching the checkbox's original hard-coded
+      // "checked" state) whenever there's no submitted data to infer from
+      // yet — i.e. the very first, non-error page load.
+      const prefillPurchaserAttending = prefillParticipantsData.length === 0 || prefillParticipantsData.some((p) => p.email.toLowerCase() === prefillPurchaserEmailLower);
+      const dupEmailsList = typeof duplicateEmails !== "undefined" && duplicateEmails ? duplicateEmails : [];
+    %>
     <% if (typeof error !== 'undefined' && error) { %><div class="alert alert-error"><%= error %></div><% } %>
+    <% if (typeof resumeUrl !== 'undefined' && resumeUrl) { %>
+      <div style="margin:-12px 0 20px"><a href="<%= resumeUrl %>" class="btn btn-gold">Retry your payment</a></div>
+    <% } %>
 
     <div class="grid-2 register-grid" style="align-items:start">
       <form method="POST" action="/courses/<%= course.slug %>/register" class="card" style="grid-column:1" id="registerForm">
         <h3 style="margin-top:0;font-size:1.05rem">Your details (purchaser / contact)</h3>
         <div class="form-row">
           <div class="form-field"><label>Full name *</label><input type="text" name="name" id="purchaserName" required value="<%= typeof form!=='undefined' ? form.name||'' : '' %>"></div>
-          <div class="form-field"><label>Email *</label><input type="email" name="email" id="purchaserEmail" required value="<%= typeof form!=='undefined' ? form.email||'' : '' %>"></div>
+          <div class="form-field"><label>Email *</label><input type="email" name="email" id="purchaserEmail" required value="<%= typeof form!=='undefined' ? form.email||'' : '' %>" <%= dupEmailsList.includes(prefillPurchaserEmailLower) ? 'style="border-color:#b91c1c"' : '' %>>
+            <% if (dupEmailsList.includes(prefillPurchaserEmailLower)) { %><p style="color:#b91c1c;font-size:.85rem;margin-top:4px">Already registered for this session</p><% } %>
+          </div>
         </div>
         <div class="form-row">
           <div class="form-field"><label>Phone</label><input type="tel" name="phone" id="purchaserPhone" value="<%= typeof form!=='undefined' ? form.phone||'' : '' %>"></div>
           <div class="form-field"><label>Address</label><input type="text" name="address" value="<%= typeof form!=='undefined' ? form.address||'' : '' %>"></div>
         </div>
         <div class="form-row">
-          <div class="form-field"><label>Company</label><input type="text" name="company"></div>
-          <div class="form-field"><label>Role</label><input type="text" name="role"></div>
+          <div class="form-field"><label>Company</label><input type="text" name="company" value="<%= typeof form!=='undefined' ? form.company||'' : '' %>"></div>
+          <div class="form-field"><label>Role</label><input type="text" name="role" value="<%= typeof form!=='undefined' ? form.role||'' : '' %>"></div>
         </div>
         <div class="form-row">
           <div class="form-field">
@@ -56,12 +84,12 @@
             <label style="margin:0">Number of participants</label>
             <div style="display:flex;align-items:center;gap:10px">
               <button type="button" class="btn btn-outline btn-sm" onclick="stepParticipants(-1)" aria-label="Decrease">&minus;</button>
-              <input type="number" name="participantCount" id="participantCount" min="1" max="50" value="1" style="width:60px;text-align:center" onchange="renderParticipantBlocks()">
+              <input type="number" name="participantCount" id="participantCount" min="1" max="50" value="<%= (typeof form!=='undefined' && form.participantCount) ? form.participantCount : 1 %>" style="width:60px;text-align:center" onchange="renderParticipantBlocks()">
               <button type="button" class="btn btn-outline btn-sm" onclick="stepParticipants(1)" aria-label="Increase">&plus;</button>
             </div>
           </div>
           <div class="checkbox-row" style="margin-top:10px">
-            <input type="checkbox" id="purchaserAttending" checked onchange="renderParticipantBlocks()">
+            <input type="checkbox" id="purchaserAttending" <%= prefillPurchaserAttending ? 'checked' : '' %> onchange="renderParticipantBlocks()">
             <label style="margin:0;font-weight:400" for="purchaserAttending">I am also attending this course</label>
           </div>
           <p id="groupDiscountNote" class="form-hint" style="margin-top:8px;display:none"></p>
@@ -73,14 +101,21 @@
 
         <div class="form-field">
           <label>Coupon code (optional)</label>
-          <input type="text" name="couponCode" value="<%= typeof couponCode !== 'undefined' ? couponCode : '' %>" placeholder="e.g. SUMMER2026">
-          <% if (typeof couponValidation !== 'undefined' && couponValidation) { %>
-            <% if (couponValidation.valid) { %>
-              <p style="color:#16847B;font-size:.85rem;margin-top:4px">Coupon applied — <%= couponValidation.percent %>% off.</p>
-            <% } else { %>
-              <p style="color:#b91c1c;font-size:.85rem;margin-top:4px"><%= couponValidation.reason %></p>
+          <div style="display:flex;gap:8px">
+            <input type="text" name="couponCode" id="couponCodeInput" value="<%= typeof couponCode !== 'undefined' ? couponCode : '' %>" placeholder="e.g. SUMMER2026" style="flex:1" <%= (typeof couponValidation !== 'undefined' && couponValidation && couponValidation.valid) ? 'readonly' : '' %>>
+            <button type="button" class="btn btn-outline" id="couponActionBtn" onclick="<%= (typeof couponValidation !== 'undefined' && couponValidation && couponValidation.valid) ? 'removeCoupon()' : 'applyCoupon()' %>">
+              <%= (typeof couponValidation !== 'undefined' && couponValidation && couponValidation.valid) ? 'Remove' : 'Apply' %>
+            </button>
+          </div>
+          <p id="couponMessage" style="font-size:.85rem;margin-top:4px">
+            <% if (typeof couponValidation !== 'undefined' && couponValidation) { %>
+              <% if (couponValidation.valid) { %>
+                <span style="color:#16847B">Coupon applied — <%= couponValidation.percent %>% off.</span>
+              <% } else { %>
+                <span style="color:#b91c1c"><%= couponValidation.reason %></span>
+              <% } %>
             <% } %>
-          <% } %>
+          </p>
         </div>
 
         <% if (examProduct) { %>
@@ -130,6 +165,20 @@
 <script>
 const courseSlug = <%- JSON.stringify(course.slug) %>;
 const sessionStartDate = <%- JSON.stringify(selectedSessionStartDate) %>;
+// Escaping "<" defends against a participant name/email containing the
+// closing-script-tag sequence and breaking out of this block early —
+// every "<" in JSON.stringify's output is necessarily inside one of the
+// quoted string values (no JSON structural character uses "<"), so
+// replacing it with the unicode escape "\u003c" is always safe: it stays
+// inside a string, where a unicode escape is valid JS, rather than
+// becoming bare, invalid syntax the way it would outside a string. (This
+// comment deliberately avoids spelling out that literal closing-tag
+// sequence itself — writing it out here, even inside a JS comment, would
+// cause the very same early-termination bug it's describing, since a
+// browser's HTML parser looks for that raw byte sequence anywhere in a
+// script element's text, with no awareness of JS comments or strings.)
+const prefillParticipants = <%- JSON.stringify(prefillParticipantsData).replace(/</g, "\\u003c") %>;
+const duplicateEmails = <%- JSON.stringify(dupEmailsList.map((e) => e.toLowerCase())).replace(/</g, "\\u003c") %>;
 
 function changeSession(newSessionStartDate) {
   const mode = document.getElementById('deliveryModeSelect').value;
@@ -176,6 +225,17 @@ function renderParticipantBlocks() {
   const count = Math.max(1, parseInt(document.getElementById('participantCount').value, 10) || 1);
   const purchaserAttending = document.getElementById('purchaserAttending').checked;
   const wrap = document.getElementById('participantsWrap');
+
+  // Capture whatever is currently typed in the visible rows before wiping
+  // them, so increasing/decreasing the count or toggling "I am attending"
+  // afterward doesn't silently discard it. This whole function always
+  // rebuilds every row from scratch, so without this capture step, a live
+  // edit to row 2+ would be lost the moment the count changed next — not
+  // just on the very first, prefill-driven render below.
+  const existingRows = Array.from(wrap.querySelectorAll('.form-row')).map((row) => {
+    const inputs = row.querySelectorAll('input');
+    return { name: inputs[0] ? inputs[0].value : '', email: inputs[1] ? inputs[1].value : '', phone: inputs[2] ? inputs[2].value : '' };
+  });
   wrap.innerHTML = '';
 
   const startIndex = purchaserAttending ? 2 : 1;
@@ -188,13 +248,29 @@ function renderParticipantBlocks() {
     wrap.appendChild(p1);
   }
   for (let i = startIndex; i <= count; i++) {
+    // prefillParticipants[0] always corresponds to whichever entry was
+    // submitted as "Participant 1" — the purchaser's own mirrored data
+    // when they attend (unused here, already reflected in the visible
+    // purchaser fields above), or a real visible row's data when they
+    // don't. Every index after that maps directly to a visible row here,
+    // regardless of whether the purchaser attends, since the server built
+    // this array in the same order the form actually submits it.
+    // Prefer whatever was already live in this row (a prior edit
+    // surviving a count change) over the server-supplied prefill; only
+    // fall back to the server's prefill — from a validation-error reload —
+    // for a row that's never existed in this DOM yet.
+    const existing = existingRows[i - startIndex];
+    const prefill = existing || prefillParticipants[i - 1] || { name: '', email: '', phone: '' };
+    const isDuplicate = prefill.email && duplicateEmails.includes(prefill.email.toLowerCase());
     const block = document.createElement('div');
     block.className = 'form-row';
     block.style.cssText = 'grid-template-columns:1fr 1fr 1fr;margin-bottom:8px';
     block.innerHTML =
-      '<div class="form-field"><label>Participant ' + i + ' name *</label><input type="text" name="participantName" required></div>' +
-      '<div class="form-field"><label>Email *</label><input type="email" name="participantEmail" required></div>' +
-      '<div class="form-field"><label>Phone</label><input type="text" name="participantPhone"></div>';
+      '<div class="form-field"><label>Participant ' + i + ' name *</label><input type="text" name="participantName" required value="' + escapeAttr(prefill.name) + '"></div>' +
+      '<div class="form-field"><label>Email *</label><input type="email" name="participantEmail" required value="' + escapeAttr(prefill.email) + '"' + (isDuplicate ? ' style="border-color:#b91c1c"' : '') + '>' +
+        (isDuplicate ? '<p style="color:#b91c1c;font-size:.85rem;margin-top:4px">Already registered for this session</p>' : '') +
+      '</div>' +
+      '<div class="form-field"><label>Phone</label><input type="text" name="participantPhone" value="' + escapeAttr(prefill.phone) + '"></div>';
     wrap.appendChild(block);
   }
   refreshPricingPreview();
@@ -218,11 +294,55 @@ function syncParticipant1FromPurchaser() {
 }
 function escapeAttr(s) { return (s || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
 
+// Tracks whichever coupon is currently applied, so it keeps being included
+// in every subsequent preview (participant count change, delivery mode
+// change, etc.) until Remove is clicked — not just at the moment Apply
+// was clicked. Starts from the server-rendered validation result so a
+// coupon that was already successfully applied before a validation-error
+// reload stays applied, rather than silently reverting to none.
+let appliedCouponCode = <%- JSON.stringify((typeof couponValidation !== 'undefined' && couponValidation && couponValidation.valid) ? couponCode : '') %>;
+
+function applyCoupon() {
+  const code = document.getElementById('couponCodeInput').value.trim();
+  const msg = document.getElementById('couponMessage');
+  const btn = document.getElementById('couponActionBtn');
+  if (!code) { msg.innerHTML = ''; return; }
+  btn.disabled = true;
+  appliedCouponCode = code;
+  refreshPricingPreview(function (data) {
+    btn.disabled = false;
+    if (data.couponValid === false) {
+      appliedCouponCode = '';
+      msg.innerHTML = '<span style="color:#b91c1c">' + (data.couponReason || 'That coupon code is not valid.') + '</span>';
+      return;
+    }
+    msg.innerHTML = '<span style="color:#16847B">Coupon applied — ' + data.discountPercent + '% off.</span>';
+    document.getElementById('couponCodeInput').readOnly = true;
+    btn.textContent = 'Remove';
+    btn.setAttribute('onclick', 'removeCoupon()');
+  });
+}
+
+function removeCoupon() {
+  appliedCouponCode = '';
+  const input = document.getElementById('couponCodeInput');
+  input.value = '';
+  input.readOnly = false;
+  document.getElementById('couponMessage').innerHTML = '';
+  const btn = document.getElementById('couponActionBtn');
+  btn.textContent = 'Apply';
+  btn.setAttribute('onclick', 'applyCoupon()');
+  refreshPricingPreview();
+}
+
 // Live pricing preview (Part 18): re-synced from the server on every
 // count change, never computed client-side, since the browser is never
 // the authority for a displayed price any more than for the charged one.
+// Takes an optional callback so applyCoupon() above can react to this
+// specific fetch's result (valid/invalid) without every other caller
+// needing to care.
 let previewDebounce = null;
-function refreshPricingPreview() {
+function refreshPricingPreview(onResult) {
   clearTimeout(previewDebounce);
   previewDebounce = setTimeout(() => {
     const count = Math.max(1, parseInt(document.getElementById('participantCount').value, 10) || 1);
@@ -235,10 +355,12 @@ function refreshPricingPreview() {
       + '&deliveryMode=' + encodeURIComponent(mode)
       + '&sessionStartDate=' + encodeURIComponent(sessionStartDate || '')
       + '&country=' + encodeURIComponent(country || '')
-      + '&addExam=' + (addExam ? 'true' : 'false');
+      + '&addExam=' + (addExam ? 'true' : 'false')
+      + '&couponCode=' + encodeURIComponent(appliedCouponCode || '');
     fetch(url)
       .then(r => r.json())
       .then(data => {
+        if (onResult) onResult(data);
         if (data.requiresInquiry) return;
         const cur = data.currencySymbol;
 

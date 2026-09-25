@@ -1,0 +1,140 @@
+<%- include('partials/header') %>
+
+<section class="section">
+  <div class="container" style="max-width:640px;text-align:center">
+    <h1>Confirm your details</h1>
+    <p class="lead">
+      Please check these details are still correct before completing payment for
+      <strong><%= course ? course.title : registration.courseTitle %></strong>.
+    </p>
+
+    <div class="card" style="text-align:left;margin-top:24px">
+      <div style="display:flex;justify-content:space-between;padding:6px 0"><span style="color:var(--muted)">Name</span><strong><%= registration.name %></strong></div>
+      <div style="display:flex;justify-content:space-between;padding:6px 0"><span style="color:var(--muted)">Email</span><strong><%= registration.email %></strong></div>
+      <% if (registration.phone) { %>
+        <div style="display:flex;justify-content:space-between;padding:6px 0"><span style="color:var(--muted)">Phone</span><strong><%= registration.phone %></strong></div>
+      <% } %>
+      <% if (registration.company) { %>
+        <div style="display:flex;justify-content:space-between;padding:6px 0"><span style="color:var(--muted)">Company</span><strong><%= registration.company %></strong></div>
+      <% } %>
+      <div style="display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid var(--line);margin-top:8px;padding-top:14px"><span style="color:var(--muted)">Course</span><strong><%= course ? course.title : registration.courseTitle %></strong></div>
+      <% if (registration.sessionStartDate) { %>
+        <div style="display:flex;justify-content:space-between;padding:6px 0"><span style="color:var(--muted)">Session</span><strong><%= registration.sessionStartDate %></strong></div>
+      <% } %>
+      <div style="display:flex;justify-content:space-between;padding:6px 0"><span style="color:var(--muted)">Delivery mode</span><strong><%= registration.deliveryMode %></strong></div>
+      <% if (registration.participantCount > 1) { %>
+        <div style="display:flex;justify-content:space-between;padding:6px 0"><span style="color:var(--muted)">Participants</span><strong><%= registration.participantCount %></strong></div>
+      <% } %>
+
+      <div style="border-top:1px solid var(--line);margin-top:8px;padding-top:14px">
+        <label style="font-size:.9rem;color:var(--muted)">Coupon code</label>
+        <div style="display:flex;gap:8px;margin-top:4px">
+          <input type="text" id="couponInput" placeholder="e.g. SUMMER2026" value="<%= typeof appliedCouponCode !== 'undefined' ? appliedCouponCode : '' %>" style="flex:1">
+          <button type="button" class="btn btn-outline" onclick="applyCoupon()" id="applyCouponBtn">Apply</button>
+        </div>
+        <p id="couponMessage" style="font-size:.85rem;margin-top:4px">
+          <% if (typeof couponError !== 'undefined' && couponError) { %><span style="color:#b91c1c"><%= couponError %></span><% } %>
+        </p>
+      </div>
+
+      <div id="pricingBreakdown" style="margin-top:6px">
+        <div style="display:flex;justify-content:space-between;padding:4px 0"><span>Training</span><span id="lineTraining"><%= currencySymbol(registration.currency) %><%= ((registration.baseTotalCents || registration.priceCentsCharged)/100).toFixed(2) %></span></div>
+        <div style="display:none;justify-content:space-between;padding:4px 0;color:#16847B" id="lineDiscountRow"><span id="lineDiscountLabel">Discount</span><span id="lineDiscount"></span></div>
+        <div style="display:none;justify-content:space-between;padding:4px 0" id="lineExamRow"><span>Certification exam</span><span id="lineExam"></span></div>
+        <div style="display:none;justify-content:space-between;padding:4px 0;color:var(--muted)" id="lineVatRow"><span id="lineVatLabel">VAT</span><span id="lineVat"></span></div>
+        <div style="display:flex;justify-content:space-between;padding-top:10px;margin-top:6px;border-top:1px solid var(--line);font-weight:700;font-size:1.1rem">
+          <span>Amount due</span><span id="lineTotal"><%= registration.currency %> <%= (registration.priceCentsCharged/100).toFixed(2) %></span>
+        </div>
+      </div>
+    </div>
+
+    <p class="form-hint" style="margin-top:16px">
+      Not you, or something looks wrong? Don't proceed — <a href="mailto:admin@baselineskills.com">contact us</a> instead of paying against the wrong details.
+    </p>
+
+    <form method="POST" action="/register/resume/<%= registration.id %>" style="margin-top:20px" id="resumeForm">
+      <input type="hidden" name="couponCode" id="couponCodeHidden" value="<%= typeof appliedCouponCode !== 'undefined' ? appliedCouponCode : '' %>">
+      <button type="submit" class="btn btn-gold btn-lg">Proceed to payment</button>
+    </form>
+    <a href="/courses" class="btn btn-outline" style="margin-top:12px">Cancel and go back</a>
+  </div>
+</section>
+
+<script>
+// The displayed breakdown always starts from the registration's own
+// currently-stored values (server-rendered above) and is only ever
+// updated here for display purposes when Apply is clicked — the actual
+// charge is always recomputed and validated again, independently,
+// server-side when "Proceed to payment" is submitted (see
+// repriceForResume in routes/registration.js). This preview can't be the
+// authority for what gets charged any more than the main registration
+// form's live preview is.
+const currency = <%- JSON.stringify(registration.currency) %>;
+
+function applyCoupon() {
+  const code = document.getElementById('couponInput').value.trim();
+  const msg = document.getElementById('couponMessage');
+  const btn = document.getElementById('applyCouponBtn');
+  document.getElementById('couponCodeHidden').value = code;
+  if (!code) {
+    msg.innerHTML = '';
+    return;
+  }
+  btn.disabled = true;
+  fetch('/register/resume/<%= registration.id %>/pricing-preview?couponCode=' + encodeURIComponent(code))
+    .then((r) => r.json())
+    .then((data) => {
+      btn.disabled = false;
+      if (data.couponValid === false) {
+        msg.innerHTML = '<span style="color:#b91c1c">' + (data.couponReason || 'That coupon code is not valid.') + '</span>';
+        return;
+      }
+      msg.innerHTML = '<span style="color:#16847B">Coupon applied.</span>';
+
+      const cur = data.currencySymbol;
+      document.getElementById('lineTraining').textContent = cur + (data.baseTotalCents / 100).toFixed(2);
+
+      const discountRow = document.getElementById('lineDiscountRow');
+      if (data.discountPercent > 0) {
+        discountRow.style.display = 'flex';
+        document.getElementById('lineDiscountLabel').textContent = 'Discount (' + data.discountPercent + '%)';
+        document.getElementById('lineDiscount').textContent = '\u2212' + cur + (data.discountAmountCents / 100).toFixed(2);
+      } else {
+        discountRow.style.display = 'none';
+      }
+
+      const examRow = document.getElementById('lineExamRow');
+      if (data.examPriceCents > 0) {
+        examRow.style.display = 'flex';
+        document.getElementById('lineExam').textContent = cur + (data.examPriceCents / 100).toFixed(2);
+      } else {
+        examRow.style.display = 'none';
+      }
+
+      const vatRow = document.getElementById('lineVatRow');
+      if (data.vatAmountCents > 0) {
+        vatRow.style.display = 'flex';
+        document.getElementById('lineVatLabel').textContent = 'VAT (' + data.vatRatePercent + '%)';
+        document.getElementById('lineVat').textContent = cur + (data.vatAmountCents / 100).toFixed(2);
+      } else {
+        vatRow.style.display = 'none';
+      }
+
+      document.getElementById('lineTotal').textContent = currency + ' ' + (data.grandTotalCents / 100).toFixed(2);
+    })
+    .catch(() => {
+      btn.disabled = false;
+      msg.innerHTML = '<span style="color:#b91c1c">Could not check that coupon right now — please try again.</span>';
+    });
+}
+
+// Keep the hidden field that actually gets submitted in sync even if the
+// visitor types a code but never clicks Apply — the server independently
+// re-validates it either way, so this doesn't need to be perfectly in
+// sync, just needs to carry whatever they last typed.
+document.getElementById('couponInput').addEventListener('input', function () {
+  document.getElementById('couponCodeHidden').value = this.value.trim();
+});
+</script>
+
+<%- include('partials/footer') %>

@@ -22,6 +22,13 @@
       </div>
     <% } %>
 
+    <% if (registration.status === 'pending_payment') { %>
+      <div class="alert" style="background:#fffbeb;color:#92400e;border:1px solid #fde68a;margin-top:20px;text-align:left">
+        Your payment hasn't been completed yet. Your seat is held for now, but if payment isn't finished soon, this registration will expire.
+      </div>
+      <a href="/register/resume/<%= registration.id %>" class="btn btn-gold" style="margin-top:16px">Complete your payment</a>
+    <% } %>
+
     <a href="/courses" class="btn btn-outline" style="margin-top:24px">Browse more courses</a>
   </div>
 </section>

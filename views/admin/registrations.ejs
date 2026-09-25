@@ -140,6 +140,26 @@
                   <button type="submit" class="btn btn-outline btn-sm">Mark as Paid</button>
                 </form>
               <% } %>
+              <% if (r.status === 'pending_payment' && r.paymentProvider && (r.paypalOrderId || r.paddleTransactionId)) { %>
+                <form method="POST" action="/admin/registrations/<%= r.id %>/check-payment-status" onsubmit="return confirm('Check with <%= r.paymentProvider %> whether this was actually paid? If it was, this confirms the registration immediately.')" style="margin-top:6px">
+                  <button type="submit" class="btn btn-outline btn-sm">Check payment status</button>
+                </form>
+              <% } %>
+              <% if (r.status !== 'cancelled' && r.status !== 'refunded') { %>
+                <%
+                  let cancelConfirmMsg;
+                  if (!r.isPurchaser) {
+                    cancelConfirmMsg = "Cancel the registration for just this participant? This does not affect the rest of their group or release a seat.";
+                  } else if (r.participantCount > 1) {
+                    cancelConfirmMsg = "Cancel this registration and the whole group (" + r.participantCount + " people)? This releases their " + r.participantCount + " seat(s) back to the session.";
+                  } else {
+                    cancelConfirmMsg = "Cancel this registration and release its seat back to the session?";
+                  }
+                %>
+                <form method="POST" action="/admin/registrations/<%= r.id %>/cancel" onsubmit="return confirm('<%= cancelConfirmMsg %>')" style="margin-top:6px">
+                  <button type="submit" class="btn btn-outline btn-sm">Cancel</button>
+                </form>
+              <% } %>
             </td>
 
             <td data-label="Registered">

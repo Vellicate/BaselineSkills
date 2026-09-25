@@ -22,10 +22,11 @@
   <div class="container" style="max-width:520px;text-align:center">
     <h1 style="font-size:1.6rem">Completing your registration for<br><%= course.title %></h1>
     <p class="lead">Loading secure checkout…</p>
+    <div style="font-size:1.4rem;font-weight:700;margin-top:8px"><%= registration.currency %> <%= (registration.priceCentsCharged/100).toFixed(2) %></div>
     <% if (provider === "paddle") { %>
     <div id="checkout-fallback" style="display:none;margin-top:20px">
       <p>The checkout window didn't open automatically.</p>
-      <button class="btn btn-gold" onclick="openCheckout()">Open checkout</button>
+      <button class="btn btn-gold" onclick="openCheckout()">Open checkout — pay <%= registration.currency %> <%= (registration.priceCentsCharged/100).toFixed(2) %></button>
     </div>
     <% } else { %>
     <div id="paypal-button-container" style="margin-top:24px"></div>

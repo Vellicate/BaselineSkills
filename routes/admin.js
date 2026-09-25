@@ -3,7 +3,8 @@ const router = express.Router();
 const path = require("path");
 const store = require("../lib/db");
 const auth = require("../lib/auth");
-const { finalizeRegistration } = require("./registration");
+const { finalizeRegistration, cancelRegistrationGroup } = require("./registration");
+const payments = require("../lib/payments");
 const lmsAccess = require("../lib/lms-content-access");
 const { LMS_CONTENT_DIR } = require("../lib/lms-content-storage");
 const fs = require("fs");
@@ -1298,6 +1299,67 @@ router.post("/registrations/:id/mark-paid", (req, res, next) => {
   }
   await finalizeRegistration(reg.id, {});
   res.redirect("/admin/registrations?success=Registration+marked+as+paid+—+confirmation+sent");
+});
+
+// Manual counterpart to the automatic reconciliation check in the resume
+// flow (see reconcileExistingOrder in registration.js) — covers a
+// registration stuck at pending_payment that the customer never actually
+// retried, which the automatic check has no reason to ever run for.
+// Lets an admin confirm directly with the provider whether money was
+// actually taken, rather than guessing from the registration's own status
+// alone, which is exactly what can't be trusted here.
+router.post("/registrations/:id/check-payment-status", (req, res, next) => {
+  const reg = store.findOne("registrations", (r) => r.id === req.params.id);
+  if (!reg) return res.status(404).send("Registration not found");
+  return auth.requireCourseAccess(() => reg.courseId)(req, res, next);
+}, async (req, res) => {
+  const reg = store.findOne("registrations", (r) => r.id === req.params.id);
+  if (!reg) return res.status(404).send("Registration not found");
+  if (reg.status !== "pending_payment") {
+    return res.redirect("/admin/registrations?error=Only+a+pending-payment+registration+can+be+checked+this+way");
+  }
+  const orderIdField = reg.paymentProvider === "paddle" ? "paddleTransactionId" : "paypalOrderId";
+  const orderId = reg[orderIdField];
+  if (!reg.paymentProvider || !orderId) {
+    return res.redirect("/admin/registrations?error=This+registration+has+no+payment+order+on+record+to+check");
+  }
+  try {
+    const result = await payments.getOrderStatus(reg.paymentProvider, orderId);
+    if (!result.supported) {
+      return res.redirect(`/admin/registrations?error=Payment+status+lookup+isn%27t+supported+for+${reg.paymentProvider}+yet`);
+    }
+    if (result.captured) {
+      await finalizeRegistration(reg.id, { viaFallback: false });
+      return res.redirect("/admin/registrations?success=Provider+confirms+this+was+already+paid+%E2%80%94+registration+confirmed");
+    }
+    return res.redirect(`/admin/registrations?error=Provider+reports+this+order+as+"${encodeURIComponent(result.status || "unknown")}"+%E2%80%94+not+yet+captured`);
+  } catch (err) {
+    console.error(`[admin] payment status check failed for ${reg.id}:`, err.message);
+    return res.redirect("/admin/registrations?error=Could+not+reach+the+payment+provider+right+now+%E2%80%94+try+again+shortly");
+  }
+});
+
+
+// releases the seat(s) their submission reserved — see
+// cancelRegistrationGroup in registration.js for why a partial
+// (single-participant) cancellation deliberately does NOT touch seats or
+// siblings. This is the first admin-facing way to release a seat at all;
+// previously the only actions were complete, regenerate-certificate, and
+// mark-paid, so a stuck pending_payment or an unwanted confirmed
+// registration had no way to free its seat back to the session.
+router.post("/registrations/:id/cancel", (req, res, next) => {
+  const reg = store.findOne("registrations", (r) => r.id === req.params.id);
+  if (!reg) return res.status(404).send("Registration not found");
+  return auth.requireCourseAccess(() => reg.courseId)(req, res, next);
+}, async (req, res) => {
+  const reg = store.findOne("registrations", (r) => r.id === req.params.id);
+  if (!reg) return res.status(404).send("Registration not found");
+  if (reg.status === "cancelled" || reg.status === "refunded") {
+    return res.redirect("/admin/registrations?error=That+registration+is+already+cancelled");
+  }
+  cancelRegistrationGroup(reg.id);
+  const message = reg.isPurchaser ? "Registration+cancelled+and+its+seat(s)+released" : "Registration+cancelled";
+  res.redirect(`/admin/registrations?success=${message}`);
 });
 
 // ==================== LMS Access Diagnostic ====================
