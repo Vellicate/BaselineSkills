@@ -204,6 +204,25 @@ app.use(bodyParser.json({
   type: (req) => !req.path.startsWith("/webhooks/") && req.is("json"),
 }));
 
+// Neither body-parser above populates req.body at all for a request whose
+// Content-Type matches neither of them (e.g. a POST sent with no body and
+// no Content-Type header at all) -- req.body is then literally undefined,
+// not {}, and every route handler in this app that reads req.body.field
+// directly (there are many, none defensively guarded) would throw a 500
+// on that one specific kind of malformed request instead of just treating
+// it as "no fields submitted." Reproduced directly: a bodyless POST to
+// /register/resume/:regId crashed with "Cannot read properties of
+// undefined (reading 'couponCode')". Fixed once, centrally, here, rather
+// than adding a guard at each individual access site — this runs after
+// both parsers above but before every route below, and never touches the
+// webhook routes' own raw Buffer body (each applies its own express.raw()
+// per-route, later in the chain, which overwrites req.body regardless of
+// what happened here).
+app.use((req, res, next) => {
+  if (!req.body) req.body = {};
+  next();
+});
+
 app.use("/", require("./routes/public"));
 app.use("/", require("./routes/registration"));
 app.use("/", require("./routes/auth"));
