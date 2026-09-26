@@ -93,36 +93,51 @@
   // confirmation is the server-side payment.captured webhook (see
   // routes/registration.js), not anything this page observes directly.
   function openCheckout() {
-    var rzp = new Razorpay({
-      key: "<%= clientConfig.keyId %>",
-      amount: <%= registration.razorpayAmountPaise %>,
-      currency: "INR",
-      order_id: "<%= orderId %>",
-      name: "Baseline Skills",
-      description: "<%= course.title.replace(/"/g, '\\\\"') %>",
-      handler: function () {
-        window.location.href = "/register/success?reg=<%= registration.id %>";
-      },
-      modal: {
-        ondismiss: function () {
-          window.location.href = "/register/cancel?reg=<%= registration.id %>";
+    try {
+      var rzp = new Razorpay({
+        key: "<%= clientConfig.keyId %>",
+        amount: <%= registration.razorpayAmountPaise %>,
+        currency: "INR",
+        order_id: "<%= orderId %>",
+        name: "Baseline Skills",
+        description: "<%= course.title.replace(/"/g, '\\\\"') %>",
+        handler: function () {
+          window.location.href = "/register/success?reg=<%= registration.id %>";
         },
-      },
-    });
-    // Mirrors PayPal's onError handler above: reports a failed payment
-    // attempt to our own server as well as the console, since a real
-    // customer hitting this won't have DevTools open for us to ask them
-    // to check.
-    rzp.on("payment.failed", function (response) {
-      console.error("[razorpay] payment.failed:", response.error);
+        modal: {
+          ondismiss: function () {
+            window.location.href = "/register/cancel?reg=<%= registration.id %>";
+          },
+        },
+      });
+      // Mirrors PayPal's onError handler above: reports a failed payment
+      // attempt to our own server as well as the console, since a real
+      // customer hitting this won't have DevTools open for us to ask them
+      // to check.
+      rzp.on("payment.failed", function (response) {
+        console.error("[razorpay] payment.failed:", response.error);
+        fetch("/register/client-error", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reg: "<%= registration.id %>", provider: "razorpay", message: JSON.stringify(response.error || {}) }),
+        }).catch(function () {});
+        window.location.href = "/register/cancel?reg=<%= registration.id %>&error=1";
+      });
+      rzp.open();
+    } catch (err) {
+      // Catches the whole class of "checkout.js itself never loaded"
+      // failures (a CSP block, an ad-blocker, a network issue) — without
+      // this, that class of problem looks identical to this page just
+      // being permanently stuck, with nothing in the console or our own
+      // logs to explain why, the exact multi-step investigation this
+      // avoids repeating for a future, different underlying cause.
+      console.error("[razorpay] checkout failed to open:", err);
       fetch("/register/client-error", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reg: "<%= registration.id %>", provider: "razorpay", message: JSON.stringify(response.error || {}) }),
+        body: JSON.stringify({ reg: "<%= registration.id %>", provider: "razorpay", message: String((err && err.message) || err) }),
       }).catch(function () {});
-      window.location.href = "/register/cancel?reg=<%= registration.id %>&error=1";
-    });
-    rzp.open();
+    }
   }
 
   openCheckout();

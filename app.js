@@ -57,14 +57,22 @@ app.use((req, res, next) => {
   // here, the CSP silently blocks PayPal's own checkout frame — surfacing
   // to the buyer as a PayPal popup stuck on a permanent loading spinner,
   // not as an obvious CSP error, found the hard way during sandbox testing.
+  // Razorpay's checkout.js needs checkout.razorpay.com in both script-src
+  // (to load the script itself) and frame-src (its own checkout iframe is
+  // served from the same domain), plus api.razorpay.com (the actual
+  // payment API calls) and lumberjack.razorpay.com (its analytics beacon)
+  // in connect-src — a well-documented, commonly-missed gap for exactly
+  // this integration, added here from the start rather than discovered
+  // the same way the PayPal sandbox domain gap was: a real payment
+  // attempt getting stuck with no visible error.
   res.setHeader("Content-Security-Policy", [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' https://cdn.paddle.com https://www.paypal.com https://cdnjs.cloudflare.com",
+    "script-src 'self' 'unsafe-inline' https://cdn.paddle.com https://www.paypal.com https://checkout.razorpay.com https://cdnjs.cloudflare.com",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com",
     "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com",
     "img-src 'self' data: https:",
-    "connect-src 'self' https://cdn.paddle.com https://www.paypal.com https://www.sandbox.paypal.com",
-    "frame-src 'self' https://www.paypal.com https://www.sandbox.paypal.com",
+    "connect-src 'self' https://cdn.paddle.com https://www.paypal.com https://www.sandbox.paypal.com https://api.razorpay.com https://lumberjack.razorpay.com",
+    "frame-src 'self' https://www.paypal.com https://www.sandbox.paypal.com https://checkout.razorpay.com",
     "object-src 'none'",
     "frame-ancestors 'self'",
     "base-uri 'self'",
