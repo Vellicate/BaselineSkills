@@ -163,7 +163,15 @@ router.post("/courses/:slug/register", regRateLimiter, async (req, res) => {
     return res.redirect(`/corporate-training?course=${encodeURIComponent(course.slug)}&mode=${encodeURIComponent(resolvedDeliveryMode)}`);
   }
 
-  if (couponCode && !validCoupon) return rerender(400, couponValidation.reason);
+  // An invalid coupon deliberately does NOT block registration -- it's
+  // already been reduced to validCoupon (null) above, so every pricing
+  // calculation below simply proceeds at full price without it, the same
+  // way a blank coupon field always has. Blocking the whole registration
+  // over a stale/mistyped code (previously done here) meant a customer
+  // could get stuck with no way forward except realizing, unprompted,
+  // that they needed to go delete text from a field the form never told
+  // them was blocking anything -- found after real registrations were
+  // getting stuck exactly that way.
   if (!name || !email) return rerender(400, "Name and email are required.");
 
   // Part 6/23: participant details, validated server-side regardless of
@@ -868,6 +876,18 @@ router.get("/register/success", async (req, res) => {
 router.get("/register/cancel", (req, res) => {
   const reg = store.findOne("registrations", (r) => r.id === req.query.reg);
   res.render("register-cancel", { title: "Registration not completed — Baseline Skills", noindex: true, registration: reg });
+});
+
+// Pairs with checkout.ejs's onError handler above — logs an unhandled
+// PayPal SDK error server-side, since a real customer hitting this has no
+// DevTools open for anyone to ask them to check, unlike how this exact
+// class of issue got diagnosed during testing. Deliberately just logs and
+// returns 204: this is a diagnostic breadcrumb, not something that should
+// ever itself fail loudly back to an already-failing checkout page.
+router.post("/register/client-error", (req, res) => {
+  const { reg, provider, message } = req.body || {};
+  console.error(`[client-error] reg=${reg} provider=${provider}:`, message);
+  res.status(204).end();
 });
 
 // ---- Paddle webhook — the authoritative payment-confirmation path ----

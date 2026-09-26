@@ -91,6 +91,23 @@
     onCancel: function () {
       window.location.href = "/register/cancel?reg=<%= registration.id %>";
     },
+    // Without this, an unhandled error inside PayPal's own SDK shows its
+    // generic "Things don't appear to be working" message and then falls
+    // through to onCancel above with zero visibility into what actually
+    // went wrong — neither the browser console nor our own server logs
+    // showed anything useful, found the hard way while investigating
+    // exactly that on the live site. Reports to our own server as well as
+    // the console, since a real customer hitting this won't have
+    // DevTools open for us to ask them to check.
+    onError: function (err) {
+      console.error("[paypal buttons] onError:", err);
+      fetch("/register/client-error", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reg: "<%= registration.id %>", provider: "paypal", message: String((err && err.message) || err) }),
+      }).catch(function () {});
+      window.location.href = "/register/cancel?reg=<%= registration.id %>&error=1";
+    },
   }).render("#paypal-button-container");
 </script>
 <% } %>
