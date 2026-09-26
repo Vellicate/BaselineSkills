@@ -65,14 +65,23 @@ app.use((req, res, next) => {
   // this integration, added here from the start rather than discovered
   // the same way the PayPal sandbox domain gap was: a real payment
   // attempt getting stuck with no visible error.
+  // Razorpay's checkout.js pulls in more than just its own main script and
+  // domain: it also injects a separate risk-detection script from
+  // cdn.razorpay.com (script-src), and frames api.razorpay.com/v1/checkout/
+  // public directly (frame-src), alongside using api.razorpay.com for
+  // regular API calls (connect-src) and posting to lumberjack.razorpay.com
+  // for analytics (connect-src). The first CSP fix for Razorpay only
+  // covered checkout.razorpay.com itself and missed these — found via a
+  // second round of real console errors after deploying that first fix,
+  // the same way the PayPal sandbox domain gap was found the first time.
   res.setHeader("Content-Security-Policy", [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' https://cdn.paddle.com https://www.paypal.com https://checkout.razorpay.com https://cdnjs.cloudflare.com",
+    "script-src 'self' 'unsafe-inline' https://cdn.paddle.com https://www.paypal.com https://checkout.razorpay.com https://cdn.razorpay.com https://cdnjs.cloudflare.com",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com",
     "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com",
     "img-src 'self' data: https:",
     "connect-src 'self' https://cdn.paddle.com https://www.paypal.com https://www.sandbox.paypal.com https://api.razorpay.com https://lumberjack.razorpay.com",
-    "frame-src 'self' https://www.paypal.com https://www.sandbox.paypal.com https://checkout.razorpay.com",
+    "frame-src 'self' https://www.paypal.com https://www.sandbox.paypal.com https://checkout.razorpay.com https://api.razorpay.com",
     "object-src 'none'",
     "frame-ancestors 'self'",
     "base-uri 'self'",
