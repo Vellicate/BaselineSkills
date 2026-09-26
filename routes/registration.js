@@ -385,7 +385,7 @@ router.post("/courses/:slug/register", regRateLimiter, async (req, res) => {
     store.insert("registrations", row);
   });
 
-  const available = payments.availableProviders();
+  const available = payments.availableProvidersForCountry(purchaserCountry);
 
   if (available.length === 0) {
     await finalizeRegistration(purchaserReg.id, { viaFallback: true });
@@ -421,11 +421,31 @@ router.post("/courses/:slug/register", regRateLimiter, async (req, res) => {
   return startCheckout(res, available[0], course, purchaserReg);
 });
 
+// Maps a payment provider name to the registration column that stores its
+// order/transaction id — three providers, three separate id shapes
+// (Paddle transaction ids, PayPal order ids, Razorpay order ids), kept as
+// one small shared lookup rather than repeating this branch at each of
+// the several places that need to read or write the right field for
+// whichever provider a given registration is actually using.
+function orderIdFieldFor(providerName) {
+  if (providerName === "paddle") return "paddleTransactionId";
+  if (providerName === "razorpay") return "razorpayOrderId";
+  return "paypalOrderId";
+}
+
 async function startCheckout(res, providerName, course, registration) {
   try {
     const order = await payments.createOrder(providerName, { course, registration });
-    const orderIdField = providerName === "paddle" ? "paddleTransactionId" : "paypalOrderId";
-    await store.update("registrations", registration.id, { paymentProvider: providerName, [orderIdField]: order.orderId });
+    const orderIdField = orderIdFieldFor(providerName);
+    const patch = { paymentProvider: providerName, [orderIdField]: order.orderId };
+    // Razorpay's checkout widget needs the INR paise amount passed to it
+    // directly on the client side — stashed here alongside the order id
+    // rather than recomputed later, since it was already computed once
+    // (with the EUR_TO_INR_RATE at the moment of order creation) and
+    // recomputing it later could disagree if that rate changes in the
+    // meantime.
+    if (providerName === "razorpay") patch.razorpayAmountPaise = order.amountPaise;
+    await store.update("registrations", registration.id, patch);
     return res.redirect(`/register/checkout/${providerName}?reg=${registration.id}`);
   } catch (err) {
     console.error(`[registration] ${providerName} order creation failed:`, err.message);
@@ -470,7 +490,7 @@ async function startCheckout(res, providerName, course, registration) {
 // callers should use the returned value, not assume the one they passed
 // in is still accurate.
 async function reconcileExistingOrder(reg) {
-  const orderIdField = reg.paymentProvider === "paddle" ? "paddleTransactionId" : "paypalOrderId";
+  const orderIdField = orderIdFieldFor(reg.paymentProvider);
   const existingOrderId = reg[orderIdField];
   if (!reg.paymentProvider || !existingOrderId) return reg;
   try {
@@ -606,7 +626,7 @@ router.post("/register/resume/:regId", async (req, res) => {
   if (updatedReg.paymentProvider && payments.isConfigured(updatedReg.paymentProvider)) {
     return startCheckout(res, updatedReg.paymentProvider, course, updatedReg);
   }
-  const available = payments.availableProviders();
+  const available = payments.availableProvidersForCountry(updatedReg.vatCountry);
   if (available.length === 0) {
     // No provider configured at all right now — same invoice-pending
     // fallback the original flow uses, rather than a dead end.
@@ -620,7 +640,7 @@ router.post("/register/resume/:regId", async (req, res) => {
 router.get("/register/choose-payment", (req, res) => {
   const reg = store.findOne("registrations", (r) => r.id === req.query.reg);
   if (!reg) return res.status(404).render("404", { title: "Registration not found" });
-  res.render("choose-payment", { title: "Choose a payment method — Baseline Skills", registration: reg, providers: payments.availableProviders() });
+  res.render("choose-payment", { title: "Choose a payment method — Baseline Skills", registration: reg, providers: payments.availableProvidersForCountry(reg.vatCountry) });
 });
 
 router.post("/register/choose-payment", async (req, res) => {
@@ -638,7 +658,7 @@ router.get("/register/checkout/:provider", (req, res) => {
   const providerName = req.params.provider;
   if (!payments.isValidProvider(providerName)) return res.status(404).render("404", { title: "Unknown payment method" });
   const reg = store.findOne("registrations", (r) => r.id === req.query.reg);
-  const orderIdField = providerName === "paddle" ? "paddleTransactionId" : "paypalOrderId";
+  const orderIdField = orderIdFieldFor(providerName);
   if (!reg || !reg[orderIdField]) return res.status(404).render("404", { title: "Registration not found" });
   const course = store.findOne("courses", (c) => c.id === reg.courseId);
   const clientConfig = payments.getClientConfig(providerName);
@@ -988,6 +1008,40 @@ router.post("/webhooks/paypal", express.json(), async (req, res) => {
   res.status(200).json({ received: true });
 });
 
+// ---- Razorpay webhook — the authoritative payment-confirmation path ----
+// Razorpay signs the raw request body with HMAC-SHA256 (see
+// lib/payments/razorpay.js's verifyWebhookSignature), the same local-HMAC
+// shape as Paddle's webhook above, not an API round-trip like PayPal's —
+// hence express.raw() here too, for the same reason.
+router.post("/webhooks/razorpay", express.raw({ type: "application/json" }), async (req, res) => {
+  const rawBody = req.body.toString("utf8");
+  const verification = payments.razorpay.verifyWebhookSignature(req.headers, rawBody);
+  if (!verification.ok) {
+    console.error("[razorpay webhook] signature verification failed:", verification.reason);
+    return res.status(401).send("Invalid signature");
+  }
+
+  let event;
+  try {
+    event = JSON.parse(rawBody);
+  } catch (e) {
+    return res.status(400).send("Invalid payload");
+  }
+
+  if (event.event === "payment.captured") {
+    const orderId = event.payload && event.payload.payment && event.payload.payment.entity && event.payload.payment.entity.order_id;
+    const reg = orderId ? store.findOne("registrations", (r) => r.razorpayOrderId === orderId) : null;
+    if (reg) {
+      await finalizeRegistration(reg.id, { viaFallback: false });
+    } else {
+      console.warn("[razorpay webhook] payment.captured with no matching registration for order", orderId);
+    }
+  }
+
+  res.status(200).json({ received: true });
+});
+
 module.exports = router;
 module.exports.finalizeRegistration = finalizeRegistration;
 module.exports.cancelRegistrationGroup = cancelRegistrationGroup;
+module.exports.orderIdFieldFor = orderIdFieldFor;

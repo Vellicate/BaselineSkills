@@ -3,7 +3,7 @@ const router = express.Router();
 const path = require("path");
 const store = require("../lib/db");
 const auth = require("../lib/auth");
-const { finalizeRegistration, cancelRegistrationGroup } = require("./registration");
+const { finalizeRegistration, cancelRegistrationGroup, orderIdFieldFor } = require("./registration");
 const payments = require("../lib/payments");
 const lmsAccess = require("../lib/lms-content-access");
 const { LMS_CONTENT_DIR } = require("../lib/lms-content-storage");
@@ -1318,7 +1318,7 @@ router.post("/registrations/:id/check-payment-status", (req, res, next) => {
   if (reg.status !== "pending_payment") {
     return res.redirect("/admin/registrations?error=Only+a+pending-payment+registration+can+be+checked+this+way");
   }
-  const orderIdField = reg.paymentProvider === "paddle" ? "paddleTransactionId" : "paypalOrderId";
+  const orderIdField = orderIdFieldFor(reg.paymentProvider);
   const orderId = reg[orderIdField];
   if (!reg.paymentProvider || !orderId) {
     return res.redirect("/admin/registrations?error=This+registration+has+no+payment+order+on+record+to+check");

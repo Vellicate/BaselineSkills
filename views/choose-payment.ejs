@@ -13,7 +13,7 @@
           <input type="hidden" name="reg" value="<%= registration.id %>">
           <input type="hidden" name="provider" value="<%= providerName %>">
           <button type="submit" class="btn btn-outline btn-block btn-lg">
-            <%= providerName === "paypal" ? "PayPal" : providerName === "paddle" ? "Credit / Debit Card" : providerName %>
+            <%= providerName === "paypal" ? "PayPal" : providerName === "paddle" ? "Credit / Debit Card" : providerName === "razorpay" ? "UPI / Cards / Netbanking (Razorpay)" : providerName %>
           </button>
         </form>
       <% }) %>

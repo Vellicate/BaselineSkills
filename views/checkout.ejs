@@ -13,6 +13,8 @@
 <link rel="stylesheet" href="/css/style.css">
 <% if (provider === "paddle") { %>
 <script src="https://cdn.paddle.com/paddle/v2/paddle.js"></script>
+<% } else if (provider === "razorpay") { %>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <% } else { %>
 <script src="https://www.paypal.com/sdk/js?client-id=<%= clientConfig.clientId %>&currency=<%= (course.currency || 'USD').toUpperCase() %>"></script>
 <% } %>
@@ -22,11 +24,20 @@
   <div class="container" style="max-width:520px;text-align:center">
     <h1 style="font-size:1.6rem">Completing your registration for<br><%= course.title %></h1>
     <p class="lead">Loading secure checkout…</p>
+    <% if (provider === "razorpay") { %>
+    <div style="font-size:1.4rem;font-weight:700;margin-top:8px">INR <%= (registration.razorpayAmountPaise/100).toFixed(2) %></div>
+    <% } else { %>
     <div style="font-size:1.4rem;font-weight:700;margin-top:8px"><%= registration.currency %> <%= (registration.priceCentsCharged/100).toFixed(2) %></div>
+    <% } %>
     <% if (provider === "paddle") { %>
     <div id="checkout-fallback" style="display:none;margin-top:20px">
       <p>The checkout window didn't open automatically.</p>
       <button class="btn btn-gold" onclick="openCheckout()">Open checkout — pay <%= registration.currency %> <%= (registration.priceCentsCharged/100).toFixed(2) %></button>
+    </div>
+    <% } else if (provider === "razorpay") { %>
+    <div id="checkout-fallback" style="display:none;margin-top:20px">
+      <p>The checkout window didn't open automatically.</p>
+      <button class="btn btn-gold" onclick="openCheckout()">Open checkout — pay INR <%= (registration.razorpayAmountPaise/100).toFixed(2) %></button>
     </div>
     <% } else { %>
     <div id="paypal-button-container" style="margin-top:24px"></div>
@@ -64,6 +75,56 @@
 
   // Open automatically; show a manual button if the overlay fails to load
   // (e.g., an ad-blocker or content blocker interfering).
+  openCheckout();
+  setTimeout(function () {
+    document.getElementById("checkout-fallback").style.display = "block";
+  }, 3000);
+</script>
+<% } else if (provider === "razorpay") { %>
+<script>
+  // Razorpay's checkout is a modal opened programmatically, the same
+  // shape as Paddle's overlay above (not an inline-rendered button the
+  // way PayPal's is) — same auto-open + fallback-button pattern as
+  // Paddle for the same reason: an ad-blocker or content blocker can
+  // prevent the modal from opening automatically.
+  //
+  // Like every other provider's client-side callback in this file,
+  // handler here is a courtesy redirect only — the authoritative
+  // confirmation is the server-side payment.captured webhook (see
+  // routes/registration.js), not anything this page observes directly.
+  function openCheckout() {
+    var rzp = new Razorpay({
+      key: "<%= clientConfig.keyId %>",
+      amount: <%= registration.razorpayAmountPaise %>,
+      currency: "INR",
+      order_id: "<%= orderId %>",
+      name: "Baseline Skills",
+      description: "<%= course.title.replace(/"/g, '\\\\"') %>",
+      handler: function () {
+        window.location.href = "/register/success?reg=<%= registration.id %>";
+      },
+      modal: {
+        ondismiss: function () {
+          window.location.href = "/register/cancel?reg=<%= registration.id %>";
+        },
+      },
+    });
+    // Mirrors PayPal's onError handler above: reports a failed payment
+    // attempt to our own server as well as the console, since a real
+    // customer hitting this won't have DevTools open for us to ask them
+    // to check.
+    rzp.on("payment.failed", function (response) {
+      console.error("[razorpay] payment.failed:", response.error);
+      fetch("/register/client-error", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reg: "<%= registration.id %>", provider: "razorpay", message: JSON.stringify(response.error || {}) }),
+      }).catch(function () {});
+      window.location.href = "/register/cancel?reg=<%= registration.id %>&error=1";
+    });
+    rzp.open();
+  }
+
   openCheckout();
   setTimeout(function () {
     document.getElementById("checkout-fallback").style.display = "block";
