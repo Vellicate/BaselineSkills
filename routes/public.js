@@ -244,7 +244,7 @@ router.get("/set-language/:lang", (req, res) => {
 router.get("/sitemap.xml", (req, res) => {
   const base = "https://www.baselineskills.com";
   const today = new Date().toISOString().slice(0, 10);
-  const staticPages = ["/", "/courses", "/about", "/contact", "/corporate-training", "/resources", "/blog", "/become-a-trainer", "/become-an-affiliate", "/trainers"].map((path) => ({ path, lastmod: today }));
+  const staticPages = ["/", "/courses", "/about", "/contact", "/corporate-training", "/resources", "/blog", "/become-a-trainer", "/become-an-affiliate", "/trainers", "/privacy-policy", "/terms-and-conditions"].map((path) => ({ path, lastmod: today }));
   const courses = store.readAll("courses").map((c) => ({ path: `/courses/${c.slug}`, lastmod: (c.updatedAt || c.createdAt || today).slice(0, 10) }));
   const blogs = store.readAll("blogs").filter((b) => b.published).map((b) => ({ path: `/blog/${b.slug}`, lastmod: (b.updatedAt || b.createdAt || today).slice(0, 10) }));
   const resources = store.readAll("resources").filter((r) => r.body).map((r) => ({ path: `/resources/${r.slug}`, lastmod: (r.updatedAt || r.createdAt || today).slice(0, 10) }));
@@ -731,6 +731,14 @@ router.post("/for-teams/request-conversation", formRateLimiter, (req, res) => {
 
 router.get("/about", (req, res) => {
   res.render("about", { title: "About Us — Baseline Skills", metaDescription: "Baseline Skills is a specialized training and certification marketplace for requirements engineering, business analysis, and systems engineering practitioners." });
+});
+
+router.get("/privacy-policy", (req, res) => {
+  res.render("privacy-policy", { title: "Privacy Policy — Baseline Skills", metaDescription: "How Baseline Skills collects, uses, and protects your personal information." });
+});
+
+router.get("/terms-and-conditions", (req, res) => {
+  res.render("terms-and-conditions", { title: "Terms and Conditions — Baseline Skills", metaDescription: "The terms and conditions that govern all orders, courses, and certification products from Baseline Skills." });
 });
 
 // Fixed resource taxonomy per the homepage redesign brief — a constrained
