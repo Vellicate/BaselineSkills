@@ -243,6 +243,12 @@
       </div>
       <h2>Secure Your Seat in the Next Cohort</h2>
       <p class="lead">Live interactive instructor-led classes with small cohorts for high engagement.</p>
+      <form method="GET" action="/#upcoming-batches" style="margin-top:14px">
+        <label style="display:inline-flex;align-items:center;gap:8px;font-size:.88rem;color:var(--muted);cursor:pointer">
+          <input type="checkbox" name="showUnscheduled" value="true" <%= showUnscheduled ? 'checked' : '' %> onchange="this.form.submit()">
+          Show unscheduled courses too
+        </label>
+      </form>
     </div>
 
     <div class="table-card-wrap">
@@ -306,6 +312,11 @@
               </td>
             </tr>
             <% }) %>
+            <% if (upcoming.length === 0) { %>
+            <tr>
+              <td colspan="7" style="text-align:center;color:var(--muted);padding:32px 20px">No cohorts are currently scheduled. Check back soon, or <a href="/courses">browse our full course catalog</a>.</td>
+            </tr>
+            <% } %>
           </tbody>
         </table>
       </div>

@@ -275,12 +275,31 @@ router.get("/", (req, res) => {
   // unlike byCategory below which intentionally includes unpublished ones.
   // The unfiltered `courses` variable itself is left alone since it feeds
   // byCategory too.
+  // Only courses with a real upcoming session appear here by default --
+  // this table was previously showing every published course, with a "No
+  // Schedule" placeholder row for ones with no future session, which made
+  // the table longer than it needed to be and buried the courses someone
+  // could actually book. courseCardViewModel's nextSession is already
+  // computed per-request (not at build/deploy time) and already excludes
+  // any session whose startDate has passed, so this naturally updates on
+  // its own as dates pass or new sessions are added -- no redeploy, no
+  // manual pruning, ever required. When a course's nearest session passes,
+  // nextSession just resolves to whichever one is next, automatically.
+  //
+  // The "Show unscheduled courses too" checkbox on that section re-submits
+  // this same page as a plain GET with ?showUnscheduled=true, same pattern
+  // the /courses filters already use elsewhere on this site -- opting back
+  // into the old "every published course, scheduled ones first" behavior,
+  // rather than silently hiding courses with no checkbox to ever see them
+  // again.
+  const showUnscheduled = req.query.showUnscheduled === "true";
   const upcoming = courses
     .filter((c) => c.published)
     .map((c) => ({ course: c, cardData: courseCardViewModel(c) }))
+    .filter((u) => showUnscheduled || u.cardData.nextSession)
     .sort((a, b) => {
       if (a.cardData.nextSession && b.cardData.nextSession) return new Date(a.cardData.nextSession.startDate) - new Date(b.cardData.nextSession.startDate);
-      if (a.cardData.nextSession) return -1; // courses with a real upcoming session sort before ones without
+      if (a.cardData.nextSession) return -1; // scheduled courses sort before unscheduled ones
       if (b.cardData.nextSession) return 1;
       return 0;
     });
@@ -348,7 +367,7 @@ router.get("/", (req, res) => {
   const searchCertBodies = ["All", ...searchAllBodies.map((b) => ({ slug: b.slug, name: b.name }))]
     .filter((v, i, arr) => v === "All" || arr.findIndex((x) => x.slug === v.slug) === i);
 
-  res.render("home", { title: "Baseline Skills | Professional Skills, Made Practical", metaDescription: "Practitioner-led live learning and hands-on practice in IREB Requirements Engineering, Business Analysis, Systems Engineering, Automotive and AI.", byCategory, upcoming, featuredCourse, featuredPricing, siteStats, searchLevels, searchFormats, searchCertBodies, learningPaths });
+  res.render("home", { title: "Baseline Skills | Professional Skills, Made Practical", metaDescription: "Practitioner-led live learning and hands-on practice in IREB Requirements Engineering, Business Analysis, Systems Engineering, Automotive and AI.", byCategory, upcoming, showUnscheduled, featuredCourse, featuredPricing, siteStats, searchLevels, searchFormats, searchCertBodies, learningPaths });
 });
 
 router.get("/courses", (req, res) => {
