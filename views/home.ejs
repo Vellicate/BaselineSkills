@@ -160,89 +160,13 @@
           <div class="outcome-count"><%= byCategory[cat].length %> course<%= byCategory[cat].length === 1 ? '' : 's' %></div>
           <h3><%= copy.title %></h3>
           <p><%= copy.desc %></p>
-          <a href="#path-<%= cat.replace(/\s+/g,'-') %>" class="btn btn-outline btn-sm" onclick="selectOutcome('<%= cat.replace(/\s+/g,'-') %>', event)" data-analytics-event="choose_outcome" data-category="<%= cat %>">
+          <a href="/courses?category=<%= encodeURIComponent(cat) %>" class="btn btn-outline btn-sm" data-analytics-event="choose_outcome" data-category="<%= cat %>">
             Explore <%= categoryDisplayLabel(cat) %>
           </a>
         </div>
       <% }) %>
     </div>
 
-    <!-- Animated Path Tabs Container -->
-    <div class="path-tabs-container">
-      <div class="path-tabs" style="justify-content:center">
-        <% Object.keys(byCategory).forEach((cat, i) => { %>
-          <button class="path-tab <%= i===0?'active':'' %>" onclick="showPath('<%= cat.replace(/\s+/g,'-') %>', this)">
-            <span class="tab-label"><%= categoryDisplayLabel(cat) %></span>
-            <span class="tab-badge"><%= byCategory[cat].length %></span>
-          </button>
-        <% }) %>
-      </div>
-    </div>
-
-    <!-- Path Panels Grid -->
-    <div class="path-panels-wrapper">
-      <% Object.keys(byCategory).forEach((cat, i) => { %>
-        <div class="path-panel <%= i===0?'active':'' %>" id="path-<%= cat.replace(/\s+/g,'-') %>">
-          <% byCategory[cat].forEach(c => { %>
-            <div class="course-mini-card">
-              <div class="mini-card-top">
-                <span class="tag <%= c.certifyingBodyLabel ? 'tag-cert' : 'tag-skill' %>">
-                  <%= c.certifyingBodyLabel ? ('🏅' + c.certifyingBodyLabel) : '⚡ Skills Mastery' %>
-                </span>
-                <span class="mini-duration"><%= c.durationDays %> Day<%= c.durationDays > 1 ? 's' : '' %></span>
-              </div>
-
-              <h4 class="mini-course-title"><%= c.title %></h4>
-              <div style="margin:-2px 0 6px"><%- include('partials/practice-badge', { course: c }) %></div>
-              <p class="mini-course-summary"><%= c.summary %></p>
-
-              <% const cardMode = c.cardData.nextSession ? c.cardData.nextSession.mode : ((c.sessions && c.sessions.length) ? c.sessions[0].mode : 'Live Online'); %>
-              <p style="font-size:.78rem;color:var(--muted);margin:-4px 0 10px" aria-label="Training mode: <%= trainingModeCategory(cardMode) %>">
-                <span aria-hidden="true"><%= trainingModeSymbol(cardMode) %></span>
-                <strong><%= trainingModeCategory(cardMode) %>:</strong> <%= trainingModeShort(cardMode) %>
-              </p>
-
-              <% if (!c.published) { %>
-                <p style="font-size:.8rem;color:var(--muted);margin:6px 0">No Schedule</p>
-              <% } else { %>
-              <div class="mini-price-row">
-                <div class="price-val-wrap">
-                  <% if (c.cardData.pricing.isFromPrice) { %>
-                    <span style="font-size:.75em;color:var(--muted);margin-right:2px">From</span>
-                    <span class="price-current"><%= currencySymbol(c.currency) %><%= (c.cardData.pricing.lowestModePriceCents/100).toFixed(0) %></span>
-                  <% } else { %>
-                    <% if(c.cardData.pricing.discountPercent > 0){ %>
-                      <span class="price-was" style="text-decoration:line-through;opacity:.55;font-size:.8em;margin-right:4px"><%= currencySymbol(c.currency) %><%= (c.cardData.pricing.originalPriceCents/100).toFixed(0) %></span>
-                    <% } %>
-                    <span class="price-current"><%= currencySymbol(c.currency) %><%= (c.cardData.pricing.finalPriceCents/100).toFixed(0) %></span>
-                    <% if(c.cardData.pricing.discountPercent > 0){ %>
-                      <span class="price-discount-pill"><%= c.cardData.pricing.discountPercent %>% OFF</span>
-                    <% } %>
-                  <% } %>
-                </div>
-                <div class="seats-status-pill">
-                  <span class="status-pulse-dot"></span>
-                  <span>Seats Available</span>
-                </div>
-              </div>
-              <% } %>
-
-              <!-- Interactive Links & Batches Elements -->
-              <div class="course-mini-ctas">
-                <a href="/courses/<%= c.slug %>" class="btn btn-outline btn-learn-more">
-                  <span>Learn More <span class="sr-only">about <%= c.title %></span></span>
-                  <svg class="cta-arrow-slide" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                </a>
-                <a href="/courses/<%= c.slug %>#sessions" class="btn btn-navy btn-batches-cta">
-                  <span>Upcoming Batches <span class="sr-only">for <%= c.title %></span></span>
-                  <span class="batch-count-dot">📅</span>
-                </a>
-              </div>
-            </div>
-          <% }) %>
-        </div>
-      <% }) %>
-    </div>
   </div>
 </section>
 
@@ -717,26 +641,6 @@
 </section>
 
 <script>
-function showPath(id, btn){
-  document.querySelectorAll('.path-panel').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.path-tab').forEach(t=>t.classList.remove('active'));
-  const target = document.getElementById('path-'+id);
-  if (target) target.classList.add('active');
-  if (btn) btn.classList.add('active');
-}
-
-// Outcome cards trigger the same tab-switching as clicking a tab directly,
-// then scroll the tabs/panel into view -- so "Explore Requirements
-// Engineering" on an outcome card and clicking the "Requirements
-// Engineering" tab always land in exactly the same state.
-function selectOutcome(id, event){
-  if (event) event.preventDefault();
-  const tabBtn = Array.from(document.querySelectorAll('.path-tab')).find(t => t.getAttribute('onclick') && t.getAttribute('onclick').includes("'" + id + "'"));
-  showPath(id, tabBtn);
-  const tabsContainer = document.querySelector('.path-tabs-container');
-  if (tabsContainer) tabsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
-
 // Fire-and-forget analytics beacon for the interactions called out in the
 // Phase 1 repositioning brief. Never blocks navigation and never throws --
 // an ad blocker or a network hiccup here should not be able to break a CTA.
