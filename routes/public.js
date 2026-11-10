@@ -260,6 +260,27 @@ router.get("/sitemap.xml", (req, res) => {
   );
 });
 
+// `courses` array already loaded by the caller so title/price/duration can
+// never drift stale, rather than hardcoding course details here. Slugs
+// only; if a course is ever renamed or removed, it silently drops out of
+// the path instead of showing broken/stale data. Shared between the home
+// route and /courses -- the "Build skills that build on each other"
+// section moved from the former to the end of the latter, and this is the
+// same computation/data both now use, rather than two copies that could
+// drift apart.
+function computeLearningPaths(courses) {
+  const pathDefinitions = [
+    { name: "Requirements Engineering", slugs: ["cpre-foundation-level", "cpre-advanced-elicitation", "cpre-advanced-requirements-management", "ai4re-microcredential", "cpre-advanced-requirements-modeling"] },
+    { name: "Business Analysis", slugs: ["requirements-elicitation-workshop", "bulletproof-business-cases", "certification-of-capability-in-business-analysis", "certified-business-analysis-professional"] },
+    { name: "Systems Engineering", slugs: ["introduction-to-systems-engineering", "complete-system-analysis", "mbse-fundamentals"] },
+    { name: "Automotive", slugs: ["aspice-fundamentals", "software-defined-vehicles", "functional-safety-overview", "automotive-cybersecurity-introduction"] },
+  ];
+  return pathDefinitions.map((p) => ({
+    name: p.name,
+    courses: p.slugs.map((slug) => courses.find((c) => c.slug === slug)).filter(Boolean),
+  })).filter((p) => p.courses.length > 0);
+}
+
 router.get("/", (req, res) => {
   const courses = store.readAll("courses");
   const today = new Date();
@@ -339,35 +360,10 @@ router.get("/", (req, res) => {
     industries: store.getSetting("stat_industries_served", "10+"),
   };
 
-  // Phase 1 repositioning, Section 13: sequenced learning paths, distinct
-  // from the flat per-category outcome cards above them. Each entry is a
-  // curated *order* through real, existing courses -- looked up from the
-  // `courses` array already loaded above so title/price/duration can never
-  // drift stale, rather than hardcoding course details in the template.
-  // Slugs only; if a course is ever renamed or removed, it silently drops
-  // out of the path instead of showing broken/stale data.
-  const pathDefinitions = [
-    { name: "Requirements Engineering", slugs: ["cpre-foundation-level", "cpre-advanced-elicitation", "cpre-advanced-requirements-management", "ai4re-microcredential", "cpre-advanced-requirements-modeling"] },
-    { name: "Business Analysis", slugs: ["requirements-elicitation-workshop", "bulletproof-business-cases", "certification-of-capability-in-business-analysis", "certified-business-analysis-professional"] },
-    { name: "Systems Engineering", slugs: ["introduction-to-systems-engineering", "complete-system-analysis", "mbse-fundamentals"] },
-    { name: "Automotive", slugs: ["aspice-fundamentals", "software-defined-vehicles", "functional-safety-overview", "automotive-cybersecurity-introduction"] },
-  ];
-  const learningPaths = pathDefinitions.map((p) => ({
-    name: p.name,
-    courses: p.slugs.map((slug) => courses.find((c) => c.slug === slug)).filter(Boolean),
-  })).filter((p) => p.courses.length > 0);
+  // See computeLearningPaths above for what this is and why it's shared.
+  const learningPaths = computeLearningPaths(courses);
 
-  // Same search bar as /courses, replicated just above the cohorts
-  // section — it submits straight to /courses (GET, no JS) rather than
-  // duplicating that page's filtering logic here, so the two can never
-  // drift out of sync with each other.
-  const searchLevels = ["All", "Beginner", "Intermediate", "Expert"];
-  const searchFormats = ["All", "Live Online", "Classroom", "Recorded", "Hybrid"];
-  const searchAllBodies = store.readAll("standards_bodies");
-  const searchCertBodies = ["All", ...searchAllBodies.map((b) => ({ slug: b.slug, name: b.name }))]
-    .filter((v, i, arr) => v === "All" || arr.findIndex((x) => x.slug === v.slug) === i);
-
-  res.render("home", { title: "Baseline Skills | Professional Skills, Made Practical", metaDescription: "Practitioner-led live learning and hands-on practice in IREB Requirements Engineering, Business Analysis, Systems Engineering, Automotive and AI.", byCategory, upcoming, showUnscheduled, featuredCourse, featuredPricing, siteStats, searchLevels, searchFormats, searchCertBodies, learningPaths });
+  res.render("home", { title: "Baseline Skills | Professional Skills, Made Practical", metaDescription: "Practitioner-led live learning and hands-on practice in IREB Requirements Engineering, Business Analysis, Systems Engineering, Automotive and AI.", byCategory, upcoming, showUnscheduled, featuredCourse, featuredPricing, siteStats, learningPaths });
 });
 
 router.get("/courses", (req, res) => {
@@ -415,6 +411,13 @@ router.get("/courses", (req, res) => {
   const certBodies = ["All", ...allBodies.map((b) => ({ slug: b.slug, name: b.name }))].filter((v, i, arr) => v === "All" || arr.findIndex((x) => x.slug === v.slug) === i);
   filtered = filtered.map((c) => ({ ...c, cardData: courseCardViewModel(c) }));
 
+  // "Build skills that build on each other" now lives at the end of this
+  // page instead of the home page -- same computeLearningPaths helper the
+  // home route uses, against the unfiltered course list (not `filtered`),
+  // so it keeps showing the full learning paths regardless of whatever
+  // filter is active above it.
+  const learningPaths = computeLearningPaths(courses);
+
   res.render("courses", {
     title: "Courses — Baseline Skills", metaDescription: "Browse accredited requirements engineering, business analysis, and systems engineering courses. Filter by certification body, level, and delivery format.", courses: filtered,
     categories, activeCategory: category,
@@ -422,6 +425,7 @@ router.get("/courses", (req, res) => {
     formats, activeFormat: format,
     certBodies, activeCertBody: certBody,
     q, maxPrice: req.query.maxPrice || "",
+    learningPaths,
   });
 });
 

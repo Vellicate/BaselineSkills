@@ -134,5 +134,31 @@
   </div>
 </section>
 
+<!-- Sequenced learning paths (moved here from the home page) -->
+<% if (learningPaths && learningPaths.length > 0) { %>
+<section class="section" style="background:#fff">
+  <div class="container">
+    <div class="section-hdr center">
+      <h2>Build skills that build on each other.</h2>
+      <p class="lead">Follow a practical learning path from foundational knowledge to workplace application.</p>
+    </div>
+    <% learningPaths.forEach(path => { %>
+      <div class="path-sequence-block">
+        <h3 class="path-sequence-name"><%= path.name %></h3>
+        <div class="path-sequence-row">
+          <% path.courses.forEach((c, i) => { %>
+            <% if (i > 0) { %><div class="path-sequence-arrow" aria-hidden="true">&rarr;</div><% } %>
+            <a href="/courses/<%= c.slug %>" class="path-sequence-item" style="text-decoration:none;color:inherit" data-analytics-event="explore_learning_path" data-course-id="<%= c.id %>">
+              <h4><%= c.title %></h4>
+              <p><%= c.durationDays %> Day<%= c.durationDays > 1 ? 's' : '' %></p>
+            </a>
+          <% }) %>
+        </div>
+      </div>
+    <% }) %>
+  </div>
+</section>
+<% } %>
+
 <%- include('partials/footer') %>
 
