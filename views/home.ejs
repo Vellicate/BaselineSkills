@@ -258,7 +258,7 @@
             <tr>
               <th>Course Program</th>
               <th>Format</th>
-              <th>Start Date</th>
+              <th style="width:160px">Start Date</th>
               <th>Duration</th>
               <th>Language</th>
               <th>Price</th>
@@ -292,9 +292,9 @@
                 <% if (!u.course.published) { %>
                   <span style="color:var(--muted);font-size:.85rem">—</span>
                 <% } else if (u.cardData.pricing.discountPercent > 0) { %>
-                  <div class="price-was" style="text-decoration:line-through;opacity:.6;font-size:.85em"><%= currencySymbol(u.course.currency) %><%= (u.cardData.pricing.originalPriceCents/100).toFixed(0) %></div>
-                  <div class="price-now" style="font-weight:700"><%= currencySymbol(u.course.currency) %><%= (u.cardData.pricing.finalPriceCents/100).toFixed(0) %></div>
-                  <div style="font-size:.75rem;color:#16847B;font-weight:600"><%= u.cardData.pricing.discountPercent %>% OFF</div>
+                  <div style="text-decoration:line-through;opacity:.6;font-size:.85em"><%= currencySymbol(u.course.currency) %><%= (u.cardData.pricing.originalPriceCents/100).toFixed(0) %></div>
+                  <div style="font-weight:700"><%= currencySymbol(u.course.currency) %><%= (u.cardData.pricing.finalPriceCents/100).toFixed(0) %></div>
+                  <div style="font-size:.75rem;color:var(--gold, #D98E04);font-weight:700"><%= u.cardData.pricing.discountPercent %>% OFF</div>
                 <% } else { %>
                   <div style="font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Published Price</div>
                   <div style="font-weight:700"><%= currencySymbol(u.course.currency) %><%= (u.cardData.pricing.finalPriceCents/100).toFixed(0) %></div>
