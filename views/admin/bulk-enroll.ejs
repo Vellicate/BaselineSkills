@@ -1,0 +1,118 @@
+<%- include('partials/head') %>
+
+<div class="page-heading">
+  <div>
+    <h1>Bulk Enroll Candidates</h1>
+    <p>Upload a CSV of candidates to enroll them directly into a published course — no payment, no checkout. Each candidate gets an email to set their password and access the course portal.</p>
+  </div>
+  <div class="page-actions">
+    <a href="/admin/bulk-enroll/template.csv" class="btn btn-outline">Download empty CSV template</a>
+  </div>
+</div>
+
+<% if (typeof error !== 'undefined' && error) { %>
+  <div class="alert alert-error" style="margin-bottom:16px"><%= error %></div>
+<% } %>
+
+<% if (result) { %>
+  <div class="alert <%= result.enrolled.length ? 'alert-success' : 'alert-error' %>" style="margin-bottom:24px">
+    <strong><%= result.enrolled.length %></strong> candidate<%= result.enrolled.length === 1 ? '' : 's' %> enrolled.
+    <% if (result.skipped.length) { %><strong><%= result.skipped.length %></strong> row<%= result.skipped.length === 1 ? '' : 's' %> skipped (see below).<% } %>
+  </div>
+
+  <% if (result.enrolled.length) { %>
+  <div class="table-card" style="margin-bottom:28px">
+    <div class="section-header" style="padding:16px 20px 0"><h2>Enrolled</h2></div>
+    <div class="table-scroll">
+      <table class="admin-table">
+        <thead><tr><th>Row</th><th>Name</th><th>Email</th></tr></thead>
+        <tbody>
+          <% result.enrolled.forEach(r => { %>
+          <tr><td><%= r.row %></td><td><strong><%= r.name %></strong></td><td><%= r.email %></td></tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <% } %>
+
+  <% if (result.skipped.length) { %>
+  <div class="table-card" style="margin-bottom:28px">
+    <div class="section-header" style="padding:16px 20px 0"><h2>Skipped</h2></div>
+    <div class="table-scroll">
+      <table class="admin-table">
+        <thead><tr><th>Row</th><th>Email</th><th>Reason</th></tr></thead>
+        <tbody>
+          <% result.skipped.forEach(r => { %>
+          <tr><td><%= r.row %></td><td><%= r.email || '—' %></td><td style="color:#b91c1c"><%= r.reason %></td></tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <% } %>
+<% } %>
+
+<form method="POST" action="/admin/bulk-enroll" enctype="multipart/form-data" class="card form-studio-card" style="max-width:640px">
+  <div class="form-field">
+    <label for="bulk-course">Course (published only)</label>
+    <select id="bulk-course" name="courseId" required onchange="bulkEnrollUpdateSessions()">
+      <option value="">Select a course…</option>
+      <% courses.forEach(c => { %>
+        <option value="<%= c.id %>"><%= c.title %></option>
+      <% }) %>
+    </select>
+  </div>
+
+  <div class="form-field" id="bulk-session-field" style="display:none">
+    <label for="bulk-session">Session</label>
+    <select id="bulk-session" name="sessionId">
+      <option value="">Select a session…</option>
+    </select>
+    <p class="form-hint">This course has no sessions — candidates will be enrolled without a specific session date.</p>
+  </div>
+
+  <div class="form-field">
+    <label for="bulk-csv">Candidate CSV file</label>
+    <input type="file" id="bulk-csv" name="csvFile" accept=".csv,text/csv" required>
+    <p class="form-hint">Columns: Name, Email (both required), Phone (optional). <a href="/admin/bulk-enroll/template.csv">Download the empty template</a> if you don't have one yet.</p>
+  </div>
+
+  <button type="submit" class="btn btn-gold">Upload and enroll</button>
+</form>
+
+<script>
+  const bulkEnrollCourseSessions = <%- JSON.stringify(Object.fromEntries(courses.map(c => [c.id, (c.sessions || []).map(s => ({ id: s.id, label: s.startDate + (s.mode ? ' — ' + s.mode : '') }))]))) %>;
+
+  function bulkEnrollUpdateSessions() {
+    const courseId = document.getElementById('bulk-course').value;
+    const field = document.getElementById('bulk-session-field');
+    const select = document.getElementById('bulk-session');
+    const hint = field.querySelector('.form-hint');
+    const sessions = bulkEnrollCourseSessions[courseId] || [];
+
+    select.innerHTML = '<option value="">Select a session…</option>';
+    sessions.forEach(function (s) {
+      const opt = document.createElement('option');
+      opt.value = s.id;
+      opt.textContent = s.label;
+      select.appendChild(opt);
+    });
+
+    if (!courseId) {
+      field.style.display = 'none';
+    } else if (sessions.length === 0) {
+      field.style.display = 'block';
+      select.style.display = 'none';
+      select.required = false;
+      hint.style.display = 'block';
+    } else {
+      field.style.display = 'block';
+      select.style.display = 'block';
+      select.required = true;
+      hint.style.display = 'none';
+    }
+  }
+</script>
+
+<%- include('partials/foot') %>

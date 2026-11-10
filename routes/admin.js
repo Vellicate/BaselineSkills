@@ -17,6 +17,9 @@ const { newId } = require("../lib/id");
 const slugify = require("slugify");
 const createRateLimiter = require("../lib/rate-limiter");
 const multer = require("multer");
+const { sendMail, escapeHtml } = require("../lib/mailer");
+const { parse: parseCsv } = require("csv-parse/sync");
+const crypto = require("crypto");
 const { BROCHURE_DIR } = require("../lib/brochures");
 const { TRAINER_PHOTO_DIR } = require("../lib/trainer-photos");
 const { COURSE_OUTLINE_DIR } = require("../lib/course-outlines");
@@ -83,6 +86,20 @@ const resourceDownloadUpload = multer({
     cb(null, true);
   },
   limits: { fileSize: adminCfg.BROCHURE_MAX_FILE_SIZE_MB * 1024 * 1024 },
+});
+
+// Bulk-enroll candidate CSV -- memory storage, not disk, since the file is
+// parsed once right here and never needs to exist afterwards. 5MB is far
+// more than any realistic candidate list needs (tens of thousands of rows
+// of name/email/phone).
+const csvUpload = multer({
+  storage: multer.memoryStorage(),
+  fileFilter: (req, file, cb) => {
+    const looksLikeCsv = file.mimetype === "text/csv" || file.mimetype === "application/vnd.ms-excel" || /\.csv$/i.test(file.originalname || "");
+    if (!looksLikeCsv) return cb(new Error("Please upload a .csv file"));
+    cb(null, true);
+  },
+  limits: { fileSize: 5 * 1024 * 1024 },
 });
 
 // Failure-only login tracking (from lib/security.js): counts only failed
@@ -1172,6 +1189,141 @@ router.get("/feedback", (req, res) => {
     ...getAlerts(req),
   });
 });
+
+// ---- Bulk enroll candidates from a CSV ----
+// Lets an admin enroll a batch of candidates into one published course
+// (and, if it has sessions, one specific session) without each person
+// going through checkout -- every candidate ends up as a real registration
+// with status "confirmed" and priceCentsCharged: 0, then gets an email to
+// set their password (or, if they already have a learner account, a plain
+// notice) using the exact same /set-password token mechanism the public
+// registration flow already uses, so there's no second login system to
+// keep in sync.
+router.get("/bulk-enroll", (req, res) => {
+  const courses = store.readAll("courses").filter((c) => c.published);
+  res.render("admin/bulk-enroll", { title: "Bulk Enroll Candidates — Baseline Skills", courses, result: null, error: null, ...getAlerts(req) });
+});
+
+router.get("/bulk-enroll/template.csv", (req, res) => {
+  res.setHeader("Content-Type", "text/csv");
+  res.setHeader("Content-Disposition", 'attachment; filename="candidate-upload-template.csv"');
+  res.send("Name,Email,Phone\n");
+});
+
+router.post("/bulk-enroll", (req, res, next) => {
+  csvUpload.single("csvFile")(req, res, (err) => {
+    if (err) return rerenderBulkEnroll(req, res, err.message);
+    next();
+  });
+}, (req, res) => {
+  const course = store.findOne("courses", (c) => c.id === req.body.courseId && c.published);
+  if (!course) return rerenderBulkEnroll(req, res, "Please select a valid, published course.");
+
+  let session = null;
+  if (course.sessions && course.sessions.length > 0) {
+    session = course.sessions.find((s) => s.id === req.body.sessionId);
+    if (!session) return rerenderBulkEnroll(req, res, "Please select a session for this course.");
+  }
+
+  if (!req.file) return rerenderBulkEnroll(req, res, "Please choose a CSV file to upload.");
+
+  let records;
+  try {
+    records = parseCsv(req.file.buffer.toString("utf8"), { columns: true, skip_empty_lines: true, trim: true });
+  } catch (e) {
+    return rerenderBulkEnroll(req, res, "Could not read this CSV file — " + e.message);
+  }
+  if (records.length === 0) return rerenderBulkEnroll(req, res, "This CSV file has no data rows.");
+
+  // Forgiving of header case/whitespace (an admin's spreadsheet export
+  // might say "E-mail" or "email " rather than exactly "Email") rather
+  // than requiring an exact match to the template's own header casing.
+  function field(record, name) {
+    const key = Object.keys(record).find((k) => k.trim().toLowerCase() === name);
+    return key ? (record[key] || "").trim() : "";
+  }
+
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const existingRegistrations = store.readAll("registrations").filter((r) => r.courseId === course.id && r.status !== "cancelled");
+  const seenInThisFile = new Set();
+  const nowIso = new Date().toISOString();
+  const appBaseUrl = process.env.APP_BASE_URL || "https://www.baselineskills.com";
+  const result = { enrolled: [], skipped: [] };
+
+  records.forEach((record, idx) => {
+    const row = idx + 2; // 1-indexed, plus the header row itself
+    const name = field(record, "name");
+    const email = field(record, "email").toLowerCase();
+    const phone = field(record, "phone");
+
+    if (!name || !email) return result.skipped.push({ row, email, reason: "Missing name or email" });
+    if (!emailPattern.test(email)) return result.skipped.push({ row, email, reason: "Invalid email address" });
+    if (seenInThisFile.has(email)) return result.skipped.push({ row, email, reason: "Duplicate row in this file" });
+    seenInThisFile.add(email);
+
+    const alreadyRegistered = existingRegistrations.some((r) => r.email.toLowerCase() === email && (!session || r.sessionStartDate === session.startDate));
+    if (alreadyRegistered) return result.skipped.push({ row, email, reason: "Already registered for this course" });
+
+    // Same atomic hold-or-fail pattern the public registration flow uses
+    // (routes/registration.js) -- a no-op for an unlimited-seats session
+    // (seatsLeft null/undefined).
+    if (session && session.seatsLeft !== null && session.seatsLeft !== undefined) {
+      const seatUpdate = store.raw.prepare(`UPDATE sessions SET seatsLeft = seatsLeft - 1 WHERE id = ? AND seatsLeft >= 1`).run(session.id);
+      if (seatUpdate.changes === 0) return result.skipped.push({ row, email, reason: "No seats left in this session" });
+    }
+
+    // Find-or-create learner -- the exact same pattern findOrCreateLearner
+    // uses in routes/registration.js for a brand-new public registration,
+    // so a CSV-enrolled candidate ends up completely indistinguishable
+    // from one who registered and paid themselves.
+    let learner = store.findOne("learners", (l) => l.email.toLowerCase() === email);
+    let passwordSetToken = null;
+    if (!learner) {
+      passwordSetToken = crypto.randomBytes(32).toString("hex");
+      learner = store.insert("learners", {
+        id: newId("learner"), email, passwordHash: null, name, country: "", phone,
+        passwordResetToken: passwordSetToken,
+        passwordResetExpires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        createdAt: nowIso,
+      });
+    }
+
+    store.insert("registrations", {
+      id: newId("reg"), courseId: course.id, courseTitle: course.title, learnerId: learner.id,
+      name, email, phone,
+      sessionStartDate: session ? session.startDate : null,
+      deliveryMode: session ? session.mode : (course.deliveryModes && course.deliveryModes[0]) || "",
+      priceCentsCharged: 0, currency: course.currency,
+      status: "confirmed", isPurchaser: 1, participantCount: 1, grantsAccess: 1,
+      createdAt: nowIso, confirmedAt: nowIso,
+    });
+
+    // Best-effort: a failed send shouldn't undo an otherwise-successful
+    // enrollment, so this isn't awaited and isn't reflected in `result`.
+    const setPasswordUrl = passwordSetToken ? `${appBaseUrl}/set-password?token=${passwordSetToken}` : null;
+    sendMail({
+      to: email,
+      subject: `You're enrolled — ${course.title.replace(/[\r\n]/g, "")}`,
+      html: `<p>Hi ${escapeHtml(name)},</p>
+             <p>Baseline Skills has enrolled you in <strong>${escapeHtml(course.title)}</strong>${session ? ` (starting ${escapeHtml(session.startDate)})` : ""}.</p>
+             ${setPasswordUrl
+               ? `<p><a href="${setPasswordUrl}">Set your password</a> to access the course portal. Your login email is <strong>${escapeHtml(email)}</strong>.</p>`
+               : `<p>Log in at <a href="${appBaseUrl}/login">${appBaseUrl}/login</a> with your existing email and password (<strong>${escapeHtml(email)}</strong>).</p>`}
+             <p>We'll be in touch with joining instructions closer to the session date.</p>
+             <p>— The Baseline Skills team</p>`,
+    }).catch(() => {});
+
+    result.enrolled.push({ row, name, email });
+  });
+
+  const courses = store.readAll("courses").filter((c) => c.published);
+  res.render("admin/bulk-enroll", { title: "Bulk Enroll Candidates — Baseline Skills", courses, result, error: null });
+});
+
+function rerenderBulkEnroll(req, res, error) {
+  const courses = store.readAll("courses").filter((c) => c.published);
+  res.status(400).render("admin/bulk-enroll", { title: "Bulk Enroll Candidates — Baseline Skills", courses, result: null, error });
+}
 
 // ---- Registrations ----
 router.get("/registrations", (req, res) => {
