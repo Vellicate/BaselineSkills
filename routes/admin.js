@@ -1720,10 +1720,29 @@ router.post("/trainers/:id/delete", (req, res) => {
   if (!trainerIsVisibleTo(req, req.params.id)) return res.status(403).send("You don't have access to this trainer.");
   const referencingCourses = store.readAll("courses").filter((c) => c.trainerId === req.params.id);
   if (referencingCourses.length) {
-    const trainers = store.readAll("trainers");
+    // Mirrors GET /trainers' own scoping exactly (see that route above) —
+    // this render was written as a standalone shortcut that only ever
+    // passed {title, trainers, error}, omitting isScoped, which the
+    // template references directly with no typeof guard
+    // (admin/trainers-list.ejs lines 6 and 8). That's an unconditional
+    // crash — not just for a restricted admin, for ANY admin hitting this
+    // path — reproduced as exactly the "deletion gives an error" bug
+    // report: deleting a trainer who's still assigned to a course doesn't
+    // show the intended "reassign those courses first" message, it 500s
+    // instead. Also wasn't scoping the trainers list down for a
+    // restricted admin the way the real route does, a second, smaller
+    // drift from the same root cause (a hand-copied shortcut render
+    // instead of reusing the real route's logic).
+    const visibleCourseIds = auth.visibleCourseIdsFor(req);
+    let trainers = store.readAll("trainers");
+    if (visibleCourseIds !== null) {
+      const teachingIds = new Set(store.readAll("courses").filter((c) => visibleCourseIds.includes(c.id) && c.trainerId).map((c) => c.trainerId));
+      trainers = trainers.filter((t) => teachingIds.has(t.id));
+    }
     return res.status(400).render("admin/trainers-list", {
       title: "Manage trainers — Baseline Skills",
       trainers,
+      isScoped: visibleCourseIds !== null,
       error: `Can't delete — this trainer is assigned to ${referencingCourses.length} course(s): ${referencingCourses.map((c) => c.title).join(", ")}. Reassign those courses first.`,
     });
   }
