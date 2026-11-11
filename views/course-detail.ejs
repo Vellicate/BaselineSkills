@@ -212,7 +212,8 @@
     <h2 style="margin-top:36px"><%= t('course_your_trainer_title') %></h2>
     <div class="card" style="max-width:420px;display:flex;gap:14px;align-items:flex-start">
       <% if (trainer.photoPath) { %>
-        <img src="<%= trainer.photoPath %>" alt="<%= trainer.name %>" style="width:56px;height:56px;border-radius:50%;object-fit:cover;flex-shrink:0">
+        <% const initials = trainer.name.split(' ').map(n => n[0]).slice(0,2).join('').toUpperCase(); %>
+        <img src="<%= trainer.photoPath %>" alt="<%= trainer.name %>" style="width:56px;height:56px;border-radius:50%;object-fit:cover;flex-shrink:0" onerror="this.outerHTML='<div style=&quot;width:56px;height:56px;border-radius:50%;background:var(--navy,#0F5C56);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0&quot;><%= initials %></div>'">
       <% } else { %>
         <div style="width:56px;height:56px;border-radius:50%;background:var(--navy,#0F5C56);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0"><%= trainer.name.split(' ').map(n => n[0]).slice(0,2).join('').toUpperCase() %></div>
       <% } %>

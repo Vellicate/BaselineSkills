@@ -38,7 +38,7 @@
     <input type="file" name="photo" accept="image/jpeg,image/png,image/webp">
     <% if (trainer && trainer.photoPath) { %>
       <p class="form-hint">
-        <img src="<%= trainer.photoPath %>" alt="" style="width:60px;height:60px;border-radius:50%;object-fit:cover;vertical-align:middle;margin-right:8px">
+        <img src="<%= trainer.photoPath %>" alt="" style="width:60px;height:60px;border-radius:50%;object-fit:cover;vertical-align:middle;margin-right:8px" onerror="this.style.display='none'">
         Current photo — upload a new file to replace it, or leave blank to keep it.
       </p>
     <% } %>

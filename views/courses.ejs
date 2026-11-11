@@ -72,7 +72,7 @@
       <% courses.forEach(c => { %>
         <% const cd = c.cardData; %>
         <div class="course-mini-card">
-          <% if (c.imageUrl) { %><img src="<%= c.imageUrl %>" alt="<%= c.title %>" style="width:100%;height:140px;object-fit:cover;border-radius:8px;margin-bottom:12px"><% } %>
+          <% if (c.imageUrl) { %><img src="<%= c.imageUrl %>" alt="<%= c.title %>" style="width:100%;height:140px;object-fit:cover;border-radius:8px;margin-bottom:12px" onerror="this.style.display='none'"><% } %>
           <div class="mini-card-top">
             <span class="tag <%= cd.certifyingBodyLabel ? 'tag-cert' : 'tag-skill' %>">
               <%= cd.certifyingBodyLabel ? ('🏅' + cd.certifyingBodyLabel) : ('⚡ ' + t('courses_skills_mastery')) %>

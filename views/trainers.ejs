@@ -17,7 +17,8 @@
         <% trainers.forEach(tr => { %>
           <a href="/trainers/<%= tr.id %>" class="why-item" style="text-decoration:none;color:inherit;display:block">
             <% if (tr.photoPath) { %>
-              <img src="<%= tr.photoPath %>" alt="<%= tr.name %>" style="width:64px;height:64px;border-radius:50%;object-fit:cover;margin-bottom:12px">
+              <% const initials = tr.name.split(' ').map(n => n[0]).slice(0,2).join('').toUpperCase(); %>
+              <img src="<%= tr.photoPath %>" alt="<%= tr.name %>" style="width:64px;height:64px;border-radius:50%;object-fit:cover;margin-bottom:12px" onerror="this.outerHTML='<div style=&quot;width:64px;height:64px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;margin-bottom:12px&quot;><%= initials %></div>'">
             <% } else { %>
               <div style="width:64px;height:64px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;margin-bottom:12px">
                 <%= tr.name.split(' ').map(n => n[0]).slice(0,2).join('').toUpperCase() %>
