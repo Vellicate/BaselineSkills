@@ -104,17 +104,18 @@ const lessonToShow = activeLesson || firstLesson;
               <p style="margin:0;color:var(--muted)"><%= t('player_no_file_yet') %></p>
             </div>
           <% } else if (lessonToShow.contentType === 'VIDEO') { %>
-            <video id="lms-video-player" controls style="width:100%;border-radius:8px;background:#000"
+            <video id="lms-video-player" controls <%- lessonToShow.downloadAllowed ? '' : 'controlsList="nodownload" disablePictureInPicture' %> style="width:100%;border-radius:8px;background:#000"
                    src="/lms/content/<%= lessonToShow.asset.id %>/stream"
                    data-lesson-id="<%= lessonToShow.id %>"
-                   data-resume-position="<%= typeof videoResumePosition !== 'undefined' ? videoResumePosition : 0 %>">
+                   data-resume-position="<%= typeof videoResumePosition !== 'undefined' ? videoResumePosition : 0 %>"
+                   oncontextmenu="<%= lessonToShow.downloadAllowed ? '' : 'return false' %>">
               <%= t('player_video_unsupported') %>
             </video>
             <% if (lessonToShow.downloadAllowed) { %>
               <p style="margin-top:10px"><a href="/lms/content/<%= lessonToShow.asset.id %>/download" class="btn btn-outline btn-sm"><%= t('player_download_video') %></a></p>
             <% } %>
           <% } else if (lessonToShow.contentType === 'PDF') { %>
-            <iframe src="/lms/content/<%= lessonToShow.asset.id %>/stream" style="width:100%;height:640px;border:1px solid var(--line);border-radius:8px" title="<%= lessonToShow.title %>"></iframe>
+            <iframe src="/lms/content/<%= lessonToShow.asset.id %>/stream<%= lessonToShow.downloadAllowed ? '' : '#toolbar=0' %>" style="width:100%;height:640px;border:1px solid var(--line);border-radius:8px" title="<%= lessonToShow.title %>"></iframe>
             <% if (lessonToShow.downloadAllowed) { %>
               <p style="margin-top:10px"><a href="/lms/content/<%= lessonToShow.asset.id %>/download" class="btn btn-outline btn-sm"><%= t('player_download_pdf') %></a></p>
             <% } %>
