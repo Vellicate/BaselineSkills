@@ -2,9 +2,9 @@
 
 <section class="section-tight" style="background:#fff;border-bottom:1px solid var(--line)">
   <div class="container">
-    <span class="eyebrow">Register</span>
-    <h1 style="font-size:1.9rem">Register for <%= course.title %></h1>
-    <p class="lead">Session details and payment on the next step.</p>
+    <span class="eyebrow"><%= t('register_eyebrow') %></span>
+    <h1 style="font-size:1.9rem"><%= t('register_title', course.title) %></h1>
+    <p class="lead"><%= t('register_lead') %></p>
   </div>
 </section>
 
@@ -35,45 +35,45 @@
     %>
     <% if (typeof error !== 'undefined' && error) { %><div class="alert alert-error"><%= error %></div><% } %>
     <% if (typeof resumeUrl !== 'undefined' && resumeUrl) { %>
-      <div style="margin:-12px 0 20px"><a href="<%= resumeUrl %>" class="btn btn-gold">Retry your payment</a></div>
+      <div style="margin:-12px 0 20px"><a href="<%= resumeUrl %>" class="btn btn-gold"><%= t('register_retry_payment') %></a></div>
     <% } %>
 
     <div class="grid-2 register-grid" style="align-items:start">
       <form method="POST" action="/courses/<%= course.slug %>/register" class="card" style="grid-column:1" id="registerForm">
-        <h3 style="margin-top:0;font-size:1.05rem">Your details (purchaser / contact)</h3>
+        <h3 style="margin-top:0;font-size:1.05rem"><%= t('register_your_details') %></h3>
         <div class="form-row">
-          <div class="form-field"><label>Full name *</label><input type="text" name="name" id="purchaserName" required value="<%= typeof form!=='undefined' ? form.name||'' : '' %>"></div>
-          <div class="form-field"><label>Email *</label><input type="email" name="email" id="purchaserEmail" required value="<%= typeof form!=='undefined' ? form.email||'' : '' %>" <%= dupEmailsList.includes(prefillPurchaserEmailLower) ? 'style="border-color:#b91c1c"' : '' %>>
-            <% if (dupEmailsList.includes(prefillPurchaserEmailLower)) { %><p style="color:#b91c1c;font-size:.85rem;margin-top:4px">Already registered for this session</p><% } %>
+          <div class="form-field"><label><%= t('register_full_name') %> *</label><input type="text" name="name" id="purchaserName" required value="<%= typeof form!=='undefined' ? form.name||'' : '' %>"></div>
+          <div class="form-field"><label><%= t('common_email') %> *</label><input type="email" name="email" id="purchaserEmail" required value="<%= typeof form!=='undefined' ? form.email||'' : '' %>" <%= dupEmailsList.includes(prefillPurchaserEmailLower) ? 'style="border-color:#b91c1c"' : '' %>>
+            <% if (dupEmailsList.includes(prefillPurchaserEmailLower)) { %><p style="color:#b91c1c;font-size:.85rem;margin-top:4px"><%= t('register_already_registered') %></p><% } %>
           </div>
         </div>
         <div class="form-row">
-          <div class="form-field"><label>Phone</label><input type="tel" name="phone" id="purchaserPhone" value="<%= typeof form!=='undefined' ? form.phone||'' : '' %>"></div>
-          <div class="form-field"><label>Address</label><input type="text" name="address" value="<%= typeof form!=='undefined' ? form.address||'' : '' %>"></div>
+          <div class="form-field"><label><%= t('common_phone') %></label><input type="tel" name="phone" id="purchaserPhone" value="<%= typeof form!=='undefined' ? form.phone||'' : '' %>"></div>
+          <div class="form-field"><label><%= t('register_address') %></label><input type="text" name="address" value="<%= typeof form!=='undefined' ? form.address||'' : '' %>"></div>
         </div>
         <div class="form-row">
-          <div class="form-field"><label>Company</label><input type="text" name="company" value="<%= typeof form!=='undefined' ? form.company||'' : '' %>"></div>
-          <div class="form-field"><label>Role</label><input type="text" name="role" value="<%= typeof form!=='undefined' ? form.role||'' : '' %>"></div>
+          <div class="form-field"><label><%= t('common_company') %></label><input type="text" name="company" value="<%= typeof form!=='undefined' ? form.company||'' : '' %>"></div>
+          <div class="form-field"><label><%= t('common_role') %></label><input type="text" name="role" value="<%= typeof form!=='undefined' ? form.role||'' : '' %>"></div>
         </div>
         <div class="form-row">
           <div class="form-field">
-            <label>Billing country *</label>
+            <label><%= t('register_billing_country') %> *</label>
             <select name="country" id="purchaserCountry" required onchange="refreshPricingPreview()">
-              <option value="">Select your country…</option>
+              <option value=""><%= t('register_select_country') %></option>
               <% countries.forEach(([code, name]) => { %><option value="<%= code %>"><%= name %></option><% }) %>
             </select>
-            <p class="form-hint">Used to calculate VAT, where applicable.</p>
+            <p class="form-hint"><%= t('register_vat_hint') %></p>
           </div>
         </div>
         <div class="form-field" id="sessionFieldWrap">
-          <label>Preferred session</label>
+          <label><%= t('register_preferred_session') %></label>
           <select name="sessionStartDate" id="sessionStartDateSelect" onchange="changeSession(this.value)" style="width:100%">
-            <% course.sessions.forEach(s => { const soldOut = s.seatsLeft !== null && s.seatsLeft !== undefined && s.seatsLeft <= 0; %><option value="<%= s.startDate %>" <%= s.startDate === selectedSessionStartDate ? 'selected' : '' %>><%= s.startDate %> — <%= s.mode %><%= soldOut ? ' (Sold out)' : '' %></option><% }) %>
+            <% course.sessions.forEach(s => { const soldOut = s.seatsLeft !== null && s.seatsLeft !== undefined && s.seatsLeft <= 0; %><option value="<%= s.startDate %>" <%= s.startDate === selectedSessionStartDate ? 'selected' : '' %>><%= s.startDate %> — <%= s.mode %><%= soldOut ? ' (' + t('register_sold_out') + ')' : '' %></option><% }) %>
           </select>
-          <p class="form-hint" id="sessionNotApplicableNote" style="display:none">Recorded is self-paced — start anytime, no fixed session date.</p>
+          <p class="form-hint" id="sessionNotApplicableNote" style="display:none"><%= t('register_recorded_note') %></p>
         </div>
         <div class="form-field">
-          <label>Delivery mode</label>
+          <label><%= t('register_delivery_mode') %></label>
           <select name="deliveryMode" id="deliveryModeSelect" onchange="onDeliveryModeChange()">
             <% course.deliveryModes.filter(m => !["Corporate On-site","Private Cohort"].includes(m)).forEach(m => { %><option value="<%= m %>" <%= (typeof selectedDeliveryMode !== 'undefined' && selectedDeliveryMode === m) ? 'selected' : '' %>><%= m %></option><% }) %>
           </select>
@@ -81,7 +81,7 @@
 
         <div class="form-field" style="border:1px solid var(--line);border-radius:8px;padding:14px;margin-top:6px;background:var(--bg-soft,#F8FAFC)">
           <div class="form-row" style="grid-template-columns:1fr auto;align-items:center">
-            <label style="margin:0">Number of participants</label>
+            <label style="margin:0"><%= t('register_num_participants') %></label>
             <div style="display:flex;align-items:center;gap:10px">
               <button type="button" class="btn btn-outline btn-sm" onclick="stepParticipants(-1)" aria-label="Decrease">&minus;</button>
               <input type="number" name="participantCount" id="participantCount" min="1" max="50" value="<%= (typeof form!=='undefined' && form.participantCount) ? form.participantCount : 1 %>" style="width:60px;text-align:center" onchange="renderParticipantBlocks()">
@@ -90,29 +90,29 @@
           </div>
           <div class="checkbox-row" style="margin-top:10px">
             <input type="checkbox" id="purchaserAttending" <%= prefillPurchaserAttending ? 'checked' : '' %> onchange="renderParticipantBlocks()">
-            <label style="margin:0;font-weight:400" for="purchaserAttending">I am also attending this course</label>
+            <label style="margin:0;font-weight:400" for="purchaserAttending"><%= t('register_also_attending') %></label>
           </div>
           <p id="groupDiscountNote" class="form-hint" style="margin-top:8px;display:none"></p>
         </div>
 
         <div id="participantsWrap" style="margin-top:10px"></div>
 
-        <div class="form-field"><label>Notes (optional)</label><textarea name="notes" rows="3"></textarea></div>
+        <div class="form-field"><label><%= t('register_notes') %></label><textarea name="notes" rows="3"></textarea></div>
 
         <div class="form-field">
-          <label>Coupon code (optional)</label>
+          <label><%= t('register_coupon_code') %></label>
           <div style="display:flex;gap:8px">
-            <input type="text" name="couponCode" id="couponCodeInput" value="<%= typeof couponCode !== 'undefined' ? couponCode : '' %>" placeholder="e.g. SUMMER2026" style="flex:1" <%= (typeof couponValidation !== 'undefined' && couponValidation && couponValidation.valid) ? 'readonly' : '' %>>
+            <input type="text" name="couponCode" id="couponCodeInput" value="<%= typeof couponCode !== 'undefined' ? couponCode : '' %>" placeholder="<%= t('register_coupon_placeholder_example') %>" style="flex:1" <%= (typeof couponValidation !== 'undefined' && couponValidation && couponValidation.valid) ? 'readonly' : '' %>>
             <button type="button" class="btn btn-outline" id="couponActionBtn" onclick="<%= (typeof couponValidation !== 'undefined' && couponValidation && couponValidation.valid) ? 'removeCoupon()' : 'applyCoupon()' %>">
-              <%= (typeof couponValidation !== 'undefined' && couponValidation && couponValidation.valid) ? 'Remove' : 'Apply' %>
+              <%= (typeof couponValidation !== 'undefined' && couponValidation && couponValidation.valid) ? t('register_remove') : t('register_apply') %>
             </button>
           </div>
           <p id="couponMessage" style="font-size:.85rem;margin-top:4px">
             <% if (typeof couponValidation !== 'undefined' && couponValidation) { %>
               <% if (couponValidation.valid) { %>
-                <span style="color:#16847B">Coupon applied — <%= couponValidation.percent %>% off.</span>
+                <span style="color:#16847B"><%= t('register_coupon_applied', couponValidation.percent) %></span>
               <% } else { %>
-                <span style="color:#b91c1c"><%= couponValidation.reason %></span>
+                <span style="color:#b91c1c"><%= t('coupon_reason_' + couponValidation.reasonKey) %></span>
               <% } %>
             <% } %>
           </p>
@@ -123,39 +123,37 @@
           <label style="display:flex;align-items:start;gap:10px;cursor:pointer">
             <input type="checkbox" name="addExam" value="1" style="margin-top:4px">
             <span>
-              <strong>Add the <%= examProduct.certificationName %> certification exam</strong> (<%= examProduct.certificationBody %>) — <%= currencySymbol(course.currency) %><%= (examFinalPriceCents/100).toFixed(2) %> per participant
+              <strong><%= t('register_add_exam', examProduct.certificationName) %></strong> (<%= examProduct.certificationBody %>) — <%= currencySymbol(course.currency) %><%= (examFinalPriceCents/100).toFixed(2) %> <%= t('register_per_participant') %>
               <br><span style="color:var(--muted);font-size:.85rem;white-space:pre-line"><%= examProduct.description %></span>
             </span>
           </label>
         </div>
         <% } %>
 
-        <button type="submit" class="btn btn-gold btn-block btn-lg">Continue to Payment</button>
-        <p class="form-hint" style="text-align:center;margin-top:10px">You'll get an email confirmation immediately after registering.</p>
+        <button type="submit" class="btn btn-gold btn-block btn-lg"><%= t('register_continue_to_payment') %></button>
+        <p class="form-hint" style="text-align:center;margin-top:10px"><%= t('register_email_confirmation_note') %></p>
       </form>
 
       <div class="sticky-card" style="grid-column:2">
         <h4 style="margin-top:0"><%= course.title %></h4>
-        <p style="font-size:.85rem;color:var(--muted)"><%= course.durationDays %> day<%= course.durationDays>1?'s':'' %> &middot; <%= course.category %></p>
+        <p style="font-size:.85rem;color:var(--muted)"><%= course.durationDays %> <%= course.durationDays>1 ? t('schedule_day_plural') : t('schedule_day_singular') %> &middot; <%= course.category %></p>
         <div id="pricingPreview" style="margin-top:16px;font-size:.92rem">
-          <div style="display:flex;justify-content:space-between;padding:4px 0"><span>Training</span><span id="lineTraining"><%= currencySymbol(course.currency) %><%= (finalPrice/100).toFixed(2) %></span></div>
-          <div style="display:flex;justify-content:space-between;padding:4px 0;display:none" id="lineExamRow"><span>Certification exam</span><span id="lineExam"></span></div>
-          <div style="display:none;justify-content:space-between;padding:4px 0;color:#16847B" id="lineDiscountRow"><span id="lineDiscountLabel">Group discount</span><span id="lineDiscount"></span></div>
-          <div style="display:none;justify-content:space-between;padding:4px 0;color:var(--muted)" id="lineVatRow"><span id="lineVatLabel">VAT</span><span id="lineVat"></span></div>
+          <div style="display:flex;justify-content:space-between;padding:4px 0"><span><%= t('register_training_label') %></span><span id="lineTraining"><%= currencySymbol(course.currency) %><%= (finalPrice/100).toFixed(2) %></span></div>
+          <div style="display:flex;justify-content:space-between;padding:4px 0;display:none" id="lineExamRow"><span><%= t('register_cert_exam_label') %></span><span id="lineExam"></span></div>
+          <div style="display:none;justify-content:space-between;padding:4px 0;color:#16847B" id="lineDiscountRow"><span id="lineDiscountLabel"><%= t('register_group_discount_label') %></span><span id="lineDiscount"></span></div>
+          <div style="display:none;justify-content:space-between;padding:4px 0;color:var(--muted)" id="lineVatRow"><span id="lineVatLabel"><%= t('register_vat_label') %></span><span id="lineVat"></span></div>
           <div style="display:flex;justify-content:space-between;padding-top:10px;margin-top:6px;border-top:1px solid var(--line);font-weight:700;font-size:1.15rem">
-            <span>Total</span><span id="previewFinalTotal"><%= currencySymbol(course.currency) %><%= (finalPrice/100).toFixed(2) %></span>
+            <span><%= t('register_total_label') %></span><span id="previewFinalTotal"><%= currencySymbol(course.currency) %><%= (finalPrice/100).toFixed(2) %></span>
           </div>
           <p class="form-hint" id="previewBreakdown" style="margin-top:6px"></p>
         </div>
         <% if (discountInfo.tierLabel === 'Very Early Bird' || discountInfo.tierLabel === 'Early Bird') { %>
-          <span class="discount-badge"><%= discountInfo.tierLabel %> — save on this session</span>
+          <span class="discount-badge"><%= t('register_save_on_session', discountInfo.tierLabel) %></span>
           <p style="font-size:.85rem;color:var(--muted);margin-top:8px">
-            This rate ends <strong><%= discountInfo.deadlineDate %></strong>
-            (<%= discountInfo.daysUntilDeadline %> day<%= discountInfo.daysUntilDeadline !== 1 ? 's' : '' %> from now) —
-            book before then to keep this price.
+            <%- t('register_rate_ends', '<strong>' + discountInfo.deadlineDate + '</strong>', discountInfo.daysUntilDeadline, discountInfo.daysUntilDeadline !== 1 ? t('schedule_day_plural') : t('schedule_day_singular')) %>
           </p>
         <% } else if (course.discountPercent) { %>
-          <span class="discount-badge"><%= course.discountPercent %>% OFF applied</span>
+          <span class="discount-badge"><%= t('register_off_applied', course.discountPercent) %></span>
         <% } %>
       </div>
     </div>
@@ -179,6 +177,24 @@ const sessionStartDate = <%- JSON.stringify(selectedSessionStartDate) %>;
 // script element's text, with no awareness of JS comments or strings.)
 const prefillParticipants = <%- JSON.stringify(prefillParticipantsData).replace(/</g, "\\u003c") %>;
 const duplicateEmails = <%- JSON.stringify(dupEmailsList.map((e) => e.toLowerCase())).replace(/</g, "\\u003c") %>;
+
+// t() is an EJS/request-time function, not available once this script runs
+// client-side -- every string the JS below builds dynamically (participant
+// rows, coupon messages, pricing labels) is rendered once here instead.
+const i18nParticipant1You = <%- JSON.stringify(t('register_participant_1_you')) %>;
+const i18nParticipantNName = <%- JSON.stringify(t('register_participant_n_name', '{0}')) %>;
+const i18nEmailRequired = <%- JSON.stringify(t('common_email') + ' *') %>;
+const i18nPhone = <%- JSON.stringify(t('common_phone')) %>;
+const i18nAlreadyRegistered = <%- JSON.stringify(t('register_already_registered')) %>;
+const i18nCouponInvalidFallback = <%- JSON.stringify(t('register_coupon_invalid_fallback')) %>;
+const i18nCouponApplied = <%- JSON.stringify(t('register_coupon_applied', '{0}')) %>;
+const i18nApply = <%- JSON.stringify(t('register_apply')) %>;
+const i18nRemove = <%- JSON.stringify(t('register_remove')) %>;
+const i18nGroupDiscountLabel = <%- JSON.stringify(t('register_group_discount_label')) %>;
+const i18nDiscountLabel = <%- JSON.stringify(t('register_discount_label')) %>;
+const i18nVatLabel = <%- JSON.stringify(t('register_vat_label')) %>;
+const i18nParticipantsCount = <%- JSON.stringify(t('register_participants_count', '{0}')) %>;
+const i18nPerParticipantAfterDiscount = <%- JSON.stringify(t('register_per_participant_after_discount', '{0}')) %>;
 
 function changeSession(newSessionStartDate) {
   const mode = document.getElementById('deliveryModeSelect').value;
@@ -244,7 +260,7 @@ function renderParticipantBlocks() {
     p1.id = 'participant1Block';
     p1.className = 'form-field';
     p1.style.cssText = 'border:1px solid var(--line);border-radius:8px;padding:10px 14px;margin-bottom:8px;background:#F8FAFC';
-    p1.innerHTML = '<strong style="font-size:.85rem">Participant 1 (you)</strong><input type="hidden" name="participantName" value="' + escapeAttr(document.getElementById('purchaserName').value) + '"><input type="hidden" name="participantEmail" value="' + escapeAttr(document.getElementById('purchaserEmail').value) + '"><input type="hidden" name="participantPhone" value="' + escapeAttr(document.getElementById('purchaserPhone').value) + '">';
+    p1.innerHTML = '<strong style="font-size:.85rem">' + i18nParticipant1You + '</strong><input type="hidden" name="participantName" value="' + escapeAttr(document.getElementById('purchaserName').value) + '"><input type="hidden" name="participantEmail" value="' + escapeAttr(document.getElementById('purchaserEmail').value) + '"><input type="hidden" name="participantPhone" value="' + escapeAttr(document.getElementById('purchaserPhone').value) + '">';
     wrap.appendChild(p1);
   }
   for (let i = startIndex; i <= count; i++) {
@@ -266,11 +282,11 @@ function renderParticipantBlocks() {
     block.className = 'form-row';
     block.style.cssText = 'grid-template-columns:1fr 1fr 1fr;margin-bottom:8px';
     block.innerHTML =
-      '<div class="form-field"><label>Participant ' + i + ' name *</label><input type="text" name="participantName" required value="' + escapeAttr(prefill.name) + '"></div>' +
-      '<div class="form-field"><label>Email *</label><input type="email" name="participantEmail" required value="' + escapeAttr(prefill.email) + '"' + (isDuplicate ? ' style="border-color:#b91c1c"' : '') + '>' +
-        (isDuplicate ? '<p style="color:#b91c1c;font-size:.85rem;margin-top:4px">Already registered for this session</p>' : '') +
+      '<div class="form-field"><label>' + i18nParticipantNName.replace('{0}', i) + ' *</label><input type="text" name="participantName" required value="' + escapeAttr(prefill.name) + '"></div>' +
+      '<div class="form-field"><label>' + i18nEmailRequired + '</label><input type="email" name="participantEmail" required value="' + escapeAttr(prefill.email) + '"' + (isDuplicate ? ' style="border-color:#b91c1c"' : '') + '>' +
+        (isDuplicate ? '<p style="color:#b91c1c;font-size:.85rem;margin-top:4px">' + i18nAlreadyRegistered + '</p>' : '') +
       '</div>' +
-      '<div class="form-field"><label>Phone</label><input type="text" name="participantPhone" value="' + escapeAttr(prefill.phone) + '"></div>';
+      '<div class="form-field"><label>' + i18nPhone + '</label><input type="text" name="participantPhone" value="' + escapeAttr(prefill.phone) + '"></div>';
     wrap.appendChild(block);
   }
   refreshPricingPreview();
@@ -313,12 +329,12 @@ function applyCoupon() {
     btn.disabled = false;
     if (data.couponValid === false) {
       appliedCouponCode = '';
-      msg.innerHTML = '<span style="color:#b91c1c">' + (data.couponReason || 'That coupon code is not valid.') + '</span>';
+      msg.innerHTML = '<span style="color:#b91c1c">' + (data.couponReason || i18nCouponInvalidFallback) + '</span>';
       return;
     }
-    msg.innerHTML = '<span style="color:#16847B">Coupon applied — ' + data.discountPercent + '% off.</span>';
+    msg.innerHTML = '<span style="color:#16847B">' + i18nCouponApplied.replace('{0}', data.discountPercent) + '</span>';
     document.getElementById('couponCodeInput').readOnly = true;
-    btn.textContent = 'Remove';
+    btn.textContent = i18nRemove;
     btn.setAttribute('onclick', 'removeCoupon()');
   });
 }
@@ -330,7 +346,7 @@ function removeCoupon() {
   input.readOnly = false;
   document.getElementById('couponMessage').innerHTML = '';
   const btn = document.getElementById('couponActionBtn');
-  btn.textContent = 'Apply';
+  btn.textContent = i18nApply;
   btn.setAttribute('onclick', 'applyCoupon()');
   refreshPricingPreview();
 }
@@ -377,7 +393,7 @@ function refreshPricingPreview(onResult) {
         const discountRow = document.getElementById('lineDiscountRow');
         if (data.discountPercent > 0) {
           discountRow.style.display = 'flex';
-          document.getElementById('lineDiscountLabel').textContent = count > 1 ? 'Group discount (' + data.discountPercent + '%)' : 'Discount (' + data.discountPercent + '%)';
+          document.getElementById('lineDiscountLabel').textContent = (count > 1 ? i18nGroupDiscountLabel : i18nDiscountLabel) + ' (' + data.discountPercent + '%)';
           document.getElementById('lineDiscount').textContent = '\u2212' + cur + (data.discountAmountCents/100).toFixed(2);
         } else {
           discountRow.style.display = 'none';
@@ -386,7 +402,7 @@ function refreshPricingPreview(onResult) {
         const vatRow = document.getElementById('lineVatRow');
         if (data.vatAmountCents > 0) {
           vatRow.style.display = 'flex';
-          document.getElementById('lineVatLabel').textContent = 'VAT (' + data.vatRatePercent + '%)';
+          document.getElementById('lineVatLabel').textContent = i18nVatLabel + ' (' + data.vatRatePercent + '%)';
           document.getElementById('lineVat').textContent = cur + (data.vatAmountCents/100).toFixed(2);
         } else {
           vatRow.style.display = 'none';
@@ -397,10 +413,10 @@ function refreshPricingPreview(onResult) {
         const note = document.getElementById('groupDiscountNote');
         const breakdown = document.getElementById('previewBreakdown');
         if (count > 1) {
-          breakdown.textContent = count + ' participants';
+          breakdown.textContent = i18nParticipantsCount.replace('{0}', count);
           if (data.discountPercent > 0) {
             note.style.display = 'block';
-            note.textContent = cur + (data.grandTotalCents/100/count).toFixed(2) + ' per participant after discount';
+            note.textContent = i18nPerParticipantAfterDiscount.replace('{0}', cur + (data.grandTotalCents/100/count).toFixed(2));
           } else {
             note.style.display = 'none';
           }

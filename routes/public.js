@@ -135,10 +135,14 @@ function courseCardViewModel(course) {
 
   let availabilityLabel = null;
   if (nextSession && nextSession.seatsLeft != null) {
-    if (nextSession.seatsLeft <= 0) availabilityLabel = "Fully booked";
-    else if (nextSession.seatsLeft <= 3) availabilityLabel = "Almost full";
-    else if (nextSession.seatsLeft <= 8) availabilityLabel = "Limited seats";
-    else availabilityLabel = "Available";
+    // Internal keys, not display text -- this helper has no access to the
+    // request's language, so the actual label is looked up via t() in
+    // whichever template renders it (courses.ejs: t('availability_' +
+    // cd.availabilityLabel)), not decided here.
+    if (nextSession.seatsLeft <= 0) availabilityLabel = "fully_booked";
+    else if (nextSession.seatsLeft <= 3) availabilityLabel = "almost_full";
+    else if (nextSession.seatsLeft <= 8) availabilityLabel = "limited_seats";
+    else availabilityLabel = "available";
   }
 
   const discountPercent = discounts.effectiveDiscountPercent(course, nextSession ? nextSession.startDate : null);
@@ -188,29 +192,33 @@ function deliveryModeOfferings(course) {
   return (course.deliveryModes || []).map((mode) => {
     if (INQUIRY_ONLY_MODES.includes(mode)) {
       return {
-        mode, schedule: "Custom", priceLabel: "Pricing available on request",
-        ctaLabel: mode === "Private Cohort" ? "Request a Private Cohort" : "Request Corporate Training",
+        mode, scheduleKey: "offer_custom", priceLabelKey: "offer_pricing_on_request",
+        ctaLabelKey: mode === "Private Cohort" ? "offer_request_private_cohort" : "offer_request_corporate_training",
         ctaUrl: `/corporate-training?course=${encodeURIComponent(course.slug)}&mode=${encodeURIComponent(mode)}`,
         isInquiry: true,
       };
     }
 
     const modeSessions = (course.sessions || []).filter((s) => s.mode === mode);
-    let schedule;
+    // scheduleKey (translatable fallback text) and scheduleDates (a literal
+    // date string, never translated) are kept separate rather than one
+    // mixed field, since only one of the two is ever real text to
+    // translate.
+    let scheduleKey = null, scheduleDates = null;
     if (mode === "Recorded") {
-      schedule = "Self-paced &middot; Available immediately";
+      scheduleKey = "offer_self_paced_available";
     } else {
       const upcoming = modeSessions
         .filter((s) => s.startDate && s.startDate !== "On Demand" && new Date(s.startDate) >= today)
         .sort((a, b) => new Date(a.startDate) - new Date(b.startDate))[0];
       if (upcoming) {
-        schedule = upcoming.endDate ? `${upcoming.startDate} &ndash; ${upcoming.endDate}` : upcoming.startDate;
+        scheduleDates = upcoming.endDate ? `${upcoming.startDate} \u2013 ${upcoming.endDate}` : upcoming.startDate;
       } else if (mode === "Hybrid") {
         // Part 1D: Hybrid dates are optional -- no invented placeholder
         // date, an honest "not yet scheduled" state instead.
-        schedule = "Self-paced learning with live sessions";
+        scheduleKey = "offer_self_paced_with_live";
       } else {
-        schedule = "No sessions currently scheduled";
+        scheduleKey = "offer_no_sessions_scheduled";
       }
     }
 
@@ -221,8 +229,8 @@ function deliveryModeOfferings(course) {
     const priceLabel = `${currencySymbol(course.currency)}${Math.round(priceResult.finalTotalCents / 100)}`;
 
     return {
-      mode, schedule, priceLabel,
-      ctaLabel: mode === "Recorded" ? "Start learning" : "Register",
+      mode, scheduleKey, scheduleDates, priceLabel,
+      ctaLabelKey: mode === "Recorded" ? "offer_start_learning" : "offer_register",
       ctaUrl: `/courses/${course.slug}/register?mode=${encodeURIComponent(mode)}`,
       isInquiry: false,
     };

@@ -6,21 +6,21 @@
 
 <section class="section-tight" style="background:#fff;border-bottom:1px solid var(--line)">
   <div class="container">
-    <span class="eyebrow">My Account</span>
-    <h1 style="font-size:2.1rem">Welcome, <%= learner.name %>.</h1>
-    <p class="lead"><%= learner.email %> · <a href="/logout">Log out</a></p>
-    <a href="/student/lms" class="btn btn-gold" style="margin-top:14px">Go to My Learning</a>
+    <span class="eyebrow"><%= t('account_eyebrow') %></span>
+    <h1 style="font-size:2.1rem"><%= t('account_welcome', learner.name) %></h1>
+    <p class="lead"><%= learner.email %> · <a href="/logout"><%= t('account_log_out') %></a></p>
+    <a href="/student/lms" class="btn btn-gold" style="margin-top:14px"><%= t('account_go_to_learning') %></a>
   </div>
 </section>
 
 <section class="section">
   <div class="container">
-    <h2 style="margin-top:0">Your registrations</h2>
+    <h2 style="margin-top:0"><%= t('account_your_registrations') %></h2>
     <% if (registrations.length === 0) { %>
-      <p class="lead">No registrations yet — <a href="/courses">browse our courses</a> to get started.</p>
+      <p class="lead"><%= t('account_no_registrations', '<a href="/courses">' + t('account_browse_our_courses') + '</a>') %></p>
     <% } else { %>
       <table class="admin-table" style="background:#fff">
-        <thead><tr><th>Course</th><th>Session</th><th>Status</th><th>Invoice</th></tr></thead>
+        <thead><tr><th><%= t('account_th_course') %></th><th><%= t('account_th_session') %></th><th><%= t('account_th_status') %></th><th><%= t('account_th_invoice') %></th></tr></thead>
         <tbody>
           <% registrations.forEach(r => { %>
           <tr>
@@ -37,20 +37,20 @@
 <% if (pendingFeedback.length > 0) { %>
 <section class="section" style="padding-top:0">
   <div class="container">
-    <h2 style="margin-top:0">We'd love your feedback</h2>
+    <h2 style="margin-top:0"><%= t('account_love_feedback') %></h2>
     <% pendingFeedback.forEach(f => { %>
       <% const fc = coursesById[f.courseId]; %>
       <div class="card" style="margin-bottom:12px;max-width:480px">
-        <p style="font-weight:600"><%= fc ? fc.title : 'Course' %> — <%= f.stage === 'purchase' ? 'How was your registration experience?' : 'How was the course overall?' %></p>
+        <p style="font-weight:600"><%= fc ? fc.title : t('account_course_fallback') %> — <%= f.stage === 'purchase' ? t('account_feedback_purchase') : t('account_feedback_course') %></p>
         <form method="POST" action="/account/feedback/<%= f.id %>">
           <div class="form-field">
-            <label>Rating</label>
+            <label><%= t('common_rating') %></label>
             <select name="rating" required>
-              <% [5,4,3,2,1].forEach(n => { %><option value="<%= n %>"><%= n %> star<%= n!==1?'s':'' %></option><% }) %>
+              <% [5,4,3,2,1].forEach(n => { %><option value="<%= n %>"><%= n %> <%= n!==1 ? t('course_star_plural') : t('course_star_singular') %></option><% }) %>
             </select>
           </div>
-          <div class="form-field"><label>Comment (optional)</label><textarea name="comment" rows="2"></textarea></div>
-          <button type="submit" class="btn btn-navy">Submit Feedback</button>
+          <div class="form-field"><label><%= t('common_comment_optional') %></label><textarea name="comment" rows="2"></textarea></div>
+          <button type="submit" class="btn btn-navy"><%= t('account_submit_feedback') %></button>
         </form>
       </div>
     <% }) %>
@@ -61,16 +61,16 @@
 <% if (certificates.length > 0) { %>
 <section class="section" style="padding-top:0">
   <div class="container">
-    <h2 style="margin-top:0">Your certificates</h2>
+    <h2 style="margin-top:0"><%= t('account_your_certificates') %></h2>
     <div class="grid-3">
       <% certificates.forEach(c => { %>
         <% const course = coursesById[c.courseId]; %>
         <div class="card">
-          <h4><%= course ? course.title : 'Course' %></h4>
-          <p style="font-size:.85rem;color:var(--muted)">Issued <%= c.issuedAt %> · <%= c.certificateNumber %></p>
+          <h4><%= course ? course.title : t('account_course_fallback') %></h4>
+          <p style="font-size:.85rem;color:var(--muted)"><%= t('account_issued_meta', c.issuedAt, c.certificateNumber) %></p>
           <div style="display:flex;gap:8px;margin-top:8px">
-            <a href="/account/certificates/<%= c.id %>/download" class="btn btn-outline btn-sm">Download</a>
-            <a href="/account/certificates/<%= c.id %>/badge" class="btn btn-outline btn-sm">Download Badge</a>
+            <a href="/account/certificates/<%= c.id %>/download" class="btn btn-outline btn-sm"><%= t('course_download') %></a>
+            <a href="/account/certificates/<%= c.id %>/badge" class="btn btn-outline btn-sm"><%= t('account_download_badge') %></a>
           </div>
         </div>
       <% }) %>

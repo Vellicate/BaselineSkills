@@ -3,16 +3,18 @@
 <section class="section-tight" style="background:linear-gradient(180deg, #fff 0%, #f8fafc 100%);border-bottom:1px solid var(--line);padding:56px 0 36px">
   <div class="container">
     <div class="section-hdr">
-      <span class="eyebrow">Engineering Curriculum</span>
-      <h1 style="font-size:2.4rem;letter-spacing:-0.02em">Accredited Certifications &amp; Practical Skills Programs</h1>
-      <p class="lead">Explore globally recognized certifications and role-based training programs led by senior industry practitioners.</p>
+      <span class="eyebrow"><%= t('courses_eyebrow') %></span>
+      <h1 style="font-size:2.4rem;letter-spacing:-0.02em"><%- t('courses_title_html') %></h1>
+      <p class="lead"><%= t('courses_lead') %></p>
     </div>
   </div>
 </section>
 
 <section class="section" style="padding-top:40px">
   <div class="container">
-    <% const courseCategoryDisplayLabel = (cat) => cat === 'AI' ? 'Artificial Intelligence' : cat; %>
+    <% const courseCategoryDisplayLabel = (cat) => cat === 'All' ? t('common_all') : (cat === 'AI' ? 'Artificial Intelligence' : cat); %>
+    <% const levelDisplayLabel = (l) => ({ All: t('common_all'), Beginner: t('common_beginner'), Intermediate: t('common_intermediate'), Expert: t('common_expert') }[l] || l); %>
+    <% const formatDisplayLabel = (f) => ({ All: t('common_all'), 'Live Online': t('common_live_online'), Classroom: t('common_classroom'), Recorded: t('faq_recorded_label'), Hybrid: t('faq_hybrid_label') }[f] || f); %>
     <div class="path-tabs-container">
       <div class="path-tabs">
         <% categories.forEach(cat => { %>
@@ -26,43 +28,43 @@
     <form method="GET" action="/courses" class="card course-filter-bar" style="margin-bottom:32px;padding:20px">
       <input type="hidden" name="category" value="<%= activeCategory %>">
       <div class="form-field filter-field-search">
-        <label for="courses-search-q">Search</label>
-        <input type="text" id="courses-search-q" name="q" placeholder="Search by course name..." value="<%= q %>">
+        <label for="courses-search-q"><%= t('common_search') %></label>
+        <input type="text" id="courses-search-q" name="q" placeholder="<%= t('common_search_by_course_name') %>" value="<%= q %>">
       </div>
       <div class="form-field filter-field-select">
-        <label for="courses-search-level">Level</label>
+        <label for="courses-search-level"><%= t('common_level') %></label>
         <select id="courses-search-level" name="level">
-          <% levels.forEach(l => { %><option value="<%= l %>" <%= l===activeLevel?'selected':'' %>><%= l %></option><% }) %>
+          <% levels.forEach(l => { %><option value="<%= l %>" <%= l===activeLevel?'selected':'' %>><%= levelDisplayLabel(l) %></option><% }) %>
         </select>
       </div>
       <div class="form-field filter-field-select">
-        <label for="courses-search-format">Format</label>
+        <label for="courses-search-format"><%= t('common_format') %></label>
         <select id="courses-search-format" name="format">
-          <% formats.forEach(f => { %><option value="<%= f %>" <%= f===activeFormat?'selected':'' %>><%= f %></option><% }) %>
+          <% formats.forEach(f => { %><option value="<%= f %>" <%= f===activeFormat?'selected':'' %>><%= formatDisplayLabel(f) %></option><% }) %>
         </select>
       </div>
       <div class="form-field filter-field-select">
-        <label for="courses-search-certbody">Certification Body</label>
+        <label for="courses-search-certbody"><%= t('common_certification_body') %></label>
         <select id="courses-search-certbody" name="certBody">
           <% certBodies.forEach(b => { %>
-            <% const val = b === 'All' ? 'All' : b.slug; const label = b === 'All' ? 'All' : b.name; %>
+            <% const val = b === 'All' ? 'All' : b.slug; const label = b === 'All' ? t('common_all') : b.name; %>
             <option value="<%= val %>" <%= val===activeCertBody?'selected':'' %>><%= label %></option>
           <% }) %>
         </select>
       </div>
       <div class="form-field filter-field-price">
-        <label for="courses-search-maxprice">Max price (€)</label>
-        <input type="number" id="courses-search-maxprice" name="maxPrice" placeholder="Any" value="<%= maxPrice %>">
+        <label for="courses-search-maxprice"><%= t('common_max_price') %></label>
+        <input type="number" id="courses-search-maxprice" name="maxPrice" placeholder="<%= t('common_any') %>" value="<%= maxPrice %>">
       </div>
-      <button type="submit" class="btn btn-navy">Filter</button>
-      <a href="/courses" class="btn btn-outline">Reset</a>
+      <button type="submit" class="btn btn-navy"><%= t('common_filter') %></button>
+      <a href="/courses" class="btn btn-outline"><%= t('common_reset') %></a>
     </form>
 
     <% if (courses.length === 0) { %>
       <div class="card" style="text-align:center;padding:48px 24px">
-        <h3>No courses match your search</h3>
-        <p class="lead" style="margin-bottom:20px">Try a different search term or filter, or view all our available training programs.</p>
-        <div><a href="/courses" class="btn btn-navy">View All Courses</a></div>
+        <h3><%= t('courses_empty_title') %></h3>
+        <p class="lead" style="margin-bottom:20px"><%= t('courses_empty_desc') %></p>
+        <div><a href="/courses" class="btn btn-navy"><%= t('courses_view_all') %></a></div>
       </div>
     <% } %>
 
@@ -73,15 +75,15 @@
           <% if (c.imageUrl) { %><img src="<%= c.imageUrl %>" alt="<%= c.title %>" style="width:100%;height:140px;object-fit:cover;border-radius:8px;margin-bottom:12px"><% } %>
           <div class="mini-card-top">
             <span class="tag <%= cd.certifyingBodyLabel ? 'tag-cert' : 'tag-skill' %>">
-              <%= cd.certifyingBodyLabel ? ('🏅' + cd.certifyingBodyLabel) : '⚡ Skills Mastery' %>
+              <%= cd.certifyingBodyLabel ? ('🏅' + cd.certifyingBodyLabel) : ('⚡ ' + t('courses_skills_mastery')) %>
             </span>
-            <span class="mini-duration"><%= c.durationDays %> Day<%= c.durationDays > 1 ? 's' : '' %></span>
+            <span class="mini-duration"><%= c.durationDays %> <%= c.durationDays > 1 ? t('schedule_day_plural') : t('schedule_day_singular') %></span>
           </div>
 
-          <span class="domain-sub-kicker"><%= c.category %><% if (c.level) { %> · <%= c.level %><% } %></span>
+          <span class="domain-sub-kicker"><%= c.category %><% if (c.level) { %> · <%= levelDisplayLabel(c.level) %><% } %></span>
           <h3 class="mini-course-title" style="font-size:1.18rem;margin-top:4px"><%= c.title %></h3>
           <% if (cd.avgRating != null) { %>
-            <p style="margin:2px 0 6px;font-size:.85rem;color:#B8860B" aria-label="Rated <%= cd.avgRating.toFixed(1) %> out of 5 from <%= cd.reviewCount %> learner<%= cd.reviewCount !== 1 ? 's' : '' %>">
+            <p style="margin:2px 0 6px;font-size:.85rem;color:#B8860B" aria-label="<%= t('courses_rating_aria', cd.avgRating.toFixed(1), cd.reviewCount, cd.reviewCount !== 1 ? t('courses_learner_plural') : t('courses_learner_singular')) %>">
               <span aria-hidden="true">⭐</span> <%= cd.avgRating.toFixed(1) %> (<%= cd.reviewCount %>)
             </p>
           <% } %>
@@ -89,30 +91,30 @@
 
           <% if (cd.nextSession) { %>
             <p style="font-size:.8rem;color:var(--muted);margin:6px 0">
-              <span aria-hidden="true">📅</span> Next: <%= cd.nextSession.startDate %> · <%= cd.nextSession.mode %>
+              <span aria-hidden="true">📅</span> <%= t('courses_next_session') %> <%= cd.nextSession.startDate %> · <%= formatDisplayLabel(cd.nextSession.mode) %>
             </p>
           <% } else if (!c.published) { %>
-            <p style="font-size:.8rem;color:var(--muted);margin:6px 0">No Schedule</p>
+            <p style="font-size:.8rem;color:var(--muted);margin:6px 0"><%= t('schedule_no_schedule') %></p>
           <% } %>
 
           <% if (c.published) { %>
           <div class="mini-price-row">
             <div class="price-val-wrap">
               <% if (cd.pricing.isFromPrice) { %>
-                <span style="font-size:.75em;color:var(--muted);margin-right:2px">From</span>
+                <span style="font-size:.75em;color:var(--muted);margin-right:2px"><%= t('courses_from_price') %></span>
                 <span class="price-current"><%= currencySymbol(c.currency) %><%= (cd.pricing.lowestModePriceCents/100).toFixed(0) %></span>
               <% } else { %>
                 <% if (cd.pricing.discountPercent > 0) { %>
                   <span class="price-was" style="text-decoration:line-through;opacity:.55;font-size:.8em;margin-right:4px"><%= currencySymbol(c.currency) %><%= (cd.pricing.originalPriceCents/100).toFixed(0) %></span>
                 <% } %>
                 <span class="price-current"><%= currencySymbol(c.currency) %><%= (cd.pricing.finalPriceCents/100).toFixed(0) %></span>
-                <% if(cd.pricing.discountPercent > 0){ %><span class="price-discount-pill"><%= cd.pricing.discountPercent %>% OFF</span><% } %>
+                <% if(cd.pricing.discountPercent > 0){ %><span class="price-discount-pill"><%= t('schedule_discount', cd.pricing.discountPercent) %></span><% } %>
               <% } %>
             </div>
             <% if (cd.availabilityLabel) { %>
               <div class="seats-status-pill">
                 <span class="status-pulse-dot"></span>
-                <span><%= cd.availabilityLabel %></span>
+                <span><%= t('availability_' + cd.availabilityLabel) %></span>
               </div>
             <% } %>
           </div>
@@ -120,11 +122,11 @@
 
           <div class="course-mini-ctas">
             <a href="/courses/<%= c.slug %>" class="btn btn-outline btn-learn-more">
-              <span>View Course <span class="sr-only">details for <%= c.title %></span></span>
+              <span><%= t('courses_view_course') %> <span class="sr-only">details for <%= c.title %></span></span>
               <svg class="cta-arrow-slide" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
             </a>
             <a href="/courses/<%= c.slug %>#sessions" class="btn btn-navy btn-batches-cta">
-              <span>Upcoming Batches <span class="sr-only">for <%= c.title %></span></span>
+              <span><%= t('courses_upcoming_batches') %> <span class="sr-only">for <%= c.title %></span></span>
               <span class="batch-count-dot">📅</span>
             </a>
           </div>
@@ -139,8 +141,8 @@
 <section class="section" style="background:#fff">
   <div class="container">
     <div class="section-hdr center">
-      <h2>Build skills that build on each other.</h2>
-      <p class="lead">Follow a practical learning path from foundational knowledge to workplace application.</p>
+      <h2><%= t('courses_pathway_title') %></h2>
+      <p class="lead"><%= t('courses_pathway_lead') %></p>
     </div>
     <% learningPaths.forEach(path => { %>
       <div class="path-sequence-block">
@@ -150,7 +152,7 @@
             <% if (i > 0) { %><div class="path-sequence-arrow" aria-hidden="true">&rarr;</div><% } %>
             <a href="/courses/<%= c.slug %>" class="path-sequence-item" style="text-decoration:none;color:inherit" data-analytics-event="explore_learning_path" data-course-id="<%= c.id %>">
               <h4><%= c.title %></h4>
-              <p><%= c.durationDays %> Day<%= c.durationDays > 1 ? 's' : '' %></p>
+              <p><%= c.durationDays %> <%= c.durationDays > 1 ? t('schedule_day_plural') : t('schedule_day_singular') %></p>
             </a>
           <% }) %>
         </div>

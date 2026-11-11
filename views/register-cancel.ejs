@@ -2,11 +2,11 @@
 
 <section class="section">
   <div class="container" style="max-width:560px;text-align:center">
-    <h1>Payment not completed</h1>
-    <p class="lead">No charge was made. Your registration was saved as pending — you can complete payment any time, or contact us if you'd like help.</p>
+    <h1><%= t('cancel_title') %></h1>
+    <p class="lead"><%= t('cancel_lead') %></p>
     <div class="hero-ctas" style="justify-content:center">
-      <a href="/courses" class="btn btn-outline">Back to courses</a>
-      <a href="/contact" class="btn btn-navy">Contact us</a>
+      <a href="/courses" class="btn btn-outline"><%= t('cancel_back_to_courses') %></a>
+      <a href="/contact" class="btn btn-navy"><%= t('faq_contact_us') %></a>
     </div>
   </div>
 </section>

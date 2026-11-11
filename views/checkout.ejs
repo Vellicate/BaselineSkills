@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<%= lang %>">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -22,8 +22,8 @@
 <body>
 <section class="section" style="min-height:70vh;display:flex;align-items:center;justify-content:center">
   <div class="container" style="max-width:520px;text-align:center">
-    <h1 style="font-size:1.6rem">Completing your registration for<br><%= course.title %></h1>
-    <p class="lead">Loading secure checkout…</p>
+    <h1 style="font-size:1.6rem"><%= t('checkout_completing_registration') %><br><%= course.title %></h1>
+    <p class="lead"><%= t('checkout_loading_secure') %></p>
     <% if (provider === "razorpay") { %>
     <div style="font-size:1.4rem;font-weight:700;margin-top:8px">INR <%= (registration.razorpayAmountPaise/100).toFixed(2) %></div>
     <% } else { %>
@@ -31,18 +31,18 @@
     <% } %>
     <% if (provider === "paddle") { %>
     <div id="checkout-fallback" style="display:none;margin-top:20px">
-      <p>The checkout window didn't open automatically.</p>
-      <button class="btn btn-gold" onclick="openCheckout()">Open checkout — pay <%= registration.currency %> <%= (registration.priceCentsCharged/100).toFixed(2) %></button>
+      <p><%= t('checkout_window_not_open') %></p>
+      <button class="btn btn-gold" onclick="openCheckout()"><%= t('checkout_open_pay', registration.currency, (registration.priceCentsCharged/100).toFixed(2)) %></button>
     </div>
     <% } else if (provider === "razorpay") { %>
     <div id="checkout-fallback" style="display:none;margin-top:20px">
-      <p>The checkout window didn't open automatically.</p>
-      <button class="btn btn-gold" onclick="openCheckout()">Open checkout — pay INR <%= (registration.razorpayAmountPaise/100).toFixed(2) %></button>
+      <p><%= t('checkout_window_not_open') %></p>
+      <button class="btn btn-gold" onclick="openCheckout()"><%= t('checkout_open_pay', 'INR', (registration.razorpayAmountPaise/100).toFixed(2)) %></button>
     </div>
     <% } else { %>
     <div id="paypal-button-container" style="margin-top:24px"></div>
     <% } %>
-    <p class="form-hint" style="margin-top:24px"><a href="/register/cancel?reg=<%= registration.id %>">Cancel and go back</a></p>
+    <p class="form-hint" style="margin-top:24px"><a href="/register/cancel?reg=<%= registration.id %>"><%= t('checkout_cancel_and_go_back') %></a></p>
   </div>
 </section>
 

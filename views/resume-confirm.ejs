@@ -2,35 +2,34 @@
 
 <section class="section">
   <div class="container" style="max-width:640px;text-align:center">
-    <h1>Confirm your details</h1>
+    <h1><%= t('resume_title') %></h1>
     <p class="lead">
-      Please check these details are still correct before completing payment for
-      <strong><%= course ? course.title : registration.courseTitle %></strong>.
+      <%- t('resume_lead', '<strong>' + (course ? course.title : registration.courseTitle) + '</strong>') %>
     </p>
 
     <div class="card" style="text-align:left;margin-top:24px">
-      <div style="display:flex;justify-content:space-between;padding:6px 0"><span style="color:var(--muted)">Name</span><strong><%= registration.name %></strong></div>
-      <div style="display:flex;justify-content:space-between;padding:6px 0"><span style="color:var(--muted)">Email</span><strong><%= registration.email %></strong></div>
+      <div style="display:flex;justify-content:space-between;padding:6px 0"><span style="color:var(--muted)"><%= t('common_name') %></span><strong><%= registration.name %></strong></div>
+      <div style="display:flex;justify-content:space-between;padding:6px 0"><span style="color:var(--muted)"><%= t('common_email') %></span><strong><%= registration.email %></strong></div>
       <% if (registration.phone) { %>
-        <div style="display:flex;justify-content:space-between;padding:6px 0"><span style="color:var(--muted)">Phone</span><strong><%= registration.phone %></strong></div>
+        <div style="display:flex;justify-content:space-between;padding:6px 0"><span style="color:var(--muted)"><%= t('common_phone') %></span><strong><%= registration.phone %></strong></div>
       <% } %>
       <% if (registration.company) { %>
-        <div style="display:flex;justify-content:space-between;padding:6px 0"><span style="color:var(--muted)">Company</span><strong><%= registration.company %></strong></div>
+        <div style="display:flex;justify-content:space-between;padding:6px 0"><span style="color:var(--muted)"><%= t('common_company') %></span><strong><%= registration.company %></strong></div>
       <% } %>
-      <div style="display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid var(--line);margin-top:8px;padding-top:14px"><span style="color:var(--muted)">Course</span><strong><%= course ? course.title : registration.courseTitle %></strong></div>
+      <div style="display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid var(--line);margin-top:8px;padding-top:14px"><span style="color:var(--muted)"><%= t('common_course') %></span><strong><%= course ? course.title : registration.courseTitle %></strong></div>
       <% if (registration.sessionStartDate) { %>
-        <div style="display:flex;justify-content:space-between;padding:6px 0"><span style="color:var(--muted)">Session</span><strong><%= registration.sessionStartDate %></strong></div>
+        <div style="display:flex;justify-content:space-between;padding:6px 0"><span style="color:var(--muted)"><%= t('success_session_label') %></span><strong><%= registration.sessionStartDate %></strong></div>
       <% } %>
-      <div style="display:flex;justify-content:space-between;padding:6px 0"><span style="color:var(--muted)">Delivery mode</span><strong><%= registration.deliveryMode %></strong></div>
+      <div style="display:flex;justify-content:space-between;padding:6px 0"><span style="color:var(--muted)"><%= t('success_delivery_mode_label') %></span><strong><%= registration.deliveryMode %></strong></div>
       <% if (registration.participantCount > 1) { %>
-        <div style="display:flex;justify-content:space-between;padding:6px 0"><span style="color:var(--muted)">Participants</span><strong><%= registration.participantCount %></strong></div>
+        <div style="display:flex;justify-content:space-between;padding:6px 0"><span style="color:var(--muted)"><%= t('resume_participants_label') %></span><strong><%= registration.participantCount %></strong></div>
       <% } %>
 
       <div style="border-top:1px solid var(--line);margin-top:8px;padding-top:14px">
-        <label style="font-size:.9rem;color:var(--muted)">Coupon code</label>
+        <label style="font-size:.9rem;color:var(--muted)"><%= t('resume_coupon_label') %></label>
         <div style="display:flex;gap:8px;margin-top:4px">
-          <input type="text" id="couponInput" placeholder="e.g. SUMMER2026" value="<%= typeof appliedCouponCode !== 'undefined' ? appliedCouponCode : '' %>" style="flex:1">
-          <button type="button" class="btn btn-outline" onclick="applyCoupon()" id="applyCouponBtn">Apply</button>
+          <input type="text" id="couponInput" placeholder="<%= t('register_coupon_placeholder_example') %>" value="<%= typeof appliedCouponCode !== 'undefined' ? appliedCouponCode : '' %>" style="flex:1">
+          <button type="button" class="btn btn-outline" onclick="applyCoupon()" id="applyCouponBtn"><%= t('register_apply') %></button>
         </div>
         <p id="couponMessage" style="font-size:.85rem;margin-top:4px">
           <% if (typeof couponError !== 'undefined' && couponError) { %><span style="color:#b91c1c"><%= couponError %></span><% } %>
@@ -38,25 +37,25 @@
       </div>
 
       <div id="pricingBreakdown" style="margin-top:6px">
-        <div style="display:flex;justify-content:space-between;padding:4px 0"><span>Training</span><span id="lineTraining"><%= currencySymbol(registration.currency) %><%= ((registration.baseTotalCents || registration.priceCentsCharged)/100).toFixed(2) %></span></div>
-        <div style="display:none;justify-content:space-between;padding:4px 0;color:#16847B" id="lineDiscountRow"><span id="lineDiscountLabel">Discount</span><span id="lineDiscount"></span></div>
-        <div style="display:none;justify-content:space-between;padding:4px 0" id="lineExamRow"><span>Certification exam</span><span id="lineExam"></span></div>
-        <div style="display:none;justify-content:space-between;padding:4px 0;color:var(--muted)" id="lineVatRow"><span id="lineVatLabel">VAT</span><span id="lineVat"></span></div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0"><span><%= t('register_training_label') %></span><span id="lineTraining"><%= currencySymbol(registration.currency) %><%= ((registration.baseTotalCents || registration.priceCentsCharged)/100).toFixed(2) %></span></div>
+        <div style="display:none;justify-content:space-between;padding:4px 0;color:#16847B" id="lineDiscountRow"><span id="lineDiscountLabel"><%= t('register_discount_label') %></span><span id="lineDiscount"></span></div>
+        <div style="display:none;justify-content:space-between;padding:4px 0" id="lineExamRow"><span><%= t('register_cert_exam_label') %></span><span id="lineExam"></span></div>
+        <div style="display:none;justify-content:space-between;padding:4px 0;color:var(--muted)" id="lineVatRow"><span id="lineVatLabel"><%= t('register_vat_label') %></span><span id="lineVat"></span></div>
         <div style="display:flex;justify-content:space-between;padding-top:10px;margin-top:6px;border-top:1px solid var(--line);font-weight:700;font-size:1.1rem">
-          <span>Amount due</span><span id="lineTotal"><%= registration.currency %> <%= (registration.priceCentsCharged/100).toFixed(2) %></span>
+          <span><%= t('resume_amount_due') %></span><span id="lineTotal"><%= registration.currency %> <%= (registration.priceCentsCharged/100).toFixed(2) %></span>
         </div>
       </div>
     </div>
 
     <p class="form-hint" style="margin-top:16px">
-      Not you, or something looks wrong? Don't proceed — <a href="mailto:admin@baselineskills.com">contact us</a> instead of paying against the wrong details.
+      <%- t('resume_not_you_warning', '<a href="mailto:admin@baselineskills.com">' + t('faq_contact_us') + '</a>') %>
     </p>
 
     <form method="POST" action="/register/resume/<%= registration.id %>" style="margin-top:20px" id="resumeForm">
       <input type="hidden" name="couponCode" id="couponCodeHidden" value="<%= typeof appliedCouponCode !== 'undefined' ? appliedCouponCode : '' %>">
-      <button type="submit" class="btn btn-gold btn-lg">Proceed to payment</button>
+      <button type="submit" class="btn btn-gold btn-lg"><%= t('resume_proceed_to_payment') %></button>
     </form>
-    <a href="/courses" class="btn btn-outline" style="margin-top:12px">Cancel and go back</a>
+    <a href="/courses" class="btn btn-outline" style="margin-top:12px"><%= t('checkout_cancel_and_go_back') %></a>
   </div>
 </section>
 
@@ -70,6 +69,11 @@
 // authority for what gets charged any more than the main registration
 // form's live preview is.
 const currency = <%- JSON.stringify(registration.currency) %>;
+const i18nCouponInvalidFallback = <%- JSON.stringify(t('register_coupon_invalid_fallback')) %>;
+const i18nCouponAppliedSimple = <%- JSON.stringify(t('resume_coupon_applied_simple')) %>;
+const i18nDiscountLabel = <%- JSON.stringify(t('register_discount_label')) %>;
+const i18nVatLabel = <%- JSON.stringify(t('register_vat_label')) %>;
+const i18nCouponCheckError = <%- JSON.stringify(t('resume_coupon_check_error')) %>;
 
 function applyCoupon() {
   const code = document.getElementById('couponInput').value.trim();
@@ -86,10 +90,10 @@ function applyCoupon() {
     .then((data) => {
       btn.disabled = false;
       if (data.couponValid === false) {
-        msg.innerHTML = '<span style="color:#b91c1c">' + (data.couponReason || 'That coupon code is not valid.') + '</span>';
+        msg.innerHTML = '<span style="color:#b91c1c">' + (data.couponReason || i18nCouponInvalidFallback) + '</span>';
         return;
       }
-      msg.innerHTML = '<span style="color:#16847B">Coupon applied.</span>';
+      msg.innerHTML = '<span style="color:#16847B">' + i18nCouponAppliedSimple + '</span>';
 
       const cur = data.currencySymbol;
       document.getElementById('lineTraining').textContent = cur + (data.baseTotalCents / 100).toFixed(2);
@@ -97,7 +101,7 @@ function applyCoupon() {
       const discountRow = document.getElementById('lineDiscountRow');
       if (data.discountPercent > 0) {
         discountRow.style.display = 'flex';
-        document.getElementById('lineDiscountLabel').textContent = 'Discount (' + data.discountPercent + '%)';
+        document.getElementById('lineDiscountLabel').textContent = i18nDiscountLabel + ' (' + data.discountPercent + '%)';
         document.getElementById('lineDiscount').textContent = '\u2212' + cur + (data.discountAmountCents / 100).toFixed(2);
       } else {
         discountRow.style.display = 'none';
@@ -114,7 +118,7 @@ function applyCoupon() {
       const vatRow = document.getElementById('lineVatRow');
       if (data.vatAmountCents > 0) {
         vatRow.style.display = 'flex';
-        document.getElementById('lineVatLabel').textContent = 'VAT (' + data.vatRatePercent + '%)';
+        document.getElementById('lineVatLabel').textContent = i18nVatLabel + ' (' + data.vatRatePercent + '%)';
         document.getElementById('lineVat').textContent = cur + (data.vatAmountCents / 100).toFixed(2);
       } else {
         vatRow.style.display = 'none';
@@ -124,7 +128,7 @@ function applyCoupon() {
     })
     .catch(() => {
       btn.disabled = false;
-      msg.innerHTML = '<span style="color:#b91c1c">Could not check that coupon right now — please try again.</span>';
+      msg.innerHTML = '<span style="color:#b91c1c">' + i18nCouponCheckError + '</span>';
     });
 }
 

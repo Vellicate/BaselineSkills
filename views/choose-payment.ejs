@@ -2,8 +2,8 @@
 
 <section class="section">
   <div class="container" style="max-width:520px;text-align:center">
-    <h1 style="font-size:1.6rem">Choose a payment method</h1>
-    <p class="lead">for <%= registration.courseTitle %></p>
+    <h1 style="font-size:1.6rem"><%= t('choose_payment_title') %></h1>
+    <p class="lead"><%= t('choose_payment_for', registration.courseTitle) %></p>
 
     <% if (typeof error !== 'undefined' && error) { %><div class="alert alert-error"><%= error %></div><% } %>
 
@@ -13,13 +13,13 @@
           <input type="hidden" name="reg" value="<%= registration.id %>">
           <input type="hidden" name="provider" value="<%= providerName %>">
           <button type="submit" class="btn btn-outline btn-block btn-lg">
-            <%= providerName === "paypal" ? "PayPal" : providerName === "paddle" ? "Credit / Debit Card" : providerName === "razorpay" ? "UPI / Cards / Netbanking (Razorpay)" : providerName %>
+            <%= providerName === "paypal" ? "PayPal" : providerName === "paddle" ? t('choose_payment_card') : providerName === "razorpay" ? t('choose_payment_razorpay') : providerName %>
           </button>
         </form>
       <% }) %>
     </div>
 
-    <p class="form-hint" style="margin-top:16px"><a href="/register/cancel?reg=<%= registration.id %>">Cancel and go back</a></p>
+    <p class="form-hint" style="margin-top:16px"><a href="/register/cancel?reg=<%= registration.id %>"><%= t('checkout_cancel_and_go_back') %></a></p>
   </div>
 </section>
 

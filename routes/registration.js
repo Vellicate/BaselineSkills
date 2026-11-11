@@ -112,7 +112,7 @@ router.get("/courses/:slug/register/pricing-preview", (req, res) => {
   res.json({
     ...result, examPriceCents, vatRatePercent, vatAmountCents, grandTotalCents, currencySymbol: currencySymbol(result.currency),
     couponValid: couponCode ? !!(couponValidation && couponValidation.valid) : null,
-    couponReason: couponValidation && !couponValidation.valid ? couponValidation.reason : null,
+    couponReason: couponValidation && !couponValidation.valid ? res.locals.t("coupon_reason_" + couponValidation.reasonKey) : null,
   });
 });
 
@@ -560,7 +560,7 @@ router.get("/register/resume/:regId/pricing-preview", (req, res) => {
   const { couponValidation, priceResult, examFinalPriceCents, vatRatePercent, vatAmountCents, grandTotalCents } = repriceForResume(course, reg, couponCode);
   res.json({
     couponValid: couponCode ? !!(couponValidation && couponValidation.valid) : null,
-    couponReason: couponValidation && !couponValidation.valid ? couponValidation.reason : null,
+    couponReason: couponValidation && !couponValidation.valid ? res.locals.t("coupon_reason_" + couponValidation.reasonKey) : null,
     currencySymbol: currencySymbol(course.currency),
     baseTotalCents: priceResult.baseTotalCents,
     discountPercent: priceResult.discountPercent,
@@ -606,7 +606,7 @@ router.post("/register/resume/:regId", async (req, res) => {
     if (!couponValidation || !couponValidation.valid) {
       return res.render("resume-confirm", {
         title: "Confirm your details — Baseline Skills", noindex: true, registration: reg, course,
-        couponError: couponValidation ? couponValidation.reason : "That coupon code doesn't exist.",
+        couponError: res.locals.t("coupon_reason_" + (couponValidation ? couponValidation.reasonKey : "code_not_found")),
         appliedCouponCode: couponCode,
       });
     }

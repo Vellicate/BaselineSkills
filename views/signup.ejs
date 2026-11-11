@@ -2,9 +2,9 @@
 
 <section class="section-tight" style="background:#fff;border-bottom:1px solid var(--line)">
   <div class="container">
-    <span class="eyebrow">Get Started</span>
-    <h1 style="font-size:2.1rem">Create your account.</h1>
-    <p class="lead">Track your registrations, certificates, and courses in one place.</p>
+    <span class="eyebrow"><%= t('signup_eyebrow') %></span>
+    <h1 style="font-size:2.1rem"><%= t('signup_title') %></h1>
+    <p class="lead"><%= t('signup_lead') %></p>
   </div>
 </section>
 
@@ -13,13 +13,13 @@
     <div class="card">
       <% if (typeof error !== 'undefined' && error) { %><div class="alert alert-error"><%= error %></div><% } %>
       <form method="POST" action="/signup">
-        <div class="form-field"><label>Full name *</label><input type="text" name="name" required></div>
-        <div class="form-field"><label>Email *</label><input type="email" name="email" required></div>
-        <div class="form-field"><label>Password * (<%= passwordMinLength %>+ characters)</label><input type="password" name="password" minlength="<%= passwordMinLength %>" required></div>
-        <div class="form-field"><label>Country</label><input type="text" name="country"></div>
-        <button type="submit" class="btn btn-navy btn-block">Create Account</button>
+        <div class="form-field"><label><%= t('signup_full_name') %> *</label><input type="text" name="name" required></div>
+        <div class="form-field"><label><%= t('common_email') %> *</label><input type="email" name="email" required></div>
+        <div class="form-field"><label><%= t('signup_password_label', passwordMinLength) %></label><input type="password" name="password" minlength="<%= passwordMinLength %>" required></div>
+        <div class="form-field"><label><%= t('signup_country') %></label><input type="text" name="country"></div>
+        <button type="submit" class="btn btn-navy btn-block"><%= t('signup_create_account') %></button>
       </form>
-      <p style="margin-top:16px;font-size:.9rem;color:var(--muted)">Already have an account? <a href="/login">Log in</a></p>
+      <p style="margin-top:16px;font-size:.9rem;color:var(--muted)"><%= t('signup_already_have_account') %> <a href="/login"><%= t('signup_log_in') %></a></p>
     </div>
   </div>
 </section>

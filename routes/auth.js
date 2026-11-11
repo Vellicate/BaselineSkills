@@ -178,14 +178,14 @@ router.get("/account/invoices/:id/download", auth.requireLearner, (req, res) => 
 // /set-password route below — no second reset mechanism to keep in sync.
 router.get("/forgot-password", (req, res) => {
   const captcha = generateCaptcha(req.session);
-  res.render("forgot-password", { title: "Forgot Password — Baseline Skills", error: null, sent: false, captchaQuestion: captcha.question });
+  res.render("forgot-password", { title: "Forgot Password — Baseline Skills", error: null, sent: false, captchaQuestion: captcha.question, captchaA: captcha.a, captchaB: captcha.b });
 });
 
 router.post("/forgot-password", authRateLimiter, async (req, res) => {
   const { email, captchaAnswer } = req.body;
   if (!verifyCaptcha(req.session, captchaAnswer)) {
     const captcha = generateCaptcha(req.session);
-    return res.status(400).render("forgot-password", { title: "Forgot Password — Baseline Skills", error: "That answer wasn't correct — please try again.", sent: false, captchaQuestion: captcha.question });
+    return res.status(400).render("forgot-password", { title: "Forgot Password — Baseline Skills", error: res.locals.t("captcha_wrong_answer"), sent: false, captchaQuestion: captcha.question, captchaA: captcha.a, captchaB: captcha.b });
   }
   const learner = email ? store.findOne("learners", (l) => l.email === email.toLowerCase()) : null;
   if (learner) {

@@ -7,25 +7,25 @@
     <div class="hero-content-col">
       <div class="hero-badge-pill animate-fade-in">
         <span class="badge-sparkle">✨</span>
-        <span class="badge-text">Professional skills, made practical</span>
+        <span class="badge-text"><%= t('hero_badge') %></span>
       </div>
 
       <!-- Exact Primary Hero Heading -->
       <h1 class="hero-title animate-title">
-        From &ldquo;I should learn this&rdquo; to &ldquo;I can use this.&rdquo;
+        <%- t('hero_title_html') %>
       </h1>
 
       <p class="hero-subtitle animate-fade-in delay-1">
-        Learn skills that matter at work&mdash;not just courses you can complete. Choose a useful outcome, learn with experienced practitioners, practise what you learn, and take it back to work.
+        <%= t('hero_subtitle') %>
       </p>
 
       <div class="hero-ctas animate-fade-in delay-2">
         <a href="#outcomes" class="btn btn-gold btn-lg btn-glow" data-analytics-event="choose_outcome">
-          <span>Choose your outcome</span>
+          <span><%= t('hero_cta_choose_outcome') %></span>
           <svg class="btn-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
         </a>
         <a href="/courses" class="btn btn-outline-light btn-lg" data-analytics-event="explore_learning_path">
-          <span>Explore learning paths</span>
+          <span><%= t('hero_cta_explore_paths') %></span>
         </a>
       </div>
 
@@ -34,7 +34,7 @@
         <div class="trainer-card-header">
           <div class="trainer-meta">
             <div class="trainer-title-wrap">
-              <span class="trainer-kicker">Proven Track Record</span>
+              <span class="trainer-kicker"><%= t('hero_trainer_kicker') %></span>
             </div>
           </div>
         </div>
@@ -42,19 +42,19 @@
         <div class="trainer-stats-grid">
           <div class="trainer-stat-pill">
             <span class="stat-highlight">Since <%= siteStats.founded %></span>
-            <span class="stat-caption">Turning knowledge into practical skills.</span>
+            <span class="stat-caption"><%= t('hero_stat_since_caption') %></span>
           </div>
           <div class="trainer-stat-pill">
             <span class="stat-highlight"><%= siteStats.rating %>/5.0</span>
-            <span class="stat-caption">Average Course Rating</span>
+            <span class="stat-caption"><%= t('hero_stat_rating_caption') %></span>
           </div>
           <div class="trainer-stat-pill">
             <span class="stat-highlight"><%= siteStats.professionals %></span>
-            <span class="stat-caption">Professionals Trained</span>
+            <span class="stat-caption"><%= t('hero_stat_professionals_caption') %></span>
           </div>
           <div class="trainer-stat-pill">
             <span class="stat-highlight"><%= siteStats.industries %></span>
-            <span class="stat-caption">Industries Served</span>
+            <span class="stat-caption"><%= t('hero_stat_industries_caption') %></span>
           </div>
         </div>
       </div>
@@ -65,37 +65,37 @@
       <div class="featured-card-wrapper">
         <div class="featured-card-glow"></div>
         <div class="hero-card next-steps-card">
-          <h2 style="margin-bottom:18px;font-size:1.43rem">How it works</h2>
+          <h2 style="margin-bottom:18px;font-size:1.43rem"><%= t('hero_howitworks_title') %></h2>
           <div class="next-step-item">
             <span class="next-step-num">01</span>
             <div>
-              <h3 style="margin:0 0 4px;font-size:1.05rem">Choose a useful outcome</h3>
-              <p style="margin:0;color:var(--muted);font-size:.9rem">Start with what you want to be able to do.</p>
+              <h3 style="margin:0 0 4px;font-size:1.05rem"><%= t('hero_step1_title') %></h3>
+              <p style="margin:0;color:var(--muted);font-size:.9rem"><%= t('hero_step1_desc') %></p>
             </div>
           </div>
           <div class="next-step-item">
             <span class="next-step-num">02</span>
             <div>
-              <h3 style="margin:0 0 4px;font-size:1.05rem">Learn with practitioners</h3>
-              <p style="margin:0;color:var(--muted);font-size:.9rem">Learn from professionals who have done the work.</p>
+              <h3 style="margin:0 0 4px;font-size:1.05rem"><%= t('hero_step2_title') %></h3>
+              <p style="margin:0;color:var(--muted);font-size:.9rem"><%= t('hero_step2_desc') %></p>
             </div>
           </div>
           <div class="next-step-item">
             <span class="next-step-num">03</span>
             <div>
-              <h3 style="margin:0 0 4px;font-size:1.05rem">Practise what you learn</h3>
-              <p style="margin:0;color:var(--muted);font-size:.9rem">Turn concepts into practical capability.</p>
+              <h3 style="margin:0 0 4px;font-size:1.05rem"><%= t('hero_step3_title') %></h3>
+              <p style="margin:0;color:var(--muted);font-size:.9rem"><%= t('hero_step3_desc') %></p>
             </div>
           </div>
           <div class="next-step-item">
             <span class="next-step-num">04</span>
             <div>
-              <h3 style="margin:0 0 4px;font-size:1.05rem">Take it back to work</h3>
-              <p style="margin:0;color:var(--muted);font-size:.9rem">Apply the skill to your project, team or organisation.</p>
+              <h3 style="margin:0 0 4px;font-size:1.05rem"><%= t('hero_step4_title') %></h3>
+              <p style="margin:0;color:var(--muted);font-size:.9rem"><%= t('hero_step4_desc') %></p>
             </div>
           </div>
           <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--line);text-align:center">
-            <strong style="color:var(--navy)">Small steps. Real momentum.</strong>
+            <strong style="color:var(--navy)"><%= t('hero_small_steps') %></strong>
           </div>
         </div>
       </div>
@@ -107,27 +107,27 @@
 <section class="section" style="background:#fff">
   <div class="container">
     <div class="section-hdr center">
-      <h2>Learning doesn&rsquo;t stop when the session ends.</h2>
-      <p class="lead">The difference between knowing a method and being able to use it is practice.</p>
+      <h2><%- t('lpa_title') %></h2>
+      <p class="lead"><%= t('lpa_lead') %></p>
     </div>
     <div class="kpd-progression">
-      <span>KNOW</span><span class="kpd-arrow">&darr;</span><span>PRACTISE</span><span class="kpd-arrow">&darr;</span><span>DO</span>
+      <span><%= t('lpa_know_cap') %></span><span class="kpd-arrow">&darr;</span><span><%= t('lpa_practise_cap') %></span><span class="kpd-arrow">&darr;</span><span><%= t('lpa_do_cap') %></span>
     </div>
     <div class="lpa-grid">
       <div class="lpa-card">
         <div class="lpa-icon" aria-hidden="true">📖</div>
-        <h3>Learn</h3>
-        <p>Build the concepts, methods and professional judgement with experienced practitioners.</p>
+        <h3><%= t('lpa_learn_title') %></h3>
+        <p><%= t('lpa_learn_desc') %></p>
       </div>
       <div class="lpa-card">
         <div class="lpa-icon" aria-hidden="true">🛠️</div>
-        <h3>Practise</h3>
-        <p>Work through realistic situations and exercises that turn knowledge into capability.</p>
+        <h3><%= t('lpa_practise_title') %></h3>
+        <p><%= t('lpa_practise_desc') %></p>
       </div>
       <div class="lpa-card">
         <div class="lpa-icon" aria-hidden="true">🎯</div>
-        <h3>Apply</h3>
-        <p>Take what you have learned back to your project, team and workplace.</p>
+        <h3><%= t('lpa_apply_title') %></h3>
+        <p><%= t('lpa_apply_desc') %></p>
       </div>
     </div>
   </div>
@@ -137,31 +137,31 @@
 <section class="section learning-paths-section" id="outcomes">
   <div class="container">
     <div class="section-hdr center">
-      <span class="eyebrow">Start with what you want to be able to do</span>
-      <h2>Choose a useful outcome</h2>
-      <p class="lead">Don't start with a course. Start with an outcome.</p>
+      <span class="eyebrow"><%= t('outcomes_eyebrow') %></span>
+      <h2><%= t('outcomes_title') %></h2>
+      <p class="lead"><%= t('outcomes_lead') %></p>
     </div>
 
     <% const categoryDisplayLabel = (cat) => cat === 'AI' ? 'Artificial Intelligence' : cat; %>
     <% const outcomeCopy = {
-      "Requirements Engineering": { title: "Improve Requirements", desc: "Write, analyse and manage better requirements." },
-      "Business Analysis": { title: "Become a Better Business Analyst", desc: "Build practical analysis, stakeholder and decision-making skills." },
-      "Systems Engineering": { title: "Build Systems Thinking", desc: "Understand systems, architecture and engineering relationships." },
-      "Business Process Modeling": { title: "Improve Business Processes", desc: "Model, analyse and improve how work gets done." },
-      "Artificial Intelligence": { title: "Work with AI", desc: "Apply AI thoughtfully to professional work." },
-      "AI": { title: "Work with AI", desc: "Apply AI thoughtfully to professional work." },
-      "Automotive": { title: "Build Automotive Engineering Skills", desc: "Develop practical capability for modern automotive and software-defined products." },
-      "Project Management": { title: "Manage Projects with Confidence", desc: "Plan, track and deliver work that stays on budget and on time." },
+      "Requirements Engineering": { title: t('outcome_re_title'), desc: t('outcome_re_desc') },
+      "Business Analysis": { title: t('outcome_ba_title'), desc: t('outcome_ba_desc') },
+      "Systems Engineering": { title: t('outcome_se_title'), desc: t('outcome_se_desc') },
+      "Business Process Modeling": { title: t('outcome_bpm_title'), desc: t('outcome_bpm_desc') },
+      "Artificial Intelligence": { title: t('outcome_ai_title'), desc: t('outcome_ai_desc') },
+      "AI": { title: t('outcome_ai_title'), desc: t('outcome_ai_desc') },
+      "Automotive": { title: t('outcome_auto_title'), desc: t('outcome_auto_desc') },
+      "Project Management": { title: t('outcome_pm_title'), desc: t('outcome_pm_desc') },
     }; %>
     <div class="outcome-grid">
       <% Object.keys(byCategory).forEach((cat) => { %>
-        <% const copy = outcomeCopy[cat] || { title: categoryDisplayLabel(cat), desc: "Build practical, job-ready skills in this area." }; %>
+        <% const copy = outcomeCopy[cat] || { title: categoryDisplayLabel(cat), desc: t('outcome_default_desc') }; %>
         <div class="outcome-card">
-          <div class="outcome-count"><%= byCategory[cat].length %> course<%= byCategory[cat].length === 1 ? '' : 's' %></div>
+          <div class="outcome-count"><%= byCategory[cat].length %> <%= byCategory[cat].length === 1 ? t('outcome_course_singular') : t('outcome_course_plural') %></div>
           <h3><%= copy.title %></h3>
           <p><%= copy.desc %></p>
           <a href="/courses?category=<%= encodeURIComponent(cat) %>" class="btn btn-outline btn-sm" data-analytics-event="choose_outcome" data-category="<%= cat %>">
-            Explore <%= categoryDisplayLabel(cat) %>
+            <%= t('outcome_explore', categoryDisplayLabel(cat)) %>
           </a>
         </div>
       <% }) %>
@@ -174,15 +174,15 @@
   <div class="container">
     <div class="section-hdr">
       <div class="hdr-kicker-row">
-        <span class="eyebrow">Upcoming Cohorts</span>
-        <span class="live-cohort-chip"><span class="pulse-green"></span> Guaranteed to Run</span>
+        <span class="eyebrow"><%= t('schedule_eyebrow') %></span>
+        <span class="live-cohort-chip"><span class="pulse-green"></span> <%= t('schedule_guaranteed') %></span>
       </div>
-      <h2>Secure Your Seat in the Next Cohort</h2>
-      <p class="lead">Live interactive instructor-led classes with small cohorts for high engagement.</p>
+      <h2><%= t('schedule_title') %></h2>
+      <p class="lead"><%= t('schedule_lead') %></p>
       <form method="GET" action="/#upcoming-batches" style="margin-top:14px">
         <label style="display:inline-flex;align-items:center;gap:8px;font-size:.88rem;color:var(--muted);cursor:pointer">
           <input type="checkbox" name="showUnscheduled" value="true" <%= showUnscheduled ? 'checked' : '' %> onchange="this.form.submit()">
-          Show unscheduled courses too
+          <%= t('schedule_show_unscheduled') %>
         </label>
       </form>
     </div>
@@ -192,13 +192,13 @@
         <table class="programs-table-enhanced">
           <thead>
             <tr>
-              <th>Course Program</th>
-              <th>Format</th>
-              <th style="width:160px">Start Date</th>
-              <th>Duration</th>
-              <th>Language</th>
-              <th>Price</th>
-              <th>Action</th>
+              <th><%= t('schedule_th_course') %></th>
+              <th><%= t('schedule_th_format') %></th>
+              <th style="width:160px"><%= t('schedule_th_start_date') %></th>
+              <th><%= t('schedule_th_duration') %></th>
+              <th><%= t('schedule_th_language') %></th>
+              <th><%= t('schedule_th_price') %></th>
+              <th><%= t('schedule_th_action') %></th>
             </tr>
           </thead>
           <tbody>
@@ -218,39 +218,39 @@
                     <span class="date-icon">📅</span>
                     <span><%= s.startDate %></span>
                   <% } else { %>
-                    <span style="color:var(--muted)">No Schedule</span>
+                    <span style="color:var(--muted)"><%= t('schedule_no_schedule') %></span>
                   <% } %>
                 </div>
               </td>
-              <td><strong><%= u.course.durationDays %> Day<%= u.course.durationDays>1?'s':'' %></strong></td>
-              <td><%= (s && s.language) || 'English' %></td>
+              <td><strong><%= u.course.durationDays %> <%= u.course.durationDays>1 ? t('schedule_day_plural') : t('schedule_day_singular') %></strong></td>
+              <td><%= (s && s.language) || t('schedule_default_language') %></td>
               <td>
                 <% if (!u.course.published) { %>
                   <span style="color:var(--muted);font-size:.85rem">—</span>
                 <% } else if (u.cardData.pricing.discountPercent > 0) { %>
                   <div style="text-decoration:line-through;opacity:.6;font-size:.85em"><%= currencySymbol(u.course.currency) %><%= (u.cardData.pricing.originalPriceCents/100).toFixed(0) %></div>
                   <div style="font-weight:700"><%= currencySymbol(u.course.currency) %><%= (u.cardData.pricing.finalPriceCents/100).toFixed(0) %></div>
-                  <div style="font-size:.75rem;color:var(--gold, #D98E04);font-weight:700"><%= u.cardData.pricing.discountPercent %>% OFF</div>
+                  <div style="font-size:.75rem;color:var(--gold, #D98E04);font-weight:700"><%= t('schedule_discount', u.cardData.pricing.discountPercent) %></div>
                 <% } else { %>
-                  <div style="font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Published Price</div>
+                  <div style="font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em"><%= t('schedule_published_price') %></div>
                   <div style="font-weight:700"><%= currencySymbol(u.course.currency) %><%= (u.cardData.pricing.finalPriceCents/100).toFixed(0) %></div>
                 <% } %>
               </td>
               <td>
                 <div class="table-action-btns">
                   <% if (u.course.published) { %>
-                    <a href="/courses/<%= u.course.slug %>/register" class="btn btn-navy btn-sm">Register<span class="sr-only"> for <%= u.course.title %></span></a>
+                    <a href="/courses/<%= u.course.slug %>/register" class="btn btn-navy btn-sm"><%= t('schedule_register') %><span class="sr-only"> for <%= u.course.title %></span></a>
                   <% } else { %>
-                    <a href="/courses/<%= u.course.slug %>#sessions" class="btn btn-navy btn-sm">I am interested<span class="sr-only"> in <%= u.course.title %></span></a>
+                    <a href="/courses/<%= u.course.slug %>#sessions" class="btn btn-navy btn-sm"><%= t('schedule_interested') %><span class="sr-only"> in <%= u.course.title %></span></a>
                   <% } %>
-                  <a href="/courses/<%= u.course.slug %>" class="btn btn-outline btn-sm">Details<span class="sr-only"> for <%= u.course.title %></span></a>
+                  <a href="/courses/<%= u.course.slug %>" class="btn btn-outline btn-sm"><%= t('schedule_details') %><span class="sr-only"> for <%= u.course.title %></span></a>
                 </div>
               </td>
             </tr>
             <% }) %>
             <% if (upcoming.length === 0) { %>
             <tr>
-              <td colspan="7" style="text-align:center;color:var(--muted);padding:32px 20px">No cohorts are currently scheduled. Check back soon, or <a href="/courses">browse our full course catalog</a>.</td>
+              <td colspan="7" style="text-align:center;color:var(--muted);padding:32px 20px"><%= t('schedule_empty_text') %> <a href="/courses"><%= t('schedule_empty_link') %></a>.</td>
             </tr>
             <% } %>
           </tbody>
@@ -264,38 +264,38 @@
 <section class="section" style="background:#fff">
   <div class="container">
     <div class="section-hdr center">
-      <span class="eyebrow">The Baseline Advantage</span>
-      <h2>Built by Practitioners, Verified Against Real Standards</h2>
+      <span class="eyebrow"><%= t('why_eyebrow') %></span>
+      <h2><%= t('why_title') %></h2>
     </div>
     <div class="why-grid">
       <div class="why-item">
         <div class="card-icon">📋</div>
-        <h3>Industry-Aligned Curriculum</h3>
-        <p>Built directly on IREB, IIBA, INCOSE, and ISO 26262 international specifications.</p>
+        <h3><%= t('why1_title') %></h3>
+        <p><%= t('why1_desc') %></p>
       </div>
       <div class="why-item">
         <div class="card-icon">👨‍🔬</div>
-        <h3>Practitioner Instructors</h3>
-        <p>Each instructor is accredited specifically in the discipline they teach, not a general trainer stretched across all four.</p>
+        <h3><%= t('why2_title') %></h3>
+        <p><%= t('why2_desc') %></p>
       </div>
       <div class="why-item">
         <div class="card-icon">🛠️</div>
-        <h3>Hands-on Case Studies</h3>
-        <p>Work with realistic aerospace, automotive, and medical system requirements templates.</p>
+        <h3><%= t('why3_title') %></h3>
+        <p><%= t('why3_desc') %></p>
       </div>
       <div class="why-item">
         <div class="card-icon">🌐</div>
-        <h3>Flexible Delivery Modes</h3>
-        <p>Interactive live online sessions, dedicated corporate cohorts, or classroom training.</p>
+        <h3><%= t('why4_title') %></h3>
+        <p><%= t('why4_desc') %></p>
       </div>
       <div class="why-item">
         <div class="card-icon">🏢</div>
-        <h3>Enterprise Customization</h3>
-        <p>Bespoke training mapped directly to your internal tools (DOORS, Polarion, Jira, Cameo).</p>
+        <h3><%= t('why5_title') %></h3>
+        <p><%= t('why5_desc') %></p>
       </div>
     </div>
     <p style="text-align:center;margin-top:32px">
-      <a href="/trainers" class="btn btn-outline" data-analytics-event="meet_practitioners">Meet our practitioners</a>
+      <a href="/trainers" class="btn btn-outline" data-analytics-event="meet_practitioners"><%= t('why_meet_practitioners') %></a>
     </p>
   </div>
 </section>
@@ -304,36 +304,36 @@
 <section class="section reqdrive-section">
   <div class="container">
     <div class="section-hdr center">
-      <h2 style="color:#fff">Learn it. Practise it. Apply it.</h2>
-      <p class="lead" style="color:rgba(255,255,255,.8)">For selected Requirements Engineering and Business Analysis programmes, Baseline Skills connects learning with hands-on practice through ReqDrive.</p>
+      <h2 style="color:#fff"><%= t('reqdrive_title') %></h2>
+      <p class="lead" style="color:rgba(255,255,255,.8)"><%= t('reqdrive_lead') %></p>
     </div>
     <p style="max-width:640px;margin:0 auto;text-align:center;color:rgba(255,255,255,.75);font-size:.92rem">
-      ReqDrive is an AI-powered practice and delivery environment for Requirements Engineering. It gives learners a place to work with requirements, explore quality issues, improve their thinking and apply professional techniques in realistic situations.
+      <%= t('reqdrive_desc') %>
     </p>
     <div class="reqdrive-flow">
       <div class="reqdrive-flow-step">
         <div class="rf-kicker">Baseline Skills</div>
-        <h3>Learn the method</h3>
-        <p>Live sessions with a practitioner instructor.</p>
+        <h3><%= t('reqdrive_step1_title') %></h3>
+        <p><%= t('reqdrive_step1_desc') %></p>
       </div>
       <div class="reqdrive-flow-arrow" aria-hidden="true">&rarr;</div>
       <div class="reqdrive-flow-step">
         <div class="rf-kicker">ReqDrive</div>
-        <h3>Practise the method</h3>
-        <p>Guided, hands-on practice with realistic requirements.</p>
+        <h3><%= t('reqdrive_step2_title') %></h3>
+        <p><%= t('reqdrive_step2_desc') %></p>
       </div>
       <div class="reqdrive-flow-arrow" aria-hidden="true">&rarr;</div>
       <div class="reqdrive-flow-step">
-        <div class="rf-kicker">Your workplace</div>
-        <h3>Apply the skill</h3>
-        <p>Bring the method back to your own project.</p>
+        <div class="rf-kicker"><%= t('reqdrive_step3_kicker') %></div>
+        <h3><%= t('reqdrive_step3_title') %></h3>
+        <p><%= t('reqdrive_step3_desc') %></p>
       </div>
     </div>
     <p style="text-align:center;margin-top:28px">
-      <a href="#outcomes" class="btn btn-gold" data-analytics-event="explore_reqdrive">Explore practice-enabled learning</a>
-      <a href="https://reqdrive.com" target="_blank" rel="noopener" class="btn btn-outline-light" style="margin-left:10px" data-analytics-event="explore_reqdrive">Explore ReqDrive</a>
+      <a href="#outcomes" class="btn btn-gold" data-analytics-event="explore_reqdrive"><%= t('reqdrive_cta1') %></a>
+      <a href="https://reqdrive.com" target="_blank" rel="noopener" class="btn btn-outline-light" style="margin-left:10px" data-analytics-event="explore_reqdrive"><%= t('reqdrive_cta2') %></a>
     </p>
-    <p class="reqdrive-principle">AI accelerates the work. The professional owns the judgement.</p>
+    <p class="reqdrive-principle"><%= t('reqdrive_principle') %></p>
   </div>
 </section>
 
@@ -341,29 +341,29 @@
 <section class="section" style="background:#fff">
   <div class="container">
     <div class="section-hdr center">
-      <span class="eyebrow">A BETTER WAY TO LEARN</span>
-      <h2>A better way to build professional capability</h2>
+      <span class="eyebrow"><%= t('better_eyebrow') %></span>
+      <h2><%= t('better_title') %></h2>
     </div>
     <div class="why-grid-4">
       <div class="why-item">
         <div class="card-icon">01</div>
-        <h3>Outcome-led</h3>
-        <p>Start with what you want to be able to do.</p>
+        <h3><%= t('better1_title') %></h3>
+        <p><%= t('better1_desc') %></p>
       </div>
       <div class="why-item">
         <div class="card-icon">02</div>
-        <h3>Practitioner-led</h3>
-        <p>Learn from people with real-world experience.</p>
+        <h3><%= t('better2_title') %></h3>
+        <p><%= t('better2_desc') %></p>
       </div>
       <div class="why-item">
         <div class="card-icon">03</div>
-        <h3>Practice-driven</h3>
-        <p>Turn concepts into practical capability.</p>
+        <h3><%= t('better3_title') %></h3>
+        <p><%= t('better3_desc') %></p>
       </div>
       <div class="why-item">
         <div class="card-icon">04</div>
-        <h3>Workplace-focused</h3>
-        <p>Take the skill back to your job.</p>
+        <h3><%= t('better4_title') %></h3>
+        <p><%= t('better4_desc') %></p>
       </div>
     </div>
   </div>
@@ -373,7 +373,7 @@
 <section class="section" style="background:#f8f9fb;overflow:hidden">
   <div class="container">
     <div class="section-hdr center">
-      <h2 style="font-size:1.3rem;color:var(--muted)">Professionals from leading organisations have learned with us</h2>
+      <h2 style="font-size:1.3rem;color:var(--muted)"><%= t('logos_title') %></h2>
     </div>
   </div>
   <div class="logo-slider-track" role="list" aria-label="Organizations professionals have learned with us from">
@@ -427,8 +427,8 @@
 <section class="section trust-section">
   <div class="container">
     <div class="section-hdr center">
-      <span class="eyebrow">Client &amp; Community Trust</span>
-      <h2>Trusted by Teams That Can't Afford to Get Anything Wrong</h2>
+      <span class="eyebrow"><%- t('trust_eyebrow') %></span>
+      <h2><%= t('trust_title') %></h2>
     </div>
     <div class="grid-3">
       <div class="testimonial-enhanced">
@@ -506,41 +506,41 @@
 <section class="section" style="background:#fff">
   <div class="container" style="max-width:760px">
     <div class="section-hdr center">
-      <span class="eyebrow">Before you choose a course</span>
-      <h2>Questions are part of learning</h2>
+      <span class="eyebrow"><%= t('faq_eyebrow') %></span>
+      <h2><%= t('faq_title') %></h2>
     </div>
     <div class="faq-list">
       <details class="faq-item" style="border-bottom:1px solid var(--line);padding:16px 0">
-        <summary style="cursor:pointer;font-weight:600">Which course is right for me?</summary>
-        <p style="color:var(--muted);margin-top:10px">If you're new to requirements engineering, CPRE Foundation is the clearest starting point. If your work is broader, begin with the path finder and we'll recommend a level.</p>
+        <summary style="cursor:pointer;font-weight:600"><%= t('faq_q1') %></summary>
+        <p style="color:var(--muted);margin-top:10px"><%= t('faq_a1') %></p>
       </details>
       <details class="faq-item" style="border-bottom:1px solid var(--line);padding:16px 0">
-        <summary style="cursor:pointer;font-weight:600">Can I learn around a full-time job?</summary>
-        <p style="color:var(--muted);margin-top:10px">Yes. Upcoming cohort pages show the complete schedule, session length and time zone before you register.</p>
+        <summary style="cursor:pointer;font-weight:600"><%= t('faq_q2') %></summary>
+        <p style="color:var(--muted);margin-top:10px"><%= t('faq_a2') %></p>
       </details>
       <details class="faq-item" style="border-bottom:1px solid var(--line);padding:16px 0">
-        <summary style="cursor:pointer;font-weight:600">Do I need experience to start?</summary>
-        <p style="color:var(--muted);margin-top:10px">Most foundation courses are designed for motivated beginners and working professionals. Each course page explains the recommended background.</p>
+        <summary style="cursor:pointer;font-weight:600"><%= t('faq_q3') %></summary>
+        <p style="color:var(--muted);margin-top:10px"><%= t('faq_a3') %></p>
       </details>
       <details class="faq-item" style="border-bottom:1px solid var(--line);padding:16px 0">
-        <summary style="cursor:pointer;font-weight:600">What training delivery modes are available?</summary>
+        <summary style="cursor:pointer;font-weight:600"><%= t('faq_q4') %></summary>
         <div style="margin-top:14px;display:flex;flex-direction:column;gap:14px">
           <div>
-            <p style="margin:0;font-weight:600"><span aria-hidden="true">🔴</span> Live</p>
-            <p style="color:var(--muted);margin:4px 0 0">Learn with a practitioner in real time. Ask questions, practise with examples and get feedback.</p>
+            <p style="margin:0;font-weight:600"><span aria-hidden="true">🔴</span> <%= t('faq_live_label') %></p>
+            <p style="color:var(--muted);margin:4px 0 0"><%= t('faq_live_desc') %></p>
           </div>
           <div>
-            <p style="margin:0;font-weight:600"><span aria-hidden="true">▶</span> Recorded</p>
-            <p style="color:var(--muted);margin:4px 0 0">Learn at your own pace with recorded lessons and supporting materials.</p>
+            <p style="margin:0;font-weight:600"><span aria-hidden="true">▶</span> <%= t('faq_recorded_label') %></p>
+            <p style="color:var(--muted);margin:4px 0 0"><%= t('faq_recorded_desc') %></p>
           </div>
           <div>
-            <p style="margin:0;font-weight:600"><span aria-hidden="true">↔</span> Hybrid</p>
-            <p style="color:var(--muted);margin:4px 0 0">Combine self-paced learning with live sessions for the best of both worlds.</p>
+            <p style="margin:0;font-weight:600"><span aria-hidden="true">↔</span> <%= t('faq_hybrid_label') %></p>
+            <p style="color:var(--muted);margin:4px 0 0"><%= t('faq_hybrid_desc') %></p>
           </div>
         </div>
       </details>
     </div>
-    <p style="text-align:center;margin-top:24px;color:var(--muted)">Still have a question? <a href="/contact">Contact us</a>.</p>
+    <p style="text-align:center;margin-top:24px;color:var(--muted)"><%= t('faq_still_question') %> <a href="/contact"><%= t('faq_contact_us') %></a>.</p>
     <script type="application/ld+json">
     <%- JSON.stringify({
       "@context": "https://schema.org",
@@ -548,23 +548,23 @@
       "mainEntity": [
         {
           "@type": "Question",
-          "name": "Which course is right for me?",
-          "acceptedAnswer": { "@type": "Answer", "text": "If you're new to requirements engineering, CPRE Foundation is the clearest starting point. If your work is broader, begin with the path finder and we'll recommend a level." }
+          "name": t('faq_q1'),
+          "acceptedAnswer": { "@type": "Answer", "text": t('faq_a1') }
         },
         {
           "@type": "Question",
-          "name": "Can I learn around a full-time job?",
-          "acceptedAnswer": { "@type": "Answer", "text": "Yes. Upcoming cohort pages show the complete schedule, session length and time zone before you register." }
+          "name": t('faq_q2'),
+          "acceptedAnswer": { "@type": "Answer", "text": t('faq_a2') }
         },
         {
           "@type": "Question",
-          "name": "Do I need experience to start?",
-          "acceptedAnswer": { "@type": "Answer", "text": "Most foundation courses are designed for motivated beginners and working professionals. Each course page explains the recommended background." }
+          "name": t('faq_q3'),
+          "acceptedAnswer": { "@type": "Answer", "text": t('faq_a3') }
         },
         {
           "@type": "Question",
-          "name": "What training delivery modes are available?",
-          "acceptedAnswer": { "@type": "Answer", "text": "Live: learn with a practitioner in real time, asking questions and practising with examples. Recorded: learn at your own pace with recorded lessons and supporting materials. Hybrid: combine self-paced learning with live sessions." }
+          "name": t('faq_q4'),
+          "acceptedAnswer": { "@type": "Answer", "text": t('faq_a4_jsonld') }
         }
       ]
     }) %>
@@ -575,13 +575,13 @@
 <section class="cta-band">
   <div class="cta-band-bg-accent" aria-hidden="true"></div>
   <div class="container cta-band-inner">
-    <h2>What do you want to be able to do?</h2>
-    <p class="cta-band-sub">Choose a useful outcome. Learn with practitioners. Practise what you learn. Take it back to work.</p>
+    <h2><%= t('cta_title') %></h2>
+    <p class="cta-band-sub"><%= t('cta_sub') %></p>
     <div class="cta-band-btns">
-      <a href="#outcomes" class="btn btn-gold btn-lg btn-glow" data-analytics-event="choose_outcome">Choose your outcome</a>
+      <a href="#outcomes" class="btn btn-gold btn-lg btn-glow" data-analytics-event="choose_outcome"><%= t('hero_cta_choose_outcome') %></a>
       <button type="button" class="btn btn-outline-light btn-lg btn-expert-hero" onclick="openExpertModal()">
         <span class="cta-pulse-dot"></span>
-        <span>Talk to an expert</span>
+        <span><%= t('cta_talk_to_expert') %></span>
       </button>
     </div>
   </div>

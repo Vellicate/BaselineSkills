@@ -46,72 +46,72 @@
 <section class="course-header">
   <div class="container">
     <span class="tag"><%= course.category %></span>
-    <% if(course.certification){ %><span class="tag" style="margin-left:8px">Certification</span><% } %>
-    <% if(certificationBody){ %><a href="/certifications/<%= certificationBody.slug %>" class="tag" style="margin-left:8px;text-decoration:none"><%= certificationBody.name %> Accredited</a><% } %>
+    <% if(course.certification){ %><span class="tag" style="margin-left:8px"><%= t('course_certification_tag') %></span><% } %>
+    <% if(certificationBody){ %><a href="/certifications/<%= certificationBody.slug %>" class="tag" style="margin-left:8px;text-decoration:none"><%= t('course_accredited', certificationBody.name) %></a><% } %>
     <h1 style="color:#fff;margin-top:14px"><%= course.title %></h1>
     <p style="color:rgba(255,255,255,.8);max-width:640px"><%= course.summary %></p>
     <div class="course-meta">
-      <span><strong><%= course.durationDays %></strong> Day<%= course.durationDays>1?'s':'' %></span>
+      <span><strong><%= course.durationDays %></strong> <%= course.durationDays>1 ? t('schedule_day_plural') : t('schedule_day_singular') %></span>
       <span><strong><%= course.deliveryModes.join(', ') %></strong></span>
       <% if (course.published) { %>
-        <span><strong><%= course.sessions.length %></strong> upcoming session<%= course.sessions.length!==1?'s':'' %></span>
+        <span><strong><%= course.sessions.length %></strong> <%= course.sessions.length!==1 ? t('course_upcoming_session_plural') : t('course_upcoming_session_singular') %></span>
       <% } else { %>
-        <span style="color:rgba(255,255,255,.7)">No Schedule</span>
+        <span style="color:rgba(255,255,255,.7)"><%= t('schedule_no_schedule') %></span>
       <% } %>
     </div>
     <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:18px">
       <% if (inquiryOnlyCourse) { %>
-        <a href="<%= deliveryOfferings[0].ctaUrl %>" class="btn btn-gold btn-lg"><%= deliveryOfferings[0].ctaLabel %></a>
+        <a href="<%= deliveryOfferings[0].ctaUrl %>" class="btn btn-gold btn-lg"><%= t(deliveryOfferings[0].ctaLabelKey) %></a>
       <% } else if (course.published) { %>
-        <a href="/courses/<%= course.slug %>/register" class="btn btn-gold btn-lg">Register Now</a>
+        <a href="/courses/<%= course.slug %>/register" class="btn btn-gold btn-lg"><%= t('course_register_now') %></a>
       <% } else { %>
-        <button type="button" class="btn btn-gold btn-lg" onclick="document.getElementById('interest-modal').style.display='flex'">I am interested</button>
+        <button type="button" class="btn btn-gold btn-lg" onclick="document.getElementById('interest-modal').style.display='flex'"><%= t('schedule_interested') %></button>
       <% } %>
-      <% if (course.courseOutlineFilename || course.courseOutlineUrl) { %><a href="<%= course.courseOutlineFilename ? '/course-outline/'+course.courseOutlineFilename : course.courseOutlineUrl %>" target="_blank" rel="noopener" class="btn btn-outline btn-lg" style="border-color:rgba(255,255,255,.4);color:#fff">View Course Outline</a><% } %>
-      <% if (course.brochureFilename) { %><button type="button" class="btn btn-outline btn-lg" style="border-color:rgba(255,255,255,.4);color:#fff" onclick="document.getElementById('brochure-modal').style.display='flex'">Download Brochure</button><% } %>
+      <% if (course.courseOutlineFilename || course.courseOutlineUrl) { %><a href="<%= course.courseOutlineFilename ? '/course-outline/'+course.courseOutlineFilename : course.courseOutlineUrl %>" target="_blank" rel="noopener" class="btn btn-outline btn-lg" style="border-color:rgba(255,255,255,.4);color:#fff"><%= t('course_view_outline') %></a><% } %>
+      <% if (course.brochureFilename) { %><button type="button" class="btn btn-outline btn-lg" style="border-color:rgba(255,255,255,.4);color:#fff" onclick="document.getElementById('brochure-modal').style.display='flex'"><%= t('course_download_brochure') %></button><% } %>
     </div>
   </div>
 </section>
 
 <div class="container course-body">
   <div>
-    <h2>Course Overview</h2>
+    <h2><%= t('course_overview_title') %></h2>
     <p style="white-space:pre-line;color:var(--text)"><%= course.description %></p>
 
-    <h2 style="margin-top:36px">Is This Course Right For You?</h2>
-    <p style="color:var(--muted)">This course is ideal for:</p>
+    <h2 style="margin-top:36px"><%= t('course_right_for_you_title') %></h2>
+    <p style="color:var(--muted)"><%= t('course_ideal_for') %></p>
     <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px">
       <% course.audience.forEach(a => { %><span class="pill"><%= a %></span><% }) %>
     </div>
     <% if (course.level) { %>
       <p style="color:var(--muted);font-size:.9rem">
         <% if (course.level === 'Foundation' || course.level === 'Beginner') { %>
-          If you're already an experienced practitioner in this area, our Advanced-level courses may be a better fit than this Foundation-level course.
+          <%= t('course_foundation_note') %>
         <% } else { %>
-          If you're new to this area, our Foundation-level courses are a better starting point than this Advanced-level course.
+          <%= t('course_advanced_note') %>
         <% } %>
       </p>
     <% } %>
 
     <% if (course.whyTakeThisCourse) { %>
-    <h2 style="margin-top:36px">What You'll Be Able To Do</h2>
+    <h2 style="margin-top:36px"><%= t('course_what_youll_do_title') %></h2>
     <p style="white-space:pre-line;color:var(--text);margin-bottom:14px"><%= course.whyTakeThisCourse %></p>
     <% } else { %>
-    <h2 style="margin-top:36px">What You'll Be Able To Do</h2>
+    <h2 style="margin-top:36px"><%= t('course_what_youll_do_title') %></h2>
     <% } %>
     <ul style="padding-left:20px;color:var(--text)">
       <% course.outcomes.forEach(o => { %><li style="margin-bottom:8px"><%= o %></li><% }) %>
     </ul>
 
-    <h2 style="margin-top:36px">How You'll Use This At Work</h2>
+    <h2 style="margin-top:36px"><%= t('course_how_youll_use_title') %></h2>
     <% if (course.practicalApplication) { %>
       <p style="white-space:pre-line;color:var(--text)"><%= course.practicalApplication %></p>
     <% } else { %>
-      <p class="lead">We're still writing up specific workplace examples for this course — check back soon, or ask your trainer during the course itself.</p>
+      <p class="lead"><%= t('course_no_practical_examples') %></p>
     <% } %>
 
     <% if (course.courseOutlineContent) { %>
-    <h2 style="margin-top:36px">Course Outline</h2>
+    <h2 style="margin-top:36px"><%= t('course_outline_title') %></h2>
     <div class="course-outline-content"><%- course.courseOutlineContent %></div>
     <style>
       /* Quill (the admin editor this content was authored in) represents a
@@ -130,7 +130,7 @@
     <% } %>
 
     <% if (course.curriculum && course.curriculum.length) { %>
-    <h2 style="margin-top:36px">Curriculum</h2>
+    <h2 style="margin-top:36px"><%= t('course_curriculum_title') %></h2>
     <% course.curriculum.forEach((mod, i) => { %>
       <div class="accordion-item <%= i===0?'open':'' %>">
         <button class="accordion-btn" onclick="this.parentElement.classList.toggle('open')">
@@ -145,7 +145,7 @@
     <% }) %>
     <% } %>
 
-    <h2 style="margin-top:36px">How You'll Learn</h2>
+    <h2 style="margin-top:36px"><%= t('course_how_youll_learn_title') %></h2>
     <% if (course.formatAndMaterial) { %>
     <p style="white-space:pre-line;color:var(--text);margin-bottom:14px"><%= course.formatAndMaterial %></p>
     <% } %>
@@ -154,58 +154,58 @@
     </div>
 
     <% if (course.prerequisites && course.prerequisites.length) { %>
-    <h2 style="margin-top:36px">Before You Start</h2>
+    <h2 style="margin-top:36px"><%= t('course_before_you_start_title') %></h2>
     <ul style="padding-left:20px;color:var(--text)">
       <% course.prerequisites.forEach(p => { %><li style="margin-bottom:8px"><%= p %></li><% }) %>
     </ul>
     <% } %>
 
     <% if (certificationBody) { %>
-    <h2 style="margin-top:36px">Certification &amp; Exam</h2>
-    <p style="color:var(--muted);max-width:640px">Certification follows a clear three-party structure — each party has a distinct role:</p>
+    <h2 style="margin-top:36px"><%- t('course_cert_exam_title') %></h2>
+    <p style="color:var(--muted);max-width:640px"><%= t('course_cert_structure_intro') %></p>
     <div class="grid-3" style="margin-top:12px">
       <div class="card">
-        <h4 style="margin-top:0"><%= certificationBody.name %> defines the standard</h4>
-        <p style="font-size:.9rem;color:var(--muted)"><%= certificationBody.name %> sets the syllabus and quality criteria this course is built against.</p>
+        <h4 style="margin-top:0"><%= t('course_cert_defines_standard', certificationBody.name) %></h4>
+        <p style="font-size:.9rem;color:var(--muted)"><%= t('course_cert_defines_standard_desc', certificationBody.name) %></p>
       </div>
       <div class="card">
-        <h4 style="margin-top:0">Baseline Skills delivers the training</h4>
-        <p style="font-size:.9rem;color:var(--muted)">Your instructor teaches the syllabus and prepares you for the exam — training and examination are kept separate for objectivity.</p>
+        <h4 style="margin-top:0"><%= t('course_cert_delivers_training') %></h4>
+        <p style="font-size:.9rem;color:var(--muted)"><%= t('course_cert_delivers_training_desc') %></p>
       </div>
       <div class="card">
-        <h4 style="margin-top:0">An independent body examines you</h4>
-        <p style="font-size:.9rem;color:var(--muted)">The certification exam is administered independently of the training provider, so your result reflects your own knowledge, not the course you happened to take.</p>
+        <h4 style="margin-top:0"><%= t('course_cert_independent_body') %></h4>
+        <p style="font-size:.9rem;color:var(--muted)"><%= t('course_cert_independent_body_desc') %></p>
       </div>
     </div>
-    <p style="color:var(--muted);font-size:.85rem;margin-top:12px">Certification exam information (format, fees, retake policy) is provided separately from training details — see the Exams page or ask your trainer for the current details.</p>
+    <p style="color:var(--muted);font-size:.85rem;margin-top:12px"><%= t('course_exam_info_note') %></p>
     <% } %>
 
     <% if (course.whatYoullReceive && course.whatYoullReceive.length) { %>
-    <h2 style="margin-top:36px">What You'll Get With Baseline Skills</h2>
+    <h2 style="margin-top:36px"><%= t('course_what_youll_receive_title') %></h2>
     <ul style="padding-left:20px;color:var(--text)">
       <% course.whatYoullReceive.forEach(w => { %><li style="margin-bottom:8px"><%= w %></li><% }) %>
     </ul>
     <% } %>
 
     <% if (materials.length) { %>
-    <h2 style="margin-top:36px">Course Materials</h2>
+    <h2 style="margin-top:36px"><%= t('course_materials_title') %></h2>
     <% if (hasAccessToMaterials) { %>
       <div class="grid-3">
         <% materials.forEach(m => { %>
           <div class="card">
             <h4><%= m.title %></h4>
             <% if (m.description) { %><p style="font-size:.85rem;color:var(--muted);white-space:pre-line"><%= m.description %></p><% } %>
-            <a href="/courses/<%= course.slug %>/materials/<%= m.id %>/download" class="btn btn-outline btn-sm">Download</a>
+            <a href="/courses/<%= course.slug %>/materials/<%= m.id %>/download" class="btn btn-outline btn-sm"><%= t('course_download') %></a>
           </div>
         <% }) %>
       </div>
     <% } else { %>
-      <p class="lead"><%= materials.length %> material<%= materials.length !== 1 ? 's' : '' %> available to registered learners — <a href="/courses/<%= course.slug %>/register">register for this course</a> to access them.</p>
+      <p class="lead"><%= materials.length %> <%= materials.length !== 1 ? t('course_material_plural') : t('course_material_singular') %> <%= t('course_materials_locked_text') %> <a href="/courses/<%= course.slug %>/register"><%= t('course_materials_register_link') %></a>.</p>
     <% } %>
     <% } %>
 
     <% if (trainer) { %>
-    <h2 style="margin-top:36px">Your Trainer</h2>
+    <h2 style="margin-top:36px"><%= t('course_your_trainer_title') %></h2>
     <div class="card" style="max-width:420px;display:flex;gap:14px;align-items:flex-start">
       <% if (trainer.photoPath) { %>
         <img src="<%= trainer.photoPath %>" alt="<%= trainer.name %>" style="width:56px;height:56px;border-radius:50%;object-fit:cover;flex-shrink:0">
@@ -216,20 +216,20 @@
         <h4 style="margin:0"><%= trainer.name %></h4>
         <% if (trainer.title) { %><p style="color:var(--muted);font-size:.9rem;margin:4px 0 10px"><%= trainer.title %></p><% } %>
         <% if (trainer.bio) { %><p style="font-size:.9rem;white-space:pre-line"><%= trainer.bio.slice(0, 220) %><%= trainer.bio.length > 220 ? '…' : '' %></p><% } %>
-        <a href="/trainers/<%= trainer.id %>" class="btn btn-outline btn-sm">View Full Profile</a>
+        <a href="/trainers/<%= trainer.id %>" class="btn btn-outline btn-sm"><%= t('course_view_full_profile') %></a>
       </div>
     </div>
     <% } %>
 
     <% if (reviewCount) { %>
-    <h2 style="margin-top:36px" id="reviews">Learner Experiences</h2>
+    <h2 style="margin-top:36px" id="reviews"><%= t('course_learner_experiences_title') %></h2>
     <% if (reviewCount >= 5) { %>
-    <p style="font-weight:600">⭐ <%= avgRating.toFixed(1) %> / 5 <span style="font-weight:400;color:var(--muted);font-size:.9rem">(<%= reviewCount %> learners)</span></p>
+    <p style="font-weight:600">⭐ <%= avgRating.toFixed(1) %> / 5 <span style="font-weight:400;color:var(--muted);font-size:.9rem">(<%= reviewCount %> <%= t('courses_learner_plural') %>)</span></p>
     <% if (reviews.length >= 5) { %>
     <div style="margin-bottom:16px">
       <% ratingDistribution.forEach(d => { %>
         <div style="display:flex;align-items:center;gap:8px;font-size:.85rem;color:var(--muted)">
-          <span style="width:40px"><%= d.star %> star</span>
+          <span style="width:40px"><%= d.star %> <%= t('course_star_label') %></span>
           <div style="background:var(--line);border-radius:4px;height:8px;width:140px;overflow:hidden"><div style="background:gold;height:100%;width:<%= reviews.length ? (d.count/reviews.length*100) : 0 %>%"></div></div>
           <span><%= d.count %></span>
         </div>
@@ -244,28 +244,28 @@
       </div>
     <% }) %>
     <% } else { %>
-    <h2 style="margin-top:36px" id="reviews">Learner Experiences</h2>
-    <p class="lead">No reviews yet.</p>
+    <h2 style="margin-top:36px" id="reviews"><%= t('course_learner_experiences_title') %></h2>
+    <p class="lead"><%= t('course_no_reviews') %></p>
     <% } %>
 
     <% if (canReview) { %>
     <div class="card" style="margin-top:16px">
-      <h4>Leave a review</h4>
+      <h4><%= t('course_leave_review_title') %></h4>
       <form method="POST" action="/courses/<%= course.slug %>/review">
         <div class="form-field">
-          <label>Rating</label>
+          <label><%= t('common_rating') %></label>
           <select name="rating" required>
-            <% [5,4,3,2,1].forEach(n => { %><option value="<%= n %>"><%= n %> star<%= n!==1?'s':'' %></option><% }) %>
+            <% [5,4,3,2,1].forEach(n => { %><option value="<%= n %>"><%= n %> <%= n!==1 ? t('course_star_plural') : t('course_star_singular') %></option><% }) %>
           </select>
         </div>
-        <div class="form-field"><label>Comment (optional)</label><textarea name="comment" rows="2"></textarea></div>
-        <button type="submit" class="btn btn-navy">Submit Review</button>
+        <div class="form-field"><label><%= t('common_comment_optional') %></label><textarea name="comment" rows="2"></textarea></div>
+        <button type="submit" class="btn btn-navy"><%= t('course_submit_review') %></button>
       </form>
     </div>
     <% } %>
 
     <% if (faqs.length) { %>
-    <h2 style="margin-top:36px">Frequently Asked Questions</h2>
+    <h2 style="margin-top:36px"><%= t('course_faq_title') %></h2>
     <div class="faq-accordion">
       <% faqs.forEach((f, i) => { %>
         <details class="card" style="margin-bottom:10px;cursor:pointer">
@@ -277,13 +277,13 @@
     <% } %>
 
     <% if (related.length) { %>
-    <h2 style="margin-top:36px">Where Do You Go Next?</h2>
+    <h2 style="margin-top:36px"><%= t('course_where_next_title') %></h2>
     <div class="grid-3">
       <% related.forEach(r => { %>
         <div class="card">
           <h4><%= r.title %></h4>
           <p style="font-size:.85rem;color:var(--muted);flex:1"><%= r.summary %></p>
-          <a href="/courses/<%= r.slug %>" class="btn btn-outline btn-sm">Learn More</a>
+          <a href="/courses/<%= r.slug %>" class="btn btn-outline btn-sm"><%= t('course_learn_more') %></a>
         </div>
       <% }) %>
     </div>
@@ -297,20 +297,20 @@
            clear price in the card below, and a one-row "comparison" table
            would just be visual noise on top of it. -->
       <div class="card" style="margin-bottom:20px;padding:20px">
-        <h3 style="margin-top:0;font-size:1.05rem">Choose how you'd like to learn</h3>
+        <h3 style="margin-top:0;font-size:1.05rem"><%= t('course_choose_how_learn') %></h3>
         <table style="width:100%;font-size:.9rem;border-collapse:collapse">
           <thead>
             <tr style="text-align:left;color:var(--muted);border-bottom:1px solid var(--line)">
-              <th style="padding:8px 4px">Delivery</th><th style="padding:8px 4px">Schedule</th><th style="padding:8px 4px">Price</th><th></th>
+              <th style="padding:8px 4px"><%= t('common_delivery') %></th><th style="padding:8px 4px"><%= t('common_schedule') %></th><th style="padding:8px 4px"><%= t('schedule_th_price') %></th><th></th>
             </tr>
           </thead>
           <tbody>
             <% deliveryOfferings.forEach(o => { %>
               <tr style="border-bottom:1px solid var(--line)">
                 <td style="padding:10px 4px;font-weight:600"><%= o.mode %></td>
-                <td style="padding:10px 4px;color:var(--muted)"><%- o.schedule %></td>
-                <td style="padding:10px 4px"><%= o.priceLabel %></td>
-                <td style="padding:10px 4px;text-align:right"><a href="<%= o.ctaUrl %>" class="btn <%= o.isInquiry ? 'btn-outline' : 'btn-navy' %> btn-sm"><%= o.ctaLabel %></a></td>
+                <td style="padding:10px 4px;color:var(--muted)"><%= o.scheduleDates || t(o.scheduleKey) %></td>
+                <td style="padding:10px 4px"><%= o.priceLabelKey ? t(o.priceLabelKey) : o.priceLabel %></td>
+                <td style="padding:10px 4px;text-align:right"><a href="<%= o.ctaUrl %>" class="btn <%= o.isInquiry ? 'btn-outline' : 'btn-navy' %> btn-sm"><%= t(o.ctaLabelKey) %></a></td>
               </tr>
             <% }) %>
           </tbody>
@@ -324,51 +324,51 @@
              payment CTA at all, ever, not even a single-mode "shortcut"
              around the comparison table above (which doesn't render for
              a single-mode course in the first place). -->
-        <p style="color:var(--muted);font-size:.9rem;margin-top:0">Pricing available on request &mdash; handled through our Corporate Training team, not online payment.</p>
-        <a href="<%= deliveryOfferings[0].ctaUrl %>" class="btn btn-gold btn-block"><%= deliveryOfferings[0].ctaLabel %></a>
+        <p style="color:var(--muted);font-size:.9rem;margin-top:0"><%= t('course_pricing_on_request_note') %></p>
+        <a href="<%= deliveryOfferings[0].ctaUrl %>" class="btn btn-gold btn-block"><%= t(deliveryOfferings[0].ctaLabelKey) %></a>
       <% } else if (course.published) { %>
         <div class="price-row">
           <% if (cardData.pricing.isFromPrice) { %>
-            <div style="font-size:.8rem;color:var(--muted)">From</div>
+            <div style="font-size:.8rem;color:var(--muted)"><%= t('courses_from_price') %></div>
             <div class="price-now"><%= currencySymbol(course.currency) %><%= (cardData.pricing.lowestModePriceCents/100).toFixed(0) %></div>
           <% } else { %>
             <div class="price-now"><%= currencySymbol(course.currency) %><%= (cardData.pricing.finalPriceCents/100).toFixed(0) %></div>
             <% if(cardData.pricing.discountPercent > 0){ %>
               <div class="price-was"><%= currencySymbol(course.currency) %><%= (cardData.pricing.originalPriceCents/100).toFixed(0) %></div>
-              <div class="price-savings" style="color:#16847B;font-size:.85rem;font-weight:600">You save <%= currencySymbol(course.currency) %><%= ((cardData.pricing.originalPriceCents-cardData.pricing.finalPriceCents)/100).toFixed(0) %></div>
+              <div class="price-savings" style="color:#16847B;font-size:.85rem;font-weight:600"><%= t('course_you_save', currencySymbol(course.currency) + ((cardData.pricing.originalPriceCents-cardData.pricing.finalPriceCents)/100).toFixed(0)) %></div>
             <% } %>
           <% } %>
         </div>
-        <% if(!cardData.pricing.isFromPrice && cardData.pricing.discountPercent > 0){ %><span class="discount-badge"><%= cardData.pricing.discountPercent %>% OFF</span><% } %>
-        <p class="form-hint" style="margin-top:10px">per person &middot; <%= course.currency %></p>
-        <a href="/courses/<%= course.slug %>/register" class="btn btn-gold btn-block" style="margin-top:14px">Register Now</a>
+        <% if(!cardData.pricing.isFromPrice && cardData.pricing.discountPercent > 0){ %><span class="discount-badge"><%= t('schedule_discount', cardData.pricing.discountPercent) %></span><% } %>
+        <p class="form-hint" style="margin-top:10px"><%= t('course_per_person') %> &middot; <%= course.currency %></p>
+        <a href="/courses/<%= course.slug %>/register" class="btn btn-gold btn-block" style="margin-top:14px"><%= t('course_register_now') %></a>
       <% } else { %>
-        <p style="color:var(--muted);font-size:.9rem;margin-top:0">This course is being finalized — pricing and scheduling aren't confirmed yet. Let us know you're interested and we'll be in touch as soon as it's ready.</p>
-        <button type="button" class="btn btn-gold btn-block" onclick="document.getElementById('interest-modal').style.display='flex'">I am interested</button>
+        <p style="color:var(--muted);font-size:.9rem;margin-top:0"><%= t('course_unconfirmed_note') %></p>
+        <button type="button" class="btn btn-gold btn-block" onclick="document.getElementById('interest-modal').style.display='flex'"><%= t('schedule_interested') %></button>
       <% } %>
-      <a href="/corporate-training?course=<%= course.slug %>" class="btn btn-outline btn-block" style="margin-top:10px">Corporate Inquiry</a>
+      <a href="/corporate-training?course=<%= course.slug %>" class="btn btn-outline btn-block" style="margin-top:10px"><%= t('course_corporate_inquiry') %></a>
       <% if (course.brochureFilename) { %>
-        <button type="button" class="btn btn-outline btn-block" style="margin-top:10px" onclick="document.getElementById('brochure-modal').style.display='flex'">Download Brochure</button>
+        <button type="button" class="btn btn-outline btn-block" style="margin-top:10px" onclick="document.getElementById('brochure-modal').style.display='flex'"><%= t('course_download_brochure') %></button>
       <% } %>
 
-      <h4 style="margin-top:24px;font-size:.95rem">Upcoming Sessions</h4>
+      <h4 style="margin-top:24px;font-size:.95rem"><%= t('course_upcoming_sessions_title') %></h4>
       <% if (!course.published) { %>
-        <p style="color:var(--muted);font-size:.9rem">No Schedule</p>
+        <p style="color:var(--muted);font-size:.9rem"><%= t('schedule_no_schedule') %></p>
       <% } else { %>
       <div class="form-field" style="margin-bottom:10px">
-        <label style="font-size:.82rem">Show times in</label>
+        <label style="font-size:.82rem"><%= t('course_show_times_in') %></label>
         <select id="session-tz-select" onchange="applySessionTimezone(this.value)">
-          <option value="Etc/GMT-2" selected>Central European Summer Time (CEST)</option>
-          <option value="Etc/GMT">Greenwich Mean Time (GMT)</option>
-          <option value="Europe/London">UK Time (London)</option>
-          <option value="America/New_York">Eastern Time (US)</option>
-          <option value="America/Chicago">Central Time (US)</option>
-          <option value="America/Los_Angeles">Pacific Time (US)</option>
-          <option value="Asia/Kolkata">India Standard Time (IST)</option>
-          <option value="Asia/Dubai">Gulf Standard Time (Dubai)</option>
-          <option value="Asia/Singapore">Singapore Time</option>
-          <option value="Asia/Tokyo">Japan Standard Time</option>
-          <option value="Australia/Sydney">Australian Eastern Time (Sydney)</option>
+          <option value="Etc/GMT-2" selected><%= t('tz_cest') %></option>
+          <option value="Etc/GMT"><%= t('tz_gmt') %></option>
+          <option value="Europe/London"><%= t('tz_london') %></option>
+          <option value="America/New_York"><%= t('tz_est') %></option>
+          <option value="America/Chicago"><%= t('tz_cst') %></option>
+          <option value="America/Los_Angeles"><%= t('tz_pst') %></option>
+          <option value="Asia/Kolkata"><%= t('tz_ist') %></option>
+          <option value="Asia/Dubai"><%= t('tz_dubai') %></option>
+          <option value="Asia/Singapore"><%= t('tz_singapore') %></option>
+          <option value="Asia/Tokyo"><%= t('tz_japan') %></option>
+          <option value="Australia/Sydney"><%= t('tz_sydney') %></option>
         </select>
       </div>
       <ul class="session-list">
@@ -378,7 +378,7 @@
               <%= s.startDate %><%= s.endDate ? ' – ' + s.endDate : '' %> &middot; <%= s.mode %>
               <% if (s.timeFrom || s.timeTo) { %><br><span class="session-time-display" style="font-size:.8rem;color:var(--muted)" data-date="<%= s.startDate %>" data-time-from="<%= s.timeFrom || '' %>" data-time-to="<%= s.timeTo || '' %>"><%= s.timeFrom || '?' %>–<%= s.timeTo || '?' %></span><% } %>
             </span>
-            <span><%= s.seatsLeft!=null ? s.seatsLeft+' seats left' : 'On request' %></span>
+            <span><%= s.seatsLeft!=null ? t('course_seats_left', s.seatsLeft) : t('course_on_request') %></span>
           </li>
         <% }) %>
       </ul>
@@ -420,20 +420,24 @@
 <% if (course.brochureFilename) { %>
 <div id="brochure-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center">
   <div class="card" style="max-width:420px;width:90%;background:#fff">
-    <h3 style="margin-top:0">Get the Brochure</h3>
-    <p style="color:var(--muted);font-size:.9rem">Enter your email and we'll send you the download link right away.</p>
+    <h3 style="margin-top:0"><%= t('course_get_brochure_title') %></h3>
+    <p style="color:var(--muted);font-size:.9rem"><%= t('course_brochure_modal_desc') %></p>
     <div id="brochure-form-area">
-      <div class="form-field"><label>Email address</label><input type="email" id="brochure-email" placeholder="you@company.com"></div>
+      <div class="form-field"><label><%= t('common_email_address') %></label><input type="email" id="brochure-email" placeholder="you@company.com"></div>
       <div id="brochure-error" class="alert alert-error" style="display:none;margin-bottom:14px"></div>
-      <button type="button" class="btn btn-gold btn-block" onclick="submitBrochureRequest()">Send Me the Brochure</button>
+      <button type="button" class="btn btn-gold btn-block" onclick="submitBrochureRequest()"><%= t('course_send_brochure') %></button>
     </div>
     <div id="brochure-success" style="display:none">
-      <div class="alert alert-success">Check your inbox — the brochure link is on its way.</div>
+      <div class="alert alert-success"><%= t('course_brochure_success') %></div>
     </div>
-    <button type="button" class="btn btn-outline btn-block" style="margin-top:10px" onclick="document.getElementById('brochure-modal').style.display='none'">Close</button>
+    <button type="button" class="btn btn-outline btn-block" style="margin-top:10px" onclick="document.getElementById('brochure-modal').style.display='none'"><%= t('common_close') %></button>
   </div>
 </div>
 <script>
+// Server-rendered once here, since this script runs client-side where
+// t() (an EJS/request-time function) isn't available at all.
+const brochureGenericError = <%- JSON.stringify(t('course_generic_error')) %>;
+const brochureNetworkError = <%- JSON.stringify(t('course_network_error')) %>;
 async function submitBrochureRequest() {
   const email = document.getElementById('brochure-email').value.trim();
   const errorBox = document.getElementById('brochure-error');
@@ -446,14 +450,14 @@ async function submitBrochureRequest() {
     });
     const data = await res.json();
     if (!res.ok) {
-      errorBox.textContent = data.error || 'Something went wrong. Please try again.';
+      errorBox.textContent = data.error || brochureGenericError;
       errorBox.style.display = 'block';
       return;
     }
     document.getElementById('brochure-form-area').style.display = 'none';
     document.getElementById('brochure-success').style.display = 'block';
   } catch (e) {
-    errorBox.textContent = 'Network error — please try again.';
+    errorBox.textContent = brochureNetworkError;
     errorBox.style.display = 'block';
   }
 }
@@ -463,33 +467,34 @@ async function submitBrochureRequest() {
 <% if (!course.published) { %>
 <div id="interest-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center">
   <div class="card" style="max-width:460px;width:90%;background:#fff;max-height:90vh;overflow-y:auto">
-    <h3 style="margin-top:0">I'm Interested</h3>
-    <p style="color:var(--muted);font-size:.9rem">This course is still being finalized. Tell us a bit about you and we'll reach out as soon as it's scheduled.</p>
+    <h3 style="margin-top:0"><%= t('course_im_interested_title') %></h3>
+    <p style="color:var(--muted);font-size:.9rem"><%= t('course_interest_modal_desc') %></p>
     <div id="interest-form-area">
-      <div class="form-field"><label>Course</label><input type="text" value="<%= course.title %>" disabled style="background:var(--bg)"></div>
-      <div class="form-field"><label>Name *</label><input type="text" id="interest-name" required></div>
-      <div class="form-field"><label>Email *</label><input type="email" id="interest-email" required></div>
-      <div class="form-field"><label>Phone</label><input type="text" id="interest-phone"></div>
-      <div class="form-field"><label>Company</label><input type="text" id="interest-company"></div>
-      <div class="form-field"><label>Team size</label><input type="text" id="interest-teamSize" placeholder="e.g. Just me, or a group of 5"></div>
+      <div class="form-field"><label><%= t('common_course') %></label><input type="text" value="<%= course.title %>" disabled style="background:var(--bg)"></div>
+      <div class="form-field"><label><%= t('common_name') %> *</label><input type="text" id="interest-name" required></div>
+      <div class="form-field"><label><%= t('common_email') %> *</label><input type="email" id="interest-email" required></div>
+      <div class="form-field"><label><%= t('common_phone') %></label><input type="text" id="interest-phone"></div>
+      <div class="form-field"><label><%= t('common_company') %></label><input type="text" id="interest-company"></div>
+      <div class="form-field"><label><%= t('common_team_size') %></label><input type="text" id="interest-teamSize" placeholder="e.g. Just me, or a group of 5"></div>
       <div class="form-field">
-        <label>Preferred delivery mode</label>
+        <label><%= t('common_preferred_delivery_mode') %></label>
         <select id="interest-deliveryMode">
-          <option value="">No preference</option>
+          <option value=""><%= t('common_no_preference') %></option>
           <% course.deliveryModes.forEach(m => { %><option value="<%= m %>"><%= m %></option><% }) %>
         </select>
       </div>
-      <div class="form-field"><label>Message (optional)</label><textarea id="interest-message" rows="3"></textarea></div>
+      <div class="form-field"><label><%= t('common_message_optional') %></label><textarea id="interest-message" rows="3"></textarea></div>
       <div id="interest-error" class="alert alert-error" style="display:none;margin-bottom:14px"></div>
-      <button type="button" class="btn btn-gold btn-block" onclick="submitInterestRequest()">Send</button>
+      <button type="button" class="btn btn-gold btn-block" onclick="submitInterestRequest()"><%= t('course_send') %></button>
     </div>
     <div id="interest-success" style="display:none">
-      <div class="alert alert-success">Thanks — we've got your details and will be in touch as soon as this course is scheduled.</div>
+      <div class="alert alert-success"><%= t('course_interest_success') %></div>
     </div>
-    <button type="button" class="btn btn-outline btn-block" style="margin-top:10px" onclick="document.getElementById('interest-modal').style.display='none'">Close</button>
+    <button type="button" class="btn btn-outline btn-block" style="margin-top:10px" onclick="document.getElementById('interest-modal').style.display='none'"><%= t('common_close') %></button>
   </div>
 </div>
 <script>
+const interestGenericError = <%- JSON.stringify(t('course_generic_error')) %>;
 async function submitInterestRequest() {
   const name = document.getElementById('interest-name').value.trim();
   const email = document.getElementById('interest-email').value.trim();
@@ -510,14 +515,14 @@ async function submitInterestRequest() {
     });
     const data = await res.json();
     if (!res.ok) {
-      errorBox.textContent = data.error || 'Something went wrong. Please try again.';
+      errorBox.textContent = data.error || interestGenericError;
       errorBox.style.display = 'block';
       return;
     }
     document.getElementById('interest-form-area').style.display = 'none';
     document.getElementById('interest-success').style.display = 'block';
   } catch (e) {
-    errorBox.textContent = 'Something went wrong. Please try again.';
+    errorBox.textContent = interestGenericError;
     errorBox.style.display = 'block';
   }
 }

@@ -39,14 +39,14 @@ const onboardingAuthRateLimiter = createRateLimiter({
 function registerPasswordReset({ table, forgotPath, setPath, loginPath, portalLabel }) {
   router.get(forgotPath, (req, res) => {
     const captcha = generateCaptcha(req.session);
-    res.render("forgot-password", { title: "Forgot Password — Baseline Skills", error: null, sent: false, captchaQuestion: captcha.question, action: forgotPath, loginUrl: loginPath });
+    res.render("forgot-password", { title: "Forgot Password — Baseline Skills", error: null, sent: false, captchaQuestion: captcha.question, captchaA: captcha.a, captchaB: captcha.b, action: forgotPath, loginUrl: loginPath });
   });
 
   router.post(forgotPath, onboardingAuthRateLimiter, async (req, res) => {
     const { email, captchaAnswer } = req.body;
     if (!verifyCaptcha(req.session, captchaAnswer)) {
       const captcha = generateCaptcha(req.session);
-      return res.status(400).render("forgot-password", { title: "Forgot Password — Baseline Skills", error: "That answer wasn't correct — please try again.", sent: false, captchaQuestion: captcha.question, action: forgotPath, loginUrl: loginPath });
+      return res.status(400).render("forgot-password", { title: "Forgot Password — Baseline Skills", error: res.locals.t("captcha_wrong_answer"), sent: false, captchaQuestion: captcha.question, captchaA: captcha.a, captchaB: captcha.b, action: forgotPath, loginUrl: loginPath });
     }
     const record = email ? store.findOne(table, (r) => r.email && r.email.toLowerCase() === String(email).toLowerCase()) : null;
     // Deliberately same response whether or not a matching, approved

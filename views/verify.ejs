@@ -3,17 +3,17 @@
 <section class="section" style="min-height:60vh;display:flex;align-items:center">
   <div class="container" style="max-width:560px;text-align:center">
     <% if (!certificate) { %>
-      <h1 style="font-size:1.8rem">Certificate not found</h1>
-      <p class="lead">This verification link doesn't match a real Baseline Skills certificate. If you believe this is an error, please <a href="/contact">contact us</a>.</p>
+      <h1 style="font-size:1.8rem"><%= t('verify_not_found_title') %></h1>
+      <p class="lead"><%- t('verify_not_found_lead', '<a href="/contact">' + t('verify_contact_us_link_text') + '</a>') %></p>
     <% } else { %>
       <div class="card" style="padding:32px">
         <img src="/img/wordmark.png" alt="Baseline Skills" width="198" height="36" style="margin-bottom:20px;object-fit:contain">
         <span style="font-size:2.5rem">✅</span>
-        <h1 style="font-size:1.6rem;margin-top:8px">Verified Certificate</h1>
-        <p class="lead" style="margin-top:16px"><strong><%= learner.name %></strong> has completed</p>
+        <h1 style="font-size:1.6rem;margin-top:8px"><%= t('verify_verified_title') %></h1>
+        <p class="lead" style="margin-top:16px"><%- t('verify_has_completed', '<strong>' + learner.name + '</strong>') %></p>
         <h2 style="font-size:1.3rem"><%= course.title %></h2>
         <p style="color:var(--muted);font-size:.9rem;margin-top:16px">
-          Issued <%= certificate.issuedAt %> · Certificate number <%= certificate.certificateNumber %>
+          <%= t('verify_issued_meta', certificate.issuedAt, certificate.certificateNumber) %>
         </p>
       </div>
     <% } %>

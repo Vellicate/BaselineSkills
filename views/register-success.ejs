@@ -3,33 +3,33 @@
 <section class="section">
   <div class="container" style="max-width:640px;text-align:center">
     <div style="width:64px;height:64px;border-radius:50%;background:#dcfce7;color:#166534;display:flex;align-items:center;justify-content:center;font-size:1.8rem;margin:0 auto 20px">&#10003;</div>
-    <h1>You're registered!</h1>
+    <h1><%= t('success_title') %></h1>
     <p class="lead">
-      <%= registration.name %>, you're booked on <strong><%= course ? course.title : registration.courseTitle %></strong>.
-      A confirmation email has been sent to <%= registration.email %>, and our team has been notified.
+      <%- t('success_lead', registration.name, '<strong>' + (course ? course.title : registration.courseTitle) + '</strong>') %>
+      <%= t('success_confirmation_sent', registration.email) %>
     </p>
 
     <div class="card" style="text-align:left;margin-top:24px">
-      <div style="display:flex;justify-content:space-between;padding:6px 0"><span style="color:var(--muted)">Session</span><strong><%= registration.sessionStartDate %></strong></div>
-      <div style="display:flex;justify-content:space-between;padding:6px 0"><span style="color:var(--muted)">Delivery mode</span><strong><%= registration.deliveryMode %></strong></div>
-      <div style="display:flex;justify-content:space-between;padding:6px 0"><span style="color:var(--muted)">Amount</span><strong><%= registration.currency %> <%= (registration.priceCentsCharged/100).toFixed(2) %></strong></div>
-      <div style="display:flex;justify-content:space-between;padding:6px 0"><span style="color:var(--muted)">Status</span><span class="badge <%= registration.status==='confirmed' ? 'badge-confirmed' : 'badge-pending' %>"><%= registration.status %></span></div>
+      <div style="display:flex;justify-content:space-between;padding:6px 0"><span style="color:var(--muted)"><%= t('success_session_label') %></span><strong><%= registration.sessionStartDate %></strong></div>
+      <div style="display:flex;justify-content:space-between;padding:6px 0"><span style="color:var(--muted)"><%= t('success_delivery_mode_label') %></span><strong><%= registration.deliveryMode %></strong></div>
+      <div style="display:flex;justify-content:space-between;padding:6px 0"><span style="color:var(--muted)"><%= t('success_amount_label') %></span><strong><%= registration.currency %> <%= (registration.priceCentsCharged/100).toFixed(2) %></strong></div>
+      <div style="display:flex;justify-content:space-between;padding:6px 0"><span style="color:var(--muted)"><%= t('success_status_label') %></span><span class="badge <%= registration.status==='confirmed' ? 'badge-confirmed' : 'badge-pending' %>"><%= registration.status %></span></div>
     </div>
 
     <% if (registration.status === 'invoice_pending') { %>
       <div class="alert" style="background:#fffbeb;color:#92400e;border:1px solid #fde68a;margin-top:20px;text-align:left">
-        Live card payment isn't fully configured on this instance yet, so this registration has been recorded as <strong>invoice pending</strong> rather than charged immediately. Everything else — your confirmation email, the admin notification, and your seat — is fully in place.
+        <%- t('success_invoice_pending_note', '<strong>' + t('success_invoice_pending_word') + '</strong>') %>
       </div>
     <% } %>
 
     <% if (registration.status === 'pending_payment') { %>
       <div class="alert" style="background:#fffbeb;color:#92400e;border:1px solid #fde68a;margin-top:20px;text-align:left">
-        Your payment hasn't been completed yet. Your seat is held for now, but if payment isn't finished soon, this registration will expire.
+        <%= t('success_pending_payment_note') %>
       </div>
-      <a href="/register/resume/<%= registration.id %>" class="btn btn-gold" style="margin-top:16px">Complete your payment</a>
+      <a href="/register/resume/<%= registration.id %>" class="btn btn-gold" style="margin-top:16px"><%= t('success_complete_payment') %></a>
     <% } %>
 
-    <a href="/courses" class="btn btn-outline" style="margin-top:24px">Browse more courses</a>
+    <a href="/courses" class="btn btn-outline" style="margin-top:24px"><%= t('success_browse_more_courses') %></a>
   </div>
 </section>
 
