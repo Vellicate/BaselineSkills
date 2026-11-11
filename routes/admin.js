@@ -1277,7 +1277,9 @@ router.post("/bulk-enroll", (req, res, next) => {
   }
 
   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  const existingRegistrations = store.readAll("registrations").filter((r) => r.courseId === course.id && r.status !== "cancelled");
+  const existingRegistrations = store.readAll("registrations").filter((r) =>
+    r.courseId === course.id && (r.status === "confirmed" || r.status === "invoice_pending")
+  );
   const seenInThisFile = new Set();
   const nowIso = new Date().toISOString();
   const appBaseUrl = process.env.APP_BASE_URL || "https://www.baselineskills.com";
