@@ -257,17 +257,25 @@ function openLessonEditor(moduleId, lesson) {
   fileInput.value = '';
 
   const contentType = lesson ? lesson.contentType : 'RICH_TEXT';
+  document.getElementById('lesson-content-type-field').style.display = 'block';
+  typeReadonly.style.display = 'none';
   if (lesson) {
     // Content type is fixed once a lesson exists -- switching a video
     // lesson to rich text (or vice versa) isn't something the edit route
-    // supports, so this is shown as read-only rather than offered as a
-    // choice that would silently do nothing.
-    document.getElementById('lesson-content-type-field').style.display = 'none';
-    typeReadonly.style.display = 'block';
-    typeReadonly.textContent = 'Content type: ' + contentType.replace('_', ' ') + ' (set when the lesson was created)';
+    // supports. The dropdown stays visible and correctly shows the real
+    // type (rather than being replaced by separate read-only text, which
+    // left this actual <select> element behind at its default "Rich
+    // text" value), but disabled -- a disabled field is excluded from
+    // the submitted form entirely, so the edit route's own fallback to
+    // the lesson's stored content type takes over correctly instead of
+    // the stale "Rich text" value being submitted and getting the file
+    // upload rejected as the wrong type. Found by actually submitting a
+    // file replacement and seeing it get rejected, not by reading the
+    // visibility logic alone.
+    typeSelect.value = contentType;
+    typeSelect.disabled = true;
   } else {
-    document.getElementById('lesson-content-type-field').style.display = 'block';
-    typeReadonly.style.display = 'none';
+    typeSelect.disabled = false;
     typeSelect.value = 'RICH_TEXT';
   }
 
