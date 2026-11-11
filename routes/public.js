@@ -981,11 +981,16 @@ router.post("/courses/:slug/review", reviewRateLimiter, auth.requireLearner, (re
 // be logged in AND have a qualifying (confirmed or invoice-pending)
 // registration for THIS specific course — the same eligibility check as
 // review submission, since both represent "did they actually buy this."
-router.get("/courses/:slug/materials/:materialId/download", auth.requireLearner, (req, res) => {
+// Shared by both the download route and the view route below -- resolves
+// the course/material and confirms the requesting learner actually has
+// access to it, independent of whether they're allowed to download or
+// only view it. Returns null (having already sent a response) on any
+// failure, or { course, material } on success.
+function resolveMaterialAccess(req, res) {
   const course = store.findOne("courses", (c) => c.slug === req.params.slug);
-  if (!course) return res.status(404).render("404", { title: res.locals.t('title_course_not_found') });
+  if (!course) { res.status(404).render("404", { title: res.locals.t('title_course_not_found') }); return null; }
   const material = store.findOne("materials", (m) => m.id === req.params.materialId && m.courseId === course.id);
-  if (!material) return res.status(404).render("404", { title: res.locals.t('title_material_not_found') });
+  if (!material) { res.status(404).render("404", { title: res.locals.t('title_material_not_found') }); return null; }
 
   const learner = store.findOne("learners", (l) => l.id === req.session.learnerId);
   const qualifies = store.findOne("registrations", (r) =>
@@ -993,11 +998,48 @@ router.get("/courses/:slug/materials/:materialId/download", auth.requireLearner,
     (r.learnerId === learner.id || r.email.toLowerCase() === learner.email.toLowerCase()) &&
     (r.status === "confirmed" || r.status === "invoice_pending") && r.grantsAccess !== 0
   );
-  if (!qualifies) return res.status(403).send("You need a confirmed registration for this course to access its materials.");
+  if (!qualifies) { res.status(403).send("You need a confirmed registration for this course to access its materials."); return null; }
+
+  return { course, material };
+}
+
+router.get("/courses/:slug/materials/:materialId/download", auth.requireLearner, (req, res) => {
+  const resolved = resolveMaterialAccess(req, res);
+  if (!resolved) return;
+  const { material } = resolved;
+  // Enforced here, not just hidden in the UI -- the course-detail page
+  // only ever links to this route for a downloadable material (a
+  // non-downloadable one gets a /view link instead), but this route being
+  // guessable/bookmarkable means the real restriction has to live here,
+  // not in which link the template happens to render.
+  if (!material.downloadable) return res.status(403).send("This material is view-only and can't be downloaded.");
 
   const filePath = path.join(MATERIAL_DIR, material.filePath);
   if (!fs.existsSync(filePath)) return res.status(404).render("404", { title: res.locals.t('title_material_file_not_found') });
   res.download(filePath, material.title + path.extname(material.filePath));
+});
+
+// View-only materials never get a download link in the UI, but still need
+// somewhere to actually be viewed -- this serves the exact same file with
+// Content-Disposition: inline instead of attachment, so a browser renders
+// it directly (PDFs, images) rather than prompting to save it. Like any
+// such control, this is a UI nicety, not a hard technical guarantee: a
+// learner who can view a file in their browser can always save it some
+// other way (print-to-PDF, a screenshot, browser dev tools) -- this
+// just removes the one-click "Download" affordance, it can't make a
+// rendered file literally un-savable, and that's told to the admin
+// plainly in the upload form's own label rather than implied as stronger
+// than it is.
+router.get("/courses/:slug/materials/:materialId/view", auth.requireLearner, (req, res) => {
+  const resolved = resolveMaterialAccess(req, res);
+  if (!resolved) return;
+  const { material } = resolved;
+
+  const filePath = path.join(MATERIAL_DIR, material.filePath);
+  if (!fs.existsSync(filePath)) return res.status(404).render("404", { title: res.locals.t('title_material_file_not_found') });
+  res.setHeader("Content-Disposition", `inline; filename="${material.title + path.extname(material.filePath)}"`);
+  if (material.fileType) res.setHeader("Content-Type", material.fileType);
+  res.sendFile(path.resolve(filePath));
 });
 
 // Public certificate/badge verification — deliberately no login required.

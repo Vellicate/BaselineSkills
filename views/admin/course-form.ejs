@@ -458,7 +458,7 @@ function carryCourseFieldsInto(targetForm) {
   <p style="color:var(--muted);font-size:.85rem">Only visible to learners with a confirmed registration for this course — never reachable through a public link.</p>
   <% (materials || []).forEach(m => { %>
     <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)">
-      <span><%= m.title %> <span style="color:var(--muted);font-size:.8rem">(<%= Math.round(m.fileSizeBytes/1024) %> KB)</span></span>
+      <span><%= m.title %> <span style="color:var(--muted);font-size:.8rem">(<%= Math.round(m.fileSizeBytes/1024) %> KB)</span> <span class="badge <%= m.downloadable ? 'badge-confirmed' : 'badge-pending' %>" style="margin-left:8px"><%= m.downloadable ? 'Downloadable' : 'View only' %></span></span>
       <form method="POST" action="/admin/materials/<%= m.id %>/delete" onsubmit="return confirm('Delete this material?')"><button type="submit" class="btn btn-outline btn-sm">Delete</button></form>
     </div>
   <% }) %>
@@ -466,7 +466,11 @@ function carryCourseFieldsInto(targetForm) {
     <div class="form-field"><label>Title</label><input type="text" name="title" required></div>
     <div class="form-field"><label>Description</label><input type="text" name="description"></div>
     <div class="form-field"><label>File</label><input type="file" name="file" required></div>
-    <button type="submit" class="btn btn-navy">Upload Material</button>
+    <div class="checkbox-row">
+      <input type="checkbox" id="material-downloadable" name="downloadable" value="1">
+      <label style="margin:0;font-weight:400" for="material-downloadable">Allow learners to download this file (otherwise it's view-only — no download link is ever provided)</label>
+    </div>
+    <button type="submit" class="btn btn-navy" style="margin-top:10px">Upload Material</button>
   </form>
 </div>
 <% } %>

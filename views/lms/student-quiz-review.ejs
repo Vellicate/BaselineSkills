@@ -5,10 +5,10 @@
 // this lookup is what turns that back into something a student can read.
 function optionText(options, id) {
   const opt = options.find(o => o.id === id);
-  return opt ? opt.optionText : '(no answer)';
+  return opt ? opt.optionText : t('quizreview_no_answer');
 }
 function formatAnswer(q, answerData) {
-  if (answerData == null) return '(no answer)';
+  if (answerData == null) return t('quizreview_no_answer');
   if (q.questionType === 'SHORT_ANSWER') return answerData || '(no answer)';
   if (q.questionType === 'MULTI_SELECT') {
     if (!Array.isArray(answerData) || answerData.length === 0) return '(no answer)';
@@ -26,7 +26,7 @@ function correctAnswerText(q) {
 <section class="section-tight" style="background:#fff;border-bottom:1px solid var(--line)">
   <div class="container">
     <a href="/student/lms/lessons/<%= lesson.id %>/quiz" style="font-size:.85rem;color:var(--muted)">&larr; <%= lesson.title %></a>
-    <h1 style="font-size:1.6rem;margin-top:8px">Review — Attempt #<%= attempt.attemptNumber %></h1>
+    <h1 style="font-size:1.6rem;margin-top:8px"><%= t('quizreview_title', attempt.attemptNumber) %></h1>
   </div>
 </section>
 
@@ -34,9 +34,9 @@ function correctAnswerText(q) {
   <div class="container" style="max-width:720px">
 
     <div id="wrong-answer-nav" style="display:none;margin-bottom:16px;text-align:center">
-      <button type="button" class="btn btn-outline btn-sm" id="prev-wrong-btn">&larr; Previous wrong answer</button>
+      <button type="button" class="btn btn-outline btn-sm" id="prev-wrong-btn">&larr; <%= t('quizreview_prev_wrong') %></button>
       <span id="wrong-nav-status" style="font-size:.85rem;color:var(--muted);margin:0 10px"></span>
-      <button type="button" class="btn btn-outline btn-sm" id="next-wrong-btn">Next wrong answer &rarr;</button>
+      <button type="button" class="btn btn-outline btn-sm" id="next-wrong-btn"><%= t('quizreview_next_wrong') %> &rarr;</button>
     </div>
 
     <% caseStudies.forEach(cs => { %>
@@ -51,20 +51,20 @@ function correctAnswerText(q) {
       <% const isCorrect = q.answer && q.answer.isCorrect === true; %>
       <div class="card question-review-card" data-is-wrong="<%= isGraded && !isCorrect ? 'true' : 'false' %>" style="margin-bottom:16px;<%= isGraded ? (isCorrect ? 'border-left:4px solid #166534' : 'border-left:4px solid #991B1B') : '' %>">
         <p style="font-weight:600"><%= i+1 %>. <%- q.questionText %></p>
-        <p style="font-size:.9rem"><strong>Your answer:</strong> <%= formatAnswer(q, q.answer ? q.answer.answerData : null) %></p>
+        <p style="font-size:.9rem"><strong><%= t('quizreview_your_answer') %></strong> <%= formatAnswer(q, q.answer ? q.answer.answerData : null) %></p>
         <% if (q.questionType === 'SHORT_ANSWER') { %>
           <p style="font-size:.85rem;color:var(--muted)">
             <% if (q.answer && q.answer.marksAwarded != null) { %>
-              Graded: <%= q.answer.marksAwarded %> / <%= q.marks %> marks
+              <%= t('quizreview_graded_marks', q.answer.marksAwarded, q.marks) %>
             <% } else { %>
-              Awaiting manual grading
+              <%= t('quizreview_awaiting_grading') %>
             <% } %>
           </p>
         <% } else { %>
           <% if (quiz.showCorrectAnswers && !isCorrect) { %>
-            <p style="font-size:.9rem;color:#166534"><strong>Correct answer:</strong> <%= correctAnswerText(q) %></p>
+            <p style="font-size:.9rem;color:#166534"><strong><%= t('quizreview_correct_answer') %></strong> <%= correctAnswerText(q) %></p>
           <% } %>
-          <p style="font-size:.85rem;color:var(--muted)"><%= isCorrect ? 'Correct' : 'Incorrect' %> &middot; <%= q.answer ? q.answer.marksAwarded : 0 %> / <%= q.marks %> marks</p>
+          <p style="font-size:.85rem;color:var(--muted)"><%= isCorrect ? t('quizreview_correct') : t('quizreview_incorrect') %> &middot; <%= t('quizreview_marks', q.answer ? q.answer.marksAwarded : 0, q.marks) %></p>
         <% } %>
         <% if (q.explanation) { %><p style="font-size:.85rem;color:var(--muted);font-style:italic"><%- q.explanation %></p><% } %>
       </div>
@@ -74,6 +74,8 @@ function correctAnswerText(q) {
 </section>
 
 <script>
+const i18nWrongStatus = <%- JSON.stringify(t('quizreview_js_wrong_status', '{0}', '{1}')) %>;
+const i18nNoWrong = <%- JSON.stringify(t('quizreview_js_no_wrong')) %>;
 const wrongCards = Array.from(document.querySelectorAll('.question-review-card')).filter(el => el.dataset.isWrong === 'true');
 let wrongIndex = -1;
 if (wrongCards.length > 0) {
@@ -81,13 +83,13 @@ if (wrongCards.length > 0) {
   function goToWrong(index) {
     wrongIndex = ((index % wrongCards.length) + wrongCards.length) % wrongCards.length;
     wrongCards[wrongIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
-    document.getElementById('wrong-nav-status').textContent = (wrongIndex + 1) + ' of ' + wrongCards.length + ' wrong';
+    document.getElementById('wrong-nav-status').textContent = i18nWrongStatus.replace('{0}', wrongIndex + 1).replace('{1}', wrongCards.length);
   }
   document.getElementById('next-wrong-btn').addEventListener('click', () => goToWrong(wrongIndex + 1));
   document.getElementById('prev-wrong-btn').addEventListener('click', () => goToWrong(wrongIndex - 1));
   goToWrong(0);
 } else {
-  document.getElementById('wrong-answer-nav').innerHTML = '<p style="color:#166534;font-size:.9rem">No wrong answers to review.</p>';
+  document.getElementById('wrong-answer-nav').innerHTML = '<p style="color:#166534;font-size:.9rem">' + i18nNoWrong + '</p>';
   document.getElementById('wrong-answer-nav').style.display = 'block';
 }
 </script>

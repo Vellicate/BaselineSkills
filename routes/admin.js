@@ -1147,7 +1147,12 @@ router.post("/courses/:courseId/materials/new", auth.requireCourseAccess(r => r.
     title: req.body.title || req.file.originalname,
     description: req.body.description || "",
     filePath: req.file.filename, fileType: req.file.mimetype,
-    fileSizeBytes: req.file.size, createdAt: new Date().toISOString(),
+    fileSizeBytes: req.file.size,
+    // Checkbox absent entirely (unticked) vs present -- the same
+    // true/false-from-a-checkbox pattern used throughout this codebase
+    // (e.g. the registration form's "I am also attending" checkbox).
+    downloadable: req.body.downloadable ? 1 : 0,
+    createdAt: new Date().toISOString(),
   });
   res.redirect(`/admin/courses/${req.params.courseId}/edit?success=Material+uploaded`);
 });

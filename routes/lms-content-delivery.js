@@ -37,12 +37,12 @@ function requesterCanView(req, lesson, course) {
 // canView() is true, independent of downloadAllowed.
 router.get("/lms/content/:assetId/stream", (req, res) => {
   const ctx = loadAssetContext(req);
-  if (!ctx) return res.status(404).render("404", { title: "Content not found" });
+  if (!ctx) return res.status(404).render("404", { title: res.locals.t('title_content_not_found') });
   if (!requesterCanView(req, ctx.lesson, ctx.course)) {
     return res.status(403).send("You don't have access to this content.");
   }
   const filePath = path.join(LMS_CONTENT_DIR, ctx.asset.storageKey);
-  if (!fs.existsSync(filePath)) return res.status(404).render("404", { title: "Content file not found" });
+  if (!fs.existsSync(filePath)) return res.status(404).render("404", { title: res.locals.t('title_content_file_not_found') });
   // res.sendFile (via the `send` package Express uses internally) already
   // honors Range request headers for us -- required for HTML5 <video>
   // seeking and seek-ahead to work at all, not just for playback to start.
@@ -57,7 +57,7 @@ router.get("/lms/content/:assetId/stream", (req, res) => {
     headers: { "Content-Type": ctx.asset.mimeType, "Content-Disposition": "inline" },
   }, (err) => {
     if (err && err.statusCode === 416) return res.status(416).send("Requested range not satisfiable.");
-    if (err && !res.headersSent) return res.status(500).render("500", { title: "Something went wrong — Baseline Skills" });
+    if (err && !res.headersSent) return res.status(500).render("500", { title: res.locals.t('err500_title') + " — Baseline Skills" });
   });
 });
 
@@ -69,13 +69,13 @@ router.get("/lms/content/:assetId/stream", (req, res) => {
 // download button in the UI is not the control, this check is.
 router.get("/lms/content/:assetId/download", (req, res) => {
   const ctx = loadAssetContext(req);
-  if (!ctx) return res.status(404).render("404", { title: "Content not found" });
+  if (!ctx) return res.status(404).render("404", { title: res.locals.t('title_content_not_found') });
   if (!lmsAccess.canDownload(req.session.learnerId || null, ctx.lesson, ctx.course) &&
       !(req.session.instructorId && lmsAccess.canManage(req.session.instructorId, ctx.course))) {
     return res.status(403).send("This content isn't available for download.");
   }
   const filePath = path.join(LMS_CONTENT_DIR, ctx.asset.storageKey);
-  if (!fs.existsSync(filePath)) return res.status(404).render("404", { title: "Content file not found" });
+  if (!fs.existsSync(filePath)) return res.status(404).render("404", { title: res.locals.t('title_content_file_not_found') });
   res.download(filePath, ctx.asset.originalFilename || ctx.asset.storageKey);
 });
 

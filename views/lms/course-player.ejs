@@ -13,23 +13,24 @@ const lessonToShow = activeLesson || firstLesson;
 
 <section class="section-tight" style="background:#fff;border-bottom:1px solid var(--line)">
   <div class="container">
+    <% const lmsModeLabel = (m) => ({ LIVE_ONLINE: t('lms_mode_live_online'), RECORDED: t('lms_mode_recorded'), HYBRID: t('lms_mode_hybrid') }[m] || m); %>
     <% if (isTeacherPreview) { %>
-      <span class="pill" style="background:#FFF6DF;color:#7a4e02;margin-bottom:8px;display:inline-block">Teacher preview &mdash; not the enrolled-student view</span>
+      <span class="pill" style="background:#FFF6DF;color:#7a4e02;margin-bottom:8px;display:inline-block"><%= t('player_teacher_preview') %></span>
     <% } %>
     <h1 style="font-size:1.6rem;margin:0"><%= course.title %></h1>
-    <p style="font-size:.85rem;color:var(--muted);margin:6px 0 0"><%= course.lmsDeliveryMode.replace('_',' ') %></p>
+    <p style="font-size:.85rem;color:var(--muted);margin:6px 0 0"><%= lmsModeLabel(course.lmsDeliveryMode) %></p>
 
     <% if (typeof liveSession !== 'undefined' && liveSession) { %>
       <!-- Part G: live-session info for LIVE_ONLINE/HYBRID -- this
            learner's own registered session, not just "a" session on the
            course, since a course can run more than one. -->
       <div class="card" style="margin-top:16px;background:var(--bg-soft,#F1F5F9)">
-        <h3 style="margin-top:0;font-size:1rem">Live session</h3>
+        <h3 style="margin-top:0;font-size:1rem"><%= t('player_live_session') %></h3>
         <p style="margin:0 0 4px"><strong><%= new Date(liveSession.startDate).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) %></strong>
           <% if (liveSession.timeFrom) { %> &middot; <%= liveSession.timeFrom %><% if (liveSession.timeTo) { %>&ndash;<%= liveSession.timeTo %><% } %><% } %>
         </p>
         <% if (liveSession.location && liveSession.location.startsWith('http')) { %>
-          <a href="<%= liveSession.location %>" class="btn btn-navy btn-sm" target="_blank" rel="noopener" style="margin-top:8px">Join meeting</a>
+          <a href="<%= liveSession.location %>" class="btn btn-navy btn-sm" target="_blank" rel="noopener" style="margin-top:8px"><%= t('player_join_meeting') %></a>
         <% } else if (liveSession.location) { %>
           <p style="margin:0;font-size:.9rem;color:var(--muted)"><%= liveSession.location %></p>
         <% } %>
@@ -43,7 +44,7 @@ const lessonToShow = activeLesson || firstLesson;
     <% if (allLessons.length === 0) { %>
       <div class="card" style="text-align:center;padding:48px 24px">
         <p class="lead" style="color:var(--muted);margin:0">
-          <%= isTeacherPreview ? "This course doesn't have any content yet." : "This course's learning content is being prepared. Check back soon." %>
+          <%= isTeacherPreview ? t('player_no_content_teacher') : t('player_no_content_student') %>
         </p>
       </div>
     <% } else { %>
@@ -62,7 +63,7 @@ const lessonToShow = activeLesson || firstLesson;
                      style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;text-decoration:none;font-size:.88rem;<%= isActive ? 'background:var(--navy);color:#fff' : 'color:var(--text)' %>">
                     <span aria-hidden="true"><%- isDone ? '&#10003;' : (isActive ? '&#9656;' : '&#9675;') %></span>
                     <span><%= lesson.title %></span>
-                    <% if (!lesson.isPublished) { %><span style="font-size:.7rem;opacity:.7">(draft)</span><% } %>
+                    <% if (!lesson.isPublished) { %><span style="font-size:.7rem;opacity:.7"><%= t('player_draft_tag') %></span><% } %>
                   </a>
                 </li>
               <% }) %>
@@ -73,7 +74,7 @@ const lessonToShow = activeLesson || firstLesson;
 
       <div class="card" style="min-height:320px">
         <% if (!lessonToShow) { %>
-          <p style="color:var(--muted)">Select a lesson to begin.</p>
+          <p style="color:var(--muted)"><%= t('player_select_lesson') %></p>
         <% } else { %>
           <h2 style="margin-top:0"><%= lessonToShow.title %></h2>
           <% if (lessonToShow.description) { %><p class="lead" style="color:var(--muted)"><%= lessonToShow.description %></p><% } %>
@@ -83,39 +84,39 @@ const lessonToShow = activeLesson || firstLesson;
           <% } else if (lessonToShow.contentType === 'QUIZ') { %>
             <div class="card" style="background:var(--bg-soft,#F1F5F9);text-align:center;padding:32px">
               <% if (isTeacherPreview) { %>
-                <p style="margin:0 0 12px;color:var(--muted)">Quiz preview isn't part of the learner player -- manage this quiz directly.</p>
-                <a href="/trainer/lms/lessons/<%= lessonToShow.id %>/quiz" class="btn btn-outline btn-sm">Open quiz builder</a>
+                <p style="margin:0 0 12px;color:var(--muted)"><%= t('player_quiz_preview_note') %></p>
+                <a href="/trainer/lms/lessons/<%= lessonToShow.id %>/quiz" class="btn btn-outline btn-sm"><%= t('player_open_quiz_builder') %></a>
               <% } else { %>
-                <a href="/student/lms/lessons/<%= lessonToShow.id %>/quiz" class="btn btn-navy">Go to quiz</a>
+                <a href="/student/lms/lessons/<%= lessonToShow.id %>/quiz" class="btn btn-navy"><%= t('player_go_to_quiz') %></a>
               <% } %>
             </div>
           <% } else if (lessonToShow.contentType === 'ASSIGNMENT') { %>
             <div class="card" style="background:var(--bg-soft,#F1F5F9);text-align:center;padding:32px">
               <% if (isTeacherPreview) { %>
-                <p style="margin:0 0 12px;color:var(--muted)">Assignment preview isn't part of the learner player -- manage this assignment directly.</p>
-                <a href="/trainer/lms/lessons/<%= lessonToShow.id %>/assignment" class="btn btn-outline btn-sm">Open assignment builder</a>
+                <p style="margin:0 0 12px;color:var(--muted)"><%= t('player_assignment_preview_note') %></p>
+                <a href="/trainer/lms/lessons/<%= lessonToShow.id %>/assignment" class="btn btn-outline btn-sm"><%= t('player_open_assignment_builder') %></a>
               <% } else { %>
-                <a href="/student/lms/lessons/<%= lessonToShow.id %>/assignment" class="btn btn-navy">Go to assignment</a>
+                <a href="/student/lms/lessons/<%= lessonToShow.id %>/assignment" class="btn btn-navy"><%= t('player_go_to_assignment') %></a>
               <% } %>
             </div>
           <% } else if (!lessonToShow.asset) { %>
             <div class="card" style="background:var(--bg-soft,#F1F5F9);text-align:center;padding:32px">
-              <p style="margin:0;color:var(--muted)">This lesson doesn't have its file uploaded yet.</p>
+              <p style="margin:0;color:var(--muted)"><%= t('player_no_file_yet') %></p>
             </div>
           <% } else if (lessonToShow.contentType === 'VIDEO') { %>
             <video id="lms-video-player" controls style="width:100%;border-radius:8px;background:#000"
                    src="/lms/content/<%= lessonToShow.asset.id %>/stream"
                    data-lesson-id="<%= lessonToShow.id %>"
                    data-resume-position="<%= typeof videoResumePosition !== 'undefined' ? videoResumePosition : 0 %>">
-              Your browser doesn't support HTML5 video.
+              <%= t('player_video_unsupported') %>
             </video>
             <% if (lessonToShow.downloadAllowed) { %>
-              <p style="margin-top:10px"><a href="/lms/content/<%= lessonToShow.asset.id %>/download" class="btn btn-outline btn-sm">Download video</a></p>
+              <p style="margin-top:10px"><a href="/lms/content/<%= lessonToShow.asset.id %>/download" class="btn btn-outline btn-sm"><%= t('player_download_video') %></a></p>
             <% } %>
           <% } else if (lessonToShow.contentType === 'PDF') { %>
             <iframe src="/lms/content/<%= lessonToShow.asset.id %>/stream" style="width:100%;height:640px;border:1px solid var(--line);border-radius:8px" title="<%= lessonToShow.title %>"></iframe>
             <% if (lessonToShow.downloadAllowed) { %>
-              <p style="margin-top:10px"><a href="/lms/content/<%= lessonToShow.asset.id %>/download" class="btn btn-outline btn-sm">Download PDF</a></p>
+              <p style="margin-top:10px"><a href="/lms/content/<%= lessonToShow.asset.id %>/download" class="btn btn-outline btn-sm"><%= t('player_download_pdf') %></a></p>
             <% } %>
           <% } else { %>
             <!-- DOCUMENT/PRESENTATION: Word and PowerPoint files have no
@@ -126,11 +127,11 @@ const lessonToShow = activeLesson || firstLesson;
                  viewer where technically possible" is conditional, not a
                  given for every format. -->
             <div class="card" style="background:var(--bg-soft,#F1F5F9);text-align:center;padding:32px">
-              <p style="margin:0 0 12px;color:var(--muted)"><%= lessonToShow.contentType.replace('_',' ') %>: <%= lessonToShow.asset.originalFilename %></p>
+              <p style="margin:0 0 12px;color:var(--muted)"><%= lessonToShow.contentType === 'DOCUMENT' ? t('lms_content_document') : t('lms_content_presentation') %>: <%= lessonToShow.asset.originalFilename %></p>
               <% if (lessonToShow.downloadAllowed) { %>
-                <a href="/lms/content/<%= lessonToShow.asset.id %>/download" class="btn btn-navy btn-sm">Download to view</a>
+                <a href="/lms/content/<%= lessonToShow.asset.id %>/download" class="btn btn-navy btn-sm"><%= t('player_download_to_view') %></a>
               <% } else { %>
-                <p style="margin:0;font-size:.85rem;color:var(--muted)">This file isn't available for download.</p>
+                <p style="margin:0;font-size:.85rem;color:var(--muted)"><%= t('player_file_not_downloadable') %></p>
               <% } %>
             </div>
           <% } %>
@@ -138,9 +139,9 @@ const lessonToShow = activeLesson || firstLesson;
           <% if (!isTeacherPreview) { %>
             <div style="margin-top:24px;padding-top:16px;border-top:1px solid var(--line)">
               <% if (completedLessonIds.has(lessonToShow.id)) { %>
-                <span class="pill" style="background:#F0FDF4;color:#166534">&#10003; Completed</span>
+                <span class="pill" style="background:#F0FDF4;color:#166534">&#10003; <%= t('player_completed_pill') %></span>
               <% } else { %>
-                <button type="button" class="btn btn-navy" id="mark-complete-btn" data-lesson-id="<%= lessonToShow.id %>">Mark Complete</button>
+                <button type="button" class="btn btn-navy" id="mark-complete-btn" data-lesson-id="<%= lessonToShow.id %>"><%= t('player_mark_complete') %></button>
               <% } %>
             </div>
           <% } %>
@@ -160,16 +161,18 @@ const lessonToShow = activeLesson || firstLesson;
 
 <% if (!isTeacherPreview) { %>
 <script>
+const i18nPlayerSaving = <%- JSON.stringify(t('player_js_saving')) %>;
+const i18nMarkCompleteRetry = <%- JSON.stringify(t('player_js_mark_complete_retry')) %>;
 const markBtn = document.getElementById('mark-complete-btn');
 if (markBtn) {
   markBtn.addEventListener('click', function() {
     const lessonId = this.dataset.lessonId;
     this.disabled = true;
-    this.textContent = 'Saving\u2026';
+    this.textContent = i18nPlayerSaving;
     fetch('/student/lms/lessons/' + lessonId + '/complete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
       .then(r => r.json())
       .then(() => location.reload())
-      .catch(() => { this.disabled = false; this.textContent = 'Mark Complete \u2014 retry'; });
+      .catch(() => { this.disabled = false; this.textContent = i18nMarkCompleteRetry; });
   });
 }
 

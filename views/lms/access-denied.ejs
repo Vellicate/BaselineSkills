@@ -16,25 +16,25 @@ function formatLmsDate(iso) {
   <div class="container" style="max-width:560px;text-align:center">
     <div class="card" style="padding:40px 32px">
       <h1 style="font-size:1.5rem;margin-top:0">
-        <% if (reason === 'not_enrolled') { %>You don't have access to this content.
-        <% } else if (reason === 'lesson_locked') { %>This lesson isn't available to you yet.
-        <% } else if (reason === 'not_started') { %>This course isn't open yet.
-        <% } else if (reason === 'ended') { %>This course is no longer available.
-        <% } else { %>Access required.
+        <% if (reason === 'not_enrolled') { %><%= t('denied_not_enrolled_title') %>
+        <% } else if (reason === 'lesson_locked') { %><%= t('denied_lesson_locked_title') %>
+        <% } else if (reason === 'not_started') { %><%= t('denied_not_started_title') %>
+        <% } else if (reason === 'ended') { %><%= t('denied_ended_title') %>
+        <% } else { %><%= t('denied_default_title') %>
         <% } %>
       </h1>
       <p class="lead" style="color:var(--muted)">
         <% if (reason === 'not_enrolled') { %>
-          You'll need to register for <strong><%= course.title %></strong> to access its course content.
+          <%- t('denied_not_enrolled_lead', '<strong>' + course.title + '</strong>') %>
         <% } else if (reason === 'not_started') { %>
-          This course becomes available on <strong><%= formatLmsDate(course.lmsAccessStartDate) %></strong>.
+          <%- t('denied_not_started_lead', '<strong>' + formatLmsDate(course.lmsAccessStartDate) + '</strong>') %>
         <% } else if (reason === 'ended') { %>
-          Your access to <strong><%= course.title %></strong> ended on <strong><%= formatLmsDate(course.lmsAccessEndDate) %></strong>.
+          <%- t('denied_ended_lead', '<strong>' + course.title + '</strong>', '<strong>' + formatLmsDate(course.lmsAccessEndDate) + '</strong>') %>
         <% } else { %>
-          Some content in <strong><%= course.title %></strong> is only available once you're registered.
+          <%- t('denied_default_lead', '<strong>' + course.title + '</strong>') %>
         <% } %>
       </p>
-      <a href="/courses/<%= course.slug %>" class="btn btn-navy">View course details</a>
+      <a href="/courses/<%= course.slug %>" class="btn btn-navy"><%= t('denied_view_course') %></a>
     </div>
   </div>
 </section>

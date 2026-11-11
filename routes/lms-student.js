@@ -64,7 +64,7 @@ function modulesWithLessons(courseId) {
 // specific denial page, which is route-layer concern, not policy.
 function loadAccessibleCourse(req, res, next) {
   const course = store.findOne("courses", (c) => c.id === req.params.courseId);
-  if (!course || !course.lmsDeliveryMode) return res.status(404).render("404", { title: "Course not found" });
+  if (!course || !course.lmsDeliveryMode) return res.status(404).render("404", { title: res.locals.t('title_course_not_found') });
 
   // Checked before enrollment/preview at all -- Section 37 lists the date
   // window as its own top-level requirement, and Section 28 says a
@@ -74,7 +74,7 @@ function loadAccessibleCourse(req, res, next) {
   const windowStatus = lmsAccess.courseAccessWindowStatus(course);
   if (windowStatus !== "open") {
     return res.status(403).render("lms/access-denied", {
-      title: "Access required — Baseline Skills",
+      title: res.locals.t('denied_default_title') + " — Baseline Skills",
       course,
       reason: windowStatus, // "not_started" or "ended"
     });
@@ -88,7 +88,7 @@ function loadAccessibleCourse(req, res, next) {
     if (!hasAnyPreview) {
       if (!learnerId) return res.redirect(`/login?next=${encodeURIComponent(req.originalUrl)}`);
       return res.status(403).render("lms/access-denied", {
-        title: "Access required — Baseline Skills",
+        title: res.locals.t('denied_default_title') + " — Baseline Skills",
         course,
         reason: "not_enrolled",
       });
@@ -140,7 +140,7 @@ router.get("/student/lms", auth.requireLearner, (req, res) => {
     }
   });
 
-  res.render("lms/student-dashboard", { title: "My Learning — Baseline Skills", active, upcoming, completed, expired });
+  res.render("lms/student-dashboard", { title: res.locals.t('mylearning_eyebrow') + " — Baseline Skills", active, upcoming, completed, expired });
 });
 
 // Part G: live-session info for LIVE_ONLINE/HYBRID courses, shown on the
@@ -192,7 +192,7 @@ router.get("/student/lms/courses/:courseId/lessons/:lessonId", loadAccessibleCou
   const learnerId = req.session.learnerId || null;
   if (!rawLesson || !lmsAccess.canView(learnerId, rawLesson, req.lmsCourse)) {
     return res.status(403).render("lms/access-denied", {
-      title: "Access required — Baseline Skills", course: req.lmsCourse, reason: "lesson_locked",
+      title: res.locals.t('denied_default_title') + " — Baseline Skills", course: req.lmsCourse, reason: "lesson_locked",
     });
   }
   const modules = modulesWithLessons(req.lmsCourse.id).map((m) => ({
@@ -321,7 +321,7 @@ router.get("/student/lms/lessons/:lessonId/quiz", auth.requireLearner, (req, res
   const result = loadViewableLesson(req);
   if (result.error) return res.status(result.error).send(result.message);
   const details = quizForLesson(result.lesson.id);
-  if (!details) return res.status(404).render("404", { title: "Quiz not found" });
+  if (!details) return res.status(404).render("404", { title: res.locals.t('title_quiz_not_found') });
   const attempts = store.readAll("lms_quiz_attempts")
     .filter((a) => a.quizId === details.quiz.id && a.learnerId === req.session.learnerId)
     .sort((a, b) => b.attemptNumber - a.attemptNumber);
@@ -367,7 +367,7 @@ router.post("/student/lms/lessons/:lessonId/quiz/start", auth.requireLearner, (r
 
 router.get("/student/lms/attempts/:attemptId", auth.requireLearner, (req, res) => {
   const result = loadOwnAttempt(req);
-  if (result.error) return res.status(result.error).render("404", { title: "Attempt not found" });
+  if (result.error) return res.status(result.error).render("404", { title: res.locals.t('title_attempt_not_found') });
   if (result.attempt.status !== "IN_PROGRESS") return res.redirect(`/student/lms/attempts/${result.attempt.id}/result`);
   const details = quizForLesson(result.lesson.id);
   const existingAnswers = store.readAll("lms_quiz_answers").filter((a) => a.attemptId === result.attempt.id);
@@ -484,7 +484,7 @@ router.post("/student/lms/attempts/:attemptId/submit", auth.requireLearner, asyn
 
 router.get("/student/lms/attempts/:attemptId/result", auth.requireLearner, (req, res) => {
   const result = loadOwnAttempt(req);
-  if (result.error) return res.status(result.error).render("404", { title: "Attempt not found" });
+  if (result.error) return res.status(result.error).render("404", { title: res.locals.t('title_attempt_not_found') });
   if (result.attempt.status === "IN_PROGRESS") return res.redirect(`/student/lms/attempts/${result.attempt.id}`);
   res.render("lms/student-quiz-result", {
     title: `Result — ${result.lesson.title}`,
@@ -500,7 +500,7 @@ router.get("/student/lms/attempts/:attemptId/result", auth.requireLearner, (req,
 // resource.
 router.get("/student/lms/attempts/:attemptId/review", auth.requireLearner, (req, res) => {
   const result = loadOwnAttempt(req);
-  if (result.error) return res.status(result.error).render("404", { title: "Attempt not found" });
+  if (result.error) return res.status(result.error).render("404", { title: res.locals.t('title_attempt_not_found') });
   if (result.attempt.status === "IN_PROGRESS") return res.redirect(`/student/lms/attempts/${result.attempt.id}`);
   const details = quizForLesson(result.lesson.id);
   const answers = store.readAll("lms_quiz_answers").filter((a) => a.attemptId === result.attempt.id);
@@ -611,10 +611,10 @@ router.get("/student/lms/submissions/:submissionId/download", auth.requireLearne
   // "can Student A update Student B's submission?" applies just as much
   // to reading it back as updating it.
   if (!submission || submission.learnerId !== req.session.learnerId) {
-    return res.status(404).render("404", { title: "Submission not found" });
+    return res.status(404).render("404", { title: res.locals.t('title_submission_not_found') });
   }
   const filePath = path.join(LMS_SUBMISSION_DIR, submission.storageKey);
-  if (!fs.existsSync(filePath)) return res.status(404).render("404", { title: "Submission file not found" });
+  if (!fs.existsSync(filePath)) return res.status(404).render("404", { title: res.locals.t('title_submission_file_not_found') });
   res.download(filePath, submission.originalFilename || submission.storageKey);
 });
 

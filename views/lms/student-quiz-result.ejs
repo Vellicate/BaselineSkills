@@ -4,18 +4,18 @@
   <div class="container" style="max-width:520px;text-align:center">
     <div class="card" style="padding:40px 32px">
       <% if (attempt.status === 'PENDING_MANUAL_GRADING') { %>
-        <h1 style="font-size:1.6rem">Submitted</h1>
-        <p class="lead" style="color:var(--muted)">This quiz includes short-answer questions your instructor grades by hand. Your final result will be available once grading is complete.</p>
+        <h1 style="font-size:1.6rem"><%= t('quizresult_submitted_title') %></h1>
+        <p class="lead" style="color:var(--muted)"><%= t('quizresult_submitted_lead') %></p>
       <% } else { %>
         <h1 style="font-size:2.2rem;margin-bottom:4px"><%= Math.round(attempt.percentage) %>%</h1>
         <p class="pill" style="<%= attempt.passed ? 'background:#F0FDF4;color:#166534' : 'background:#FEF2F2;color:#991B1B' %>font-size:1rem;padding:8px 20px">
-          <%= attempt.passed ? 'Pass' : 'Fail' %>
+          <%= attempt.passed ? t('quizresult_pass') : t('quizresult_fail') %>
         </p>
-        <p style="color:var(--muted);margin-top:16px">Score: <%= attempt.score %> marks &middot; Attempt #<%= attempt.attemptNumber %></p>
+        <p style="color:var(--muted);margin-top:16px"><%= t('quizresult_score', attempt.score, attempt.attemptNumber) %></p>
       <% } %>
       <div style="margin-top:20px;display:flex;gap:10px;justify-content:center">
-        <a href="/student/lms/attempts/<%= attempt.id %>/review" class="btn btn-outline">Review answers</a>
-        <a href="/student/lms/lessons/<%= lesson.id %>/quiz" class="btn btn-navy">Back to quiz</a>
+        <a href="/student/lms/attempts/<%= attempt.id %>/review" class="btn btn-outline"><%= t('quizresult_review_answers') %></a>
+        <a href="/student/lms/lessons/<%= lesson.id %>/quiz" class="btn btn-navy"><%= t('quizresult_back_to_quiz') %></a>
       </div>
     </div>
   </div>

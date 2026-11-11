@@ -26,7 +26,7 @@
         <div class="card question-card" data-question-id="<%= q.id %>" data-question-type="<%= q.questionType %>" <%- correctCount ? `data-max-selections="${correctCount}"` : '' %> style="margin-bottom:16px">
           <p style="font-weight:600"><%= i+1 %>. <%- q.questionText %> <span style="font-size:.78rem;color:var(--muted);font-weight:400">(<%= q.marks %> mark<%= q.marks===1?'':'s' %>)</span></p>
           <% if (correctCount) { %>
-            <p style="font-size:.8rem;color:var(--muted);margin:-6px 0 8px">Select exactly <%= correctCount %>.</p>
+            <p style="font-size:.8rem;color:var(--muted);margin:-6px 0 8px"><%= t('quiztake_select_exactly', correctCount) %></p>
           <% } %>
 
           <% if (q.questionType === 'SHORT_ANSWER') { %>
@@ -50,12 +50,21 @@
         </div>
       <% }) %>
 
-      <button type="button" id="submit-quiz-btn" class="btn btn-navy">Submit quiz</button>
+      <button type="button" id="submit-quiz-btn" class="btn btn-navy"><%= t('quiztake_submit') %></button>
     </form>
   </div>
 </section>
 
 <script>
+const i18nSaving = <%- JSON.stringify(t('quiztake_js_saving')) %>;
+const i18nSaved = <%- JSON.stringify(t('quiztake_js_saved')) %>;
+const i18nTimeUpNotSaved = <%- JSON.stringify(t('quiztake_js_time_up_not_saved')) %>;
+const i18nConnectionError = <%- JSON.stringify(t('quiztake_js_connection_error')) %>;
+const i18nConfirmSubmit = <%- JSON.stringify(t('quiztake_js_confirm_submit')) %>;
+const i18nSubmitting = <%- JSON.stringify(t('quiztake_js_submitting')) %>;
+const i18nSubmitRetry = <%- JSON.stringify(t('quiztake_js_submit_retry')) %>;
+const i18nTimesUp = <%- JSON.stringify(t('quiztake_js_times_up')) %>;
+
 // Autosave each question's answer as soon as it changes -- Section 44's
 // "answer questions" is naturally incremental, not one big blob sent only
 // at final submit, and this also means a browser crash or accidental
@@ -75,14 +84,14 @@ function collectAnswer(card) {
 
 function saveAnswer(card) {
   const status = card.querySelector('.save-status');
-  status.textContent = 'Saving\u2026';
+  status.textContent = i18nSaving;
   fetch('/student/lms/attempts/<%= attempt.id %>/answers', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ questionId: card.dataset.questionId, answerData: collectAnswer(card) }),
   }).then(r => {
-    if (r.ok) { status.textContent = 'Saved'; }
-    else { status.textContent = 'Time is up -- this answer was not saved.'; }
-  }).catch(() => { status.textContent = "Couldn't save -- check your connection."; });
+    if (r.ok) { status.textContent = i18nSaved; }
+    else { status.textContent = i18nTimeUpNotSaved; }
+  }).catch(() => { status.textContent = i18nConnectionError; });
 }
 
 document.querySelectorAll('.question-card').forEach(card => {
@@ -111,13 +120,13 @@ document.querySelectorAll('.question-card').forEach(card => {
 });
 
 document.getElementById('submit-quiz-btn').addEventListener('click', function() {
-  if (!confirm('Submit this quiz? You will not be able to change your answers afterwards.')) return;
+  if (!confirm(i18nConfirmSubmit)) return;
   this.disabled = true;
-  this.textContent = 'Submitting\u2026';
+  this.textContent = i18nSubmitting;
   fetch('/student/lms/attempts/<%= attempt.id %>/submit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
     .then(r => r.json())
     .then(data => { if (data.resultUrl) window.location.href = data.resultUrl; })
-    .catch(() => { this.disabled = false; this.textContent = 'Submit quiz -- retry'; });
+    .catch(() => { this.disabled = false; this.textContent = i18nSubmitRetry; });
 });
 
 // Countdown display only -- purely cosmetic. The server (Section 46)
@@ -133,7 +142,7 @@ if (timerEl) {
     const s = remaining % 60;
     timerEl.textContent = m + ':' + String(s).padStart(2, '0');
     if (remaining === 0) {
-      timerEl.textContent = "Time's up";
+      timerEl.textContent = i18nTimesUp;
       clearInterval(timerHandle);
     }
   }

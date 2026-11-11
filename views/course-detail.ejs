@@ -195,7 +195,11 @@
           <div class="card">
             <h4><%= m.title %></h4>
             <% if (m.description) { %><p style="font-size:.85rem;color:var(--muted);white-space:pre-line"><%= m.description %></p><% } %>
-            <a href="/courses/<%= course.slug %>/materials/<%= m.id %>/download" class="btn btn-outline btn-sm"><%= t('course_download') %></a>
+            <% if (m.downloadable) { %>
+              <a href="/courses/<%= course.slug %>/materials/<%= m.id %>/download" class="btn btn-outline btn-sm"><%= t('course_download') %></a>
+            <% } else { %>
+              <a href="/courses/<%= course.slug %>/materials/<%= m.id %>/view" target="_blank" rel="noopener" class="btn btn-outline btn-sm"><%= t('course_view') %></a>
+            <% } %>
           </div>
         <% }) %>
       </div>

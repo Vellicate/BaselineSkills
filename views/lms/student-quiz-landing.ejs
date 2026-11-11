@@ -10,35 +10,36 @@
 <section class="section">
   <div class="container" style="max-width:640px">
     <div class="card">
+      <% const attemptStatusLabel = (s) => ({ IN_PROGRESS: t('lms_attempt_in_progress'), SUBMITTED: t('lms_attempt_submitted'), EXPIRED: t('lms_attempt_expired'), PENDING_MANUAL_GRADING: t('lms_attempt_pending_grading') }[s] || s); %>
       <p style="color:var(--muted)">
-        <%= questions.length %> question<%= questions.length===1?'':'s' %>
-        <% if (quiz.timeLimitSeconds) { %> &middot; <%= Math.round(quiz.timeLimitSeconds/60) %> minute time limit<% } %>
-        &middot; Pass mark: <%= quiz.passPercentage %>%
+        <%= questions.length %> <%= questions.length===1 ? t('quiz_question_singular') : t('quiz_question_plural') %>
+        <% if (quiz.timeLimitSeconds) { %> &middot; <%= t('quiz_time_limit', Math.round(quiz.timeLimitSeconds/60)) %><% } %>
+        &middot; <%= t('quiz_pass_mark', quiz.passPercentage) %>
       </p>
 
       <% if (inProgress) { %>
-        <a href="/student/lms/attempts/<%= inProgress.id %>" class="btn btn-navy">Continue attempt in progress</a>
+        <a href="/student/lms/attempts/<%= inProgress.id %>" class="btn btn-navy"><%= t('quiz_continue_attempt') %></a>
       <% } else if (attemptsRemaining > 0) { %>
         <form method="POST" action="/student/lms/lessons/<%= lesson.id %>/quiz/start">
-          <button type="submit" class="btn btn-navy">Start attempt <%= attemptsUsed + 1 %> of <%= quiz.maxAttempts %></button>
+          <button type="submit" class="btn btn-navy"><%= t('quiz_start_attempt', attemptsUsed + 1, quiz.maxAttempts) %></button>
         </form>
       <% } else { %>
-        <p class="pill" style="background:#FEF2F2;color:#991B1B">You've used all <%= quiz.maxAttempts %> attempt<%= quiz.maxAttempts===1?'':'s' %> for this quiz.</p>
+        <p class="pill" style="background:#FEF2F2;color:#991B1B"><%= t('quiz_used_all_attempts', quiz.maxAttempts, quiz.maxAttempts===1 ? t('quiz_attempt_singular') : t('quiz_attempt_plural')) %></p>
       <% } %>
     </div>
 
     <% if (attempts.length > 0) { %>
       <div class="card" style="margin-top:20px">
-        <h3 style="margin-top:0">Your attempts</h3>
+        <h3 style="margin-top:0"><%= t('quiz_your_attempts') %></h3>
         <table style="width:100%;font-size:.9rem">
-          <thead><tr style="text-align:left;color:var(--muted)"><th>Attempt</th><th>Status</th><th>Score</th><th></th></tr></thead>
+          <thead><tr style="text-align:left;color:var(--muted)"><th><%= t('quiz_th_attempt') %></th><th><%= t('success_status_label') %></th><th><%= t('quiz_th_score') %></th><th></th></tr></thead>
           <tbody>
             <% attempts.forEach(a => { %>
               <tr>
                 <td>#<%= a.attemptNumber %></td>
-                <td><%= a.status.replace('_',' ') %></td>
-                <td><% if (a.percentage != null) { %><%= Math.round(a.percentage) %>% <%= a.passed ? '(Pass)' : (a.passed === false ? '(Fail)' : '') %><% } else { %>&mdash;<% } %></td>
-                <td><% if (a.status !== 'IN_PROGRESS') { %><a href="/student/lms/attempts/<%= a.id %>/review" style="font-size:.85rem">Review</a><% } %></td>
+                <td><%= attemptStatusLabel(a.status) %></td>
+                <td><% if (a.percentage != null) { %><%= Math.round(a.percentage) %>% <%= a.passed ? t('quiz_pass_tag') : (a.passed === false ? t('quiz_fail_tag') : '') %><% } else { %>&mdash;<% } %></td>
+                <td><% if (a.status !== 'IN_PROGRESS') { %><a href="/student/lms/attempts/<%= a.id %>/review" style="font-size:.85rem"><%= t('quiz_review_link') %></a><% } %></td>
               </tr>
             <% }) %>
           </tbody>
