@@ -371,7 +371,7 @@ router.get("/", (req, res) => {
   // See computeLearningPaths above for what this is and why it's shared.
   const learningPaths = computeLearningPaths(courses);
 
-  res.render("home", { title: "Baseline Skills | Professional Skills, Made Practical", metaDescription: "Practitioner-led live learning and hands-on practice in IREB Requirements Engineering, Business Analysis, Systems Engineering, Automotive and AI.", byCategory, upcoming, showUnscheduled, featuredCourse, featuredPricing, siteStats, learningPaths });
+  res.render("home", { title: res.locals.t('title_home'), metaDescription: "Practitioner-led live learning and hands-on practice in IREB Requirements Engineering, Business Analysis, Systems Engineering, Automotive and AI.", byCategory, upcoming, showUnscheduled, featuredCourse, featuredPricing, siteStats, learningPaths });
 });
 
 router.get("/courses", (req, res) => {
@@ -427,7 +427,7 @@ router.get("/courses", (req, res) => {
   const learningPaths = computeLearningPaths(courses);
 
   res.render("courses", {
-    title: "Courses — Baseline Skills", metaDescription: "Browse accredited requirements engineering, business analysis, and systems engineering courses. Filter by certification body, level, and delivery format.", courses: filtered,
+    title: res.locals.t('nav_courses') + " — Baseline Skills", metaDescription: "Browse accredited requirements engineering, business analysis, and systems engineering courses. Filter by certification body, level, and delivery format.", courses: filtered,
     categories, activeCategory: category,
     levels, activeLevel: level,
     formats, activeFormat: format,
@@ -449,7 +449,7 @@ router.get("/trainers", (req, res) => {
     courseCount: publishedCourses().filter((c) => c.trainerId === t.id).length,
   }));
   res.render("trainers", {
-    title: "Meet our practitioners — Baseline Skills",
+    title: res.locals.t('why_meet_practitioners') + " — Baseline Skills",
     metaDescription: "Baseline Skills courses are designed and delivered by experienced practitioners, each accredited specifically in the discipline they teach.",
     trainers: withCourseCounts,
   });
@@ -457,14 +457,14 @@ router.get("/trainers", (req, res) => {
 
 router.get("/trainers/:id", (req, res) => {
   const trainer = store.findOne("trainers", (t) => t.id === req.params.id);
-  if (!trainer) return res.status(404).render("404", { title: "Trainer not found" });
+  if (!trainer) return res.status(404).render("404", { title: res.locals.t('title_trainer_not_found') });
   const courses = publishedCourses().filter((c) => c.trainerId === trainer.id);
   res.render("trainer-profile", { title: `${trainer.name} — Baseline Skills`, metaDescription: (trainer.bio || `${trainer.name}, ${trainer.title || "trainer"} at Baseline Skills.`).slice(0, 160), trainer, courses });
 });
 
 router.get("/courses/:slug", (req, res) => {
   const course = store.findOne("courses", (c) => c.slug === req.params.slug);
-  if (!course) return res.status(404).render("404", { title: "Course not found" });
+  if (!course) return res.status(404).render("404", { title: res.locals.t('title_course_not_found') });
   if (req.query.ref) req.session.refCode = req.query.ref;
 
   // Prefer explicit course_sequences ("courses to take after this one") over
@@ -632,7 +632,7 @@ router.get("/corporate-training", (req, res) => {
   const prefilledCourse = req.query.course ? store.findOne("courses", (c) => c.slug === req.query.course) : null;
   const prefilledMode = ["Corporate On-site", "Private Cohort"].includes(req.query.mode) ? req.query.mode : null;
   res.render("corporate-training", {
-    title: "Corporate Training — Baseline Skills",
+    title: res.locals.t('corp_eyebrow') + " — Baseline Skills",
     metaDescription: "Upskill your engineering, product, and business analysis teams with corporate requirements engineering and systems engineering training programs.",
     prefilledCourse, prefilledMode,
   });
@@ -648,7 +648,7 @@ router.post("/corporate-training/inquiry", formRateLimiter, (req, res) => {
   const deliveryMode = ["Corporate On-site", "Private Cohort"].includes(req.body.deliveryMode) ? req.body.deliveryMode : "";
   if (!name || !company || !email) {
     return res.status(400).render("corporate-training", {
-      title: "Corporate Training — Baseline Skills",
+      title: res.locals.t('corp_eyebrow') + " — Baseline Skills",
       metaDescription: "Upskill your engineering, product, and business analysis teams with corporate requirements engineering and systems engineering training programs.",
       error: "Name, company, and email are required.",
       form: req.body, prefilledCourse: null, prefilledMode: null,
@@ -675,7 +675,7 @@ router.post("/corporate-training/inquiry", formRateLimiter, (req, res) => {
            <p>Message: ${escapeHtml(message) || "(none)"}</p>`,
   });
 
-  res.render("corporate-training", { title: "Corporate Training — Baseline Skills", metaDescription: "Upskill your engineering, product, and business analysis teams with corporate requirements engineering and systems engineering training programs.", success: true, prefilledCourse: null, prefilledMode: null });
+  res.render("corporate-training", { title: res.locals.t('corp_eyebrow') + " — Baseline Skills", metaDescription: "Upskill your engineering, product, and business analysis teams with corporate requirements engineering and systems engineering training programs.", success: true, prefilledCourse: null, prefilledMode: null });
 });
 
 // For Teams — a corporate group nominating participants into an EXISTING
@@ -685,7 +685,7 @@ router.post("/corporate-training/inquiry", formRateLimiter, (req, res) => {
 // clarification, not merged into the existing inquiry type.
 router.get("/for-teams/team-cohorts", (req, res) => {
   res.render("for-teams-form", {
-    title: "Team Cohorts — Baseline Skills",
+    title: res.locals.t('heading_team_cohorts') + " — Baseline Skills",
     metaDescription: "Nominate a group of colleagues into an upcoming public Baseline Skills cohort — billed by purchase order, not individual checkout.",
     formType: "team-cohorts",
     heading: "Team Cohorts",
@@ -697,7 +697,7 @@ router.post("/for-teams/team-cohorts", formRateLimiter, (req, res) => {
   const { name, company, email, teamSize, courseInterest, deliveryMode, message } = req.body;
   if (!name || !company || !email || !teamSize) {
     return res.status(400).render("for-teams-form", {
-      title: "Team Cohorts — Baseline Skills", formType: "team-cohorts", heading: "Team Cohorts",
+      title: res.locals.t('heading_team_cohorts') + " — Baseline Skills", formType: "team-cohorts", heading: "Team Cohorts",
       intro: "Send several colleagues to an upcoming public cohort together. We'll confirm seats and invoice your organization directly — no individual online payment needed.",
       error: "Name, organization, work email, and number of participants are required.", form: req.body,
     });
@@ -716,7 +716,7 @@ router.post("/for-teams/team-cohorts", formRateLimiter, (req, res) => {
            <p>Message: ${escapeHtml(message) || "(none)"}</p>`,
   });
   res.render("for-teams-form", {
-    title: "Team Cohorts — Baseline Skills", formType: "team-cohorts", heading: "Team Cohorts",
+    title: res.locals.t('heading_team_cohorts') + " — Baseline Skills", formType: "team-cohorts", heading: "Team Cohorts",
     intro: "Send several colleagues to an upcoming public cohort together. We'll confirm seats and invoice your organization directly — no individual online payment needed.",
     success: true,
   });
@@ -724,7 +724,7 @@ router.post("/for-teams/team-cohorts", formRateLimiter, (req, res) => {
 
 router.get("/for-teams/request-conversation", (req, res) => {
   res.render("for-teams-form", {
-    title: "Request a Conversation — Baseline Skills",
+    title: res.locals.t('heading_request_conversation') + " — Baseline Skills",
     metaDescription: "Not sure which path fits your team? Request a short conversation with Baseline Skills.",
     formType: "request-conversation",
     heading: "Request a Conversation",
@@ -736,7 +736,7 @@ router.post("/for-teams/request-conversation", formRateLimiter, (req, res) => {
   const { name, company, email, phone, courseInterest, message } = req.body;
   if (!name || !email) {
     return res.status(400).render("for-teams-form", {
-      title: "Request a Conversation — Baseline Skills", formType: "request-conversation", heading: "Request a Conversation",
+      title: res.locals.t('heading_request_conversation') + " — Baseline Skills", formType: "request-conversation", heading: "Request a Conversation",
       intro: "Not sure whether Corporate Learning or Team Cohorts fits better? Tell us a bit about what you need and we'll point you the right way.",
       error: "Name and email are required.", form: req.body,
     });
@@ -754,22 +754,22 @@ router.post("/for-teams/request-conversation", formRateLimiter, (req, res) => {
            <p>Message: ${escapeHtml(message) || "(none)"}</p>`,
   });
   res.render("for-teams-form", {
-    title: "Request a Conversation — Baseline Skills", formType: "request-conversation", heading: "Request a Conversation",
+    title: res.locals.t('heading_request_conversation') + " — Baseline Skills", formType: "request-conversation", heading: "Request a Conversation",
     intro: "Not sure whether Corporate Learning or Team Cohorts fits better? Tell us a bit about what you need and we'll point you the right way.",
     success: true,
   });
 });
 
 router.get("/about", (req, res) => {
-  res.render("about", { title: "About Us — Baseline Skills", metaDescription: "Baseline Skills is a specialized training and certification marketplace for requirements engineering, business analysis, and systems engineering practitioners." });
+  res.render("about", { title: res.locals.t('about_eyebrow') + " — Baseline Skills", metaDescription: "Baseline Skills is a specialized training and certification marketplace for requirements engineering, business analysis, and systems engineering practitioners." });
 });
 
 router.get("/privacy-policy", (req, res) => {
-  res.render("privacy-policy", { title: "Privacy Policy — Baseline Skills", metaDescription: "How Baseline Skills collects, uses, and protects your personal information." });
+  res.render("privacy-policy", { title: res.locals.t('title_privacy_policy') + " — Baseline Skills", metaDescription: "How Baseline Skills collects, uses, and protects your personal information." });
 });
 
 router.get("/terms-and-conditions", (req, res) => {
-  res.render("terms-and-conditions", { title: "Terms and Conditions — Baseline Skills", metaDescription: "The terms and conditions that govern all orders, courses, and certification products from Baseline Skills." });
+  res.render("terms-and-conditions", { title: res.locals.t('title_terms_conditions') + " — Baseline Skills", metaDescription: "The terms and conditions that govern all orders, courses, and certification products from Baseline Skills." });
 });
 
 // Fixed resource taxonomy per the homepage redesign brief — a constrained
@@ -798,7 +798,7 @@ RESOURCE_CATEGORIES.forEach(({ slug, label }) => {
       .filter((r) => r.category === label)
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     res.render("resources", {
-      title: `${label} Resources — Baseline Skills`,
+      title: res.locals.t('title_label_resources', label) + " — Baseline Skills",
       metaDescription: `Practical ${label} articles and guides from Baseline Skills.`,
       articles, categories: RESOURCE_CATEGORIES, activeCategory: label,
     });
@@ -807,7 +807,7 @@ RESOURCE_CATEGORIES.forEach(({ slug, label }) => {
 
 router.get("/resources/:slug", (req, res) => {
   const resource = store.findOne("resources", (r) => r.slug === req.params.slug);
-  if (!resource) return res.status(404).render("404", { title: "Resource not found" });
+  if (!resource) return res.status(404).render("404", { title: res.locals.t('title_resource_not_found') });
   // A resource with no body is a legacy/external-link-only entry — send
   // the visitor straight to wherever it actually points rather than
   // rendering an empty detail page for it.
@@ -874,7 +874,7 @@ router.get("/exams", (req, res) => {
     return { ...exam, course };
   });
   res.render("exams", {
-    title: "Certification Exams — Baseline Skills",
+    title: res.locals.t('exams_tag') + " — Baseline Skills",
     metaDescription: "Certification examinations available through Baseline Skills, administered independently of training delivery.",
     exams,
   });
@@ -882,22 +882,22 @@ router.get("/exams", (req, res) => {
 
 router.get("/certifications/:slug", (req, res) => {
   const body = store.findOne("standards_bodies", (b) => b.slug === req.params.slug);
-  if (!body) return res.status(404).render("404", { title: "Certification body not found" });
+  if (!body) return res.status(404).render("404", { title: res.locals.t('title_certbody_not_found') });
   const mappings = store.readAll("course_standards_mapping").filter((m) => m.standardsBodyId === body.id);
   const courses = mappings.map((m) => store.findOne("courses", (c) => c.id === m.courseId)).filter((c) => c && c.published);
-  res.render("certification-body", { title: `${body.name} Certification Training — Baseline Skills`, metaDescription: body.description.slice(0, 160), body, courses });
+  res.render("certification-body", { title: res.locals.t('title_cert_training', body.name) + " — Baseline Skills", metaDescription: body.description.slice(0, 160), body, courses });
 });
 
 router.get("/blog", (req, res) => {
   const posts = store.readAll("blogs")
     .filter((b) => b.published)
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-  res.render("blog-list", { title: "Blog — Baseline Skills", metaDescription: "Insights, updates, and practical guidance on requirements engineering, business analysis, and systems engineering certification from the Baseline Skills team.", posts });
+  res.render("blog-list", { title: res.locals.t('blog_eyebrow') + " — Baseline Skills", metaDescription: "Insights, updates, and practical guidance on requirements engineering, business analysis, and systems engineering certification from the Baseline Skills team.", posts });
 });
 
 router.get("/blog/:slug", (req, res) => {
   const post = store.findOne("blogs", (b) => b.slug === req.params.slug && b.published);
-  if (!post) return res.status(404).render("404", { title: "Post not found" });
+  if (!post) return res.status(404).render("404", { title: res.locals.t('title_post_not_found') });
   const related = store.readAll("blogs")
     .filter((b) => b.published && b.category === post.category && b.id !== post.id)
     .slice(0, 3);
@@ -905,13 +905,13 @@ router.get("/blog/:slug", (req, res) => {
 });
 
 router.get("/contact", (req, res) => {
-  res.render("contact", { title: "Contact — Baseline Skills", metaDescription: "Get in touch with Baseline Skills for course enquiries, corporate training requests, or general questions about our certification programs." });
+  res.render("contact", { title: res.locals.t('contact_eyebrow') + " — Baseline Skills", metaDescription: "Get in touch with Baseline Skills for course enquiries, corporate training requests, or general questions about our certification programs." });
 });
 
 router.post("/contact", formRateLimiter, (req, res) => {
   const { name, email, company, role, courseInterest, teamSize, deliveryMode, message } = req.body;
   if (!name || !email || !message) {
-    return res.status(400).render("contact", { title: "Contact — Baseline Skills", error: "Name, email, and message are required.", form: req.body });
+    return res.status(400).render("contact", { title: res.locals.t('contact_eyebrow') + " — Baseline Skills", error: "Name, email, and message are required.", form: req.body });
   }
 
   const contactEntry = {
@@ -932,7 +932,7 @@ router.post("/contact", formRateLimiter, (req, res) => {
            <p>${escapeHtml(message)}</p>`,
   });
 
-  res.render("contact", { title: "Contact — Baseline Skills", metaDescription: "Get in touch with Baseline Skills for course enquiries, corporate training requests, or general questions about our certification programs.", success: true });
+  res.render("contact", { title: res.locals.t('contact_eyebrow') + " — Baseline Skills", metaDescription: "Get in touch with Baseline Skills for course enquiries, corporate training requests, or general questions about our certification programs.", success: true });
 });
 
 const reviewRateLimiter = createRateLimiter({
@@ -944,7 +944,7 @@ const reviewRateLimiter = createRateLimiter({
 
 router.post("/courses/:slug/review", reviewRateLimiter, auth.requireLearner, (req, res) => {
   const course = store.findOne("courses", (c) => c.slug === req.params.slug);
-  if (!course) return res.status(404).render("404", { title: "Course not found" });
+  if (!course) return res.status(404).render("404", { title: res.locals.t('title_course_not_found') });
   const learner = store.findOne("learners", (l) => l.id === req.session.learnerId);
 
   // Verified purchase: a confirmed or invoice-pending registration for this
@@ -983,9 +983,9 @@ router.post("/courses/:slug/review", reviewRateLimiter, auth.requireLearner, (re
 // review submission, since both represent "did they actually buy this."
 router.get("/courses/:slug/materials/:materialId/download", auth.requireLearner, (req, res) => {
   const course = store.findOne("courses", (c) => c.slug === req.params.slug);
-  if (!course) return res.status(404).render("404", { title: "Course not found" });
+  if (!course) return res.status(404).render("404", { title: res.locals.t('title_course_not_found') });
   const material = store.findOne("materials", (m) => m.id === req.params.materialId && m.courseId === course.id);
-  if (!material) return res.status(404).render("404", { title: "Material not found" });
+  if (!material) return res.status(404).render("404", { title: res.locals.t('title_material_not_found') });
 
   const learner = store.findOne("learners", (l) => l.id === req.session.learnerId);
   const qualifies = store.findOne("registrations", (r) =>
@@ -996,7 +996,7 @@ router.get("/courses/:slug/materials/:materialId/download", auth.requireLearner,
   if (!qualifies) return res.status(403).send("You need a confirmed registration for this course to access its materials.");
 
   const filePath = path.join(MATERIAL_DIR, material.filePath);
-  if (!fs.existsSync(filePath)) return res.status(404).render("404", { title: "Material file not found" });
+  if (!fs.existsSync(filePath)) return res.status(404).render("404", { title: res.locals.t('title_material_file_not_found') });
   res.download(filePath, material.title + path.extname(material.filePath));
 });
 
@@ -1007,7 +1007,7 @@ router.get("/courses/:slug/materials/:materialId/download", auth.requireLearner,
 // colleague) can confirm it's real without needing an account themselves.
 router.get("/verify/:id", (req, res) => {
   const certificate = store.findOne("certificates", (c) => c.id === req.params.id);
-  if (!certificate) return res.status(404).render("verify", { title: "Certificate not found — Baseline Skills", certificate: null, learner: null, course: null });
+  if (!certificate) return res.status(404).render("verify", { title: res.locals.t('verify_not_found_title') + " — Baseline Skills", certificate: null, learner: null, course: null });
   const learnerRecord = store.findOne("learners", (l) => l.id === certificate.learnerId);
   const course = store.findOne("courses", (c) => c.id === certificate.courseId);
   // This page is public and unauthenticated by design (see comment above) —
@@ -1015,7 +1015,7 @@ router.get("/verify/:id", (req, res) => {
   // record (which includes email, phone, and passwordHash), so a future
   // template change can't accidentally leak PII on a page anyone can load.
   const learner = { name: learnerRecord.name };
-  res.render("verify", { title: `Verified: ${learner.name} — Baseline Skills`, noindex: true, certificate, learner, course });
+  res.render("verify", { title: res.locals.t('title_verified', learner.name) + " — Baseline Skills", noindex: true, certificate, learner, course });
 });
 
 // Phase 1 repositioning: real event capture for the analytics_events table,

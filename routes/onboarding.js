@@ -39,14 +39,14 @@ const onboardingAuthRateLimiter = createRateLimiter({
 function registerPasswordReset({ table, forgotPath, setPath, loginPath, portalLabel }) {
   router.get(forgotPath, (req, res) => {
     const captcha = generateCaptcha(req.session);
-    res.render("forgot-password", { title: "Forgot Password — Baseline Skills", error: null, sent: false, captchaQuestion: captcha.question, captchaA: captcha.a, captchaB: captcha.b, action: forgotPath, loginUrl: loginPath });
+    res.render("forgot-password", { title: res.locals.t('title_forgot_password') + " — Baseline Skills", error: null, sent: false, captchaQuestion: captcha.question, captchaA: captcha.a, captchaB: captcha.b, action: forgotPath, loginUrl: loginPath });
   });
 
   router.post(forgotPath, onboardingAuthRateLimiter, async (req, res) => {
     const { email, captchaAnswer } = req.body;
     if (!verifyCaptcha(req.session, captchaAnswer)) {
       const captcha = generateCaptcha(req.session);
-      return res.status(400).render("forgot-password", { title: "Forgot Password — Baseline Skills", error: res.locals.t("captcha_wrong_answer"), sent: false, captchaQuestion: captcha.question, captchaA: captcha.a, captchaB: captcha.b, action: forgotPath, loginUrl: loginPath });
+      return res.status(400).render("forgot-password", { title: res.locals.t('title_forgot_password') + " — Baseline Skills", error: res.locals.t("captcha_wrong_answer"), sent: false, captchaQuestion: captcha.question, captchaA: captcha.a, captchaB: captcha.b, action: forgotPath, loginUrl: loginPath });
     }
     const record = email ? store.findOne(table, (r) => r.email && r.email.toLowerCase() === String(email).toLowerCase()) : null;
     // Deliberately same response whether or not a matching, approved
@@ -79,25 +79,25 @@ function registerPasswordReset({ table, forgotPath, setPath, loginPath, portalLa
                <p>If you didn't request this, you can safely ignore this email — your password hasn't been changed.</p>`,
       });
     }
-    res.render("forgot-password", { title: "Forgot Password — Baseline Skills", error: null, sent: true, captchaQuestion: null, action: forgotPath, loginUrl: loginPath });
+    res.render("forgot-password", { title: res.locals.t('title_forgot_password') + " — Baseline Skills", error: null, sent: true, captchaQuestion: null, action: forgotPath, loginUrl: loginPath });
   });
 
   router.get(setPath, (req, res) => {
     const record = store.findOne(table, (r) => r.passwordResetToken === req.query.token);
     if (!record || new Date(record.passwordResetExpires) < new Date()) {
-      return res.status(400).render("set-password", { title: "Set your password — Baseline Skills", error: "This link is invalid or has expired. Please contact us for a new one.", token: null, action: setPath });
+      return res.status(400).render("set-password", { title: res.locals.t('setpw_title') + " — Baseline Skills", error: "This link is invalid or has expired. Please contact us for a new one.", token: null, action: setPath });
     }
-    res.render("set-password", { title: "Set your password — Baseline Skills", error: null, token: req.query.token, action: setPath });
+    res.render("set-password", { title: res.locals.t('setpw_title') + " — Baseline Skills", error: null, token: req.query.token, action: setPath });
   });
 
   router.post(setPath, onboardingAuthRateLimiter, (req, res) => {
     const { token, password } = req.body;
     const record = store.findOne(table, (r) => r.passwordResetToken === token);
     if (!record || new Date(record.passwordResetExpires) < new Date()) {
-      return res.status(400).render("set-password", { title: "Set your password — Baseline Skills", error: "This link is invalid or has expired. Please contact us for a new one.", token: null, action: setPath });
+      return res.status(400).render("set-password", { title: res.locals.t('setpw_title') + " — Baseline Skills", error: "This link is invalid or has expired. Please contact us for a new one.", token: null, action: setPath });
     }
     if (!password || password.length < onboardingCfg.PASSWORD_MIN_LENGTH) {
-      return res.status(400).render("set-password", { title: "Set your password — Baseline Skills", error: `Password must be at least ${onboardingCfg.PASSWORD_MIN_LENGTH} characters.`, token, action: setPath });
+      return res.status(400).render("set-password", { title: res.locals.t('setpw_title') + " — Baseline Skills", error: `Password must be at least ${onboardingCfg.PASSWORD_MIN_LENGTH} characters.`, token, action: setPath });
     }
     store.update(table, record.id, {
       passwordHash: auth.hashPassword(password),
@@ -153,21 +153,21 @@ function handleRoeUpload(viewName) {
 // primary URL (matching the new nav label), with the old path redirecting to
 // it rather than serving duplicate content at two URLs.
 router.get("/teach-with-us", (req, res) => {
-  res.render("become-a-trainer", { title: "Teach with Us — Baseline Skills", error: null });
+  res.render("become-a-trainer", { title: res.locals.t('title_teach_with_us') + " — Baseline Skills", error: null });
 });
 router.get("/become-a-trainer", (req, res) => res.redirect(301, "/teach-with-us"));
 
 router.post("/become-a-trainer/apply", applicationRateLimiter, handleRoeUpload("become-a-trainer"), async (req, res) => {
   const { name, email, password, title, bio, profileUrl } = req.body;
   if (!name || !email || !password || !req.file) {
-    return res.status(400).render("become-a-trainer", { title: "Become a Trainer — Baseline Skills", error: "Name, email, password, and the signed Rules of Engagement PDF are all required." });
+    return res.status(400).render("become-a-trainer", { title: res.locals.t('title_become_trainer') + " — Baseline Skills", error: "Name, email, password, and the signed Rules of Engagement PDF are all required." });
   }
   if (password.length < onboardingCfg.PASSWORD_MIN_LENGTH) {
-    return res.status(400).render("become-a-trainer", { title: "Become a Trainer — Baseline Skills", error: `Password must be at least ${onboardingCfg.PASSWORD_MIN_LENGTH} characters.` });
+    return res.status(400).render("become-a-trainer", { title: res.locals.t('title_become_trainer') + " — Baseline Skills", error: `Password must be at least ${onboardingCfg.PASSWORD_MIN_LENGTH} characters.` });
   }
   const existing = store.findOne("instructors", (i) => i.email && i.email.toLowerCase() === email.toLowerCase());
   if (existing && existing.verificationStatus !== "rejected") {
-    return res.status(400).render("become-a-trainer", { title: "Become a Trainer — Baseline Skills", error: "An application or account with that email already exists." });
+    return res.status(400).render("become-a-trainer", { title: res.locals.t('title_become_trainer') + " — Baseline Skills", error: "An application or account with that email already exists." });
   }
 
   let instructor;
@@ -211,33 +211,33 @@ router.post("/become-a-trainer/apply", applicationRateLimiter, handleRoeUpload("
       <p><a href="${process.env.APP_BASE_URL || "https://www.baselineskills.com"}/admin/trainer-applications">Review this application</a>.</p>`,
   });
 
-  res.render("application-submitted", { title: "Application submitted — Baseline Skills", type: "trainer" });
+  res.render("application-submitted", { title: res.locals.t('appsub_title') + " — Baseline Skills", type: "trainer" });
 });
 
 router.get("/trainer/login", (req, res) => {
   if (req.session.instructorId) return res.redirect("/trainer/dashboard");
-  res.render("trainer-login", { title: "Trainer login — Baseline Skills", error: null, success: req.query.success || null });
+  res.render("trainer-login", { title: res.locals.t('trainer_login_title') + " — Baseline Skills", error: null, success: req.query.success || null });
 });
 
 router.post("/trainer/login", (req, res) => {
   const attemptStatus = trainerLoginAttempts.check(req);
   if (attemptStatus.blocked) {
     res.set("Retry-After", attemptStatus.retryAfterSeconds);
-    return res.status(429).render("trainer-login", { title: "Trainer login — Baseline Skills", error: "Too many failed login attempts. Please wait 15 minutes and try again." });
+    return res.status(429).render("trainer-login", { title: res.locals.t('trainer_login_title') + " — Baseline Skills", error: "Too many failed login attempts. Please wait 15 minutes and try again." });
   }
   const { email, password } = req.body;
   const instructor = store.findOne("instructors", (i) => i.email && i.email.toLowerCase() === String(email || "").toLowerCase());
   if (!instructor || !auth.verifyPassword(password, instructor.passwordHash)) {
     trainerLoginAttempts.recordFailure(req);
-    return res.status(400).render("trainer-login", { title: "Trainer login — Baseline Skills", error: "Incorrect email or password." });
+    return res.status(400).render("trainer-login", { title: res.locals.t('trainer_login_title') + " — Baseline Skills", error: "Incorrect email or password." });
   }
   if (instructor.verificationStatus !== "approved") {
     trainerLoginAttempts.recordFailure(req);
-    return res.status(403).render("trainer-login", { title: "Trainer login — Baseline Skills", error: `Your application is currently ${instructor.verificationStatus}. We'll email you once it's reviewed.` });
+    return res.status(403).render("trainer-login", { title: res.locals.t('trainer_login_title') + " — Baseline Skills", error: `Your application is currently ${instructor.verificationStatus}. We'll email you once it's reviewed.` });
   }
   trainerLoginAttempts.recordSuccess(req);
   auth.regenerateSessionKeepingLang(req, (err) => {
-    if (err) return res.status(500).render("trainer-login", { title: "Trainer login — Baseline Skills", error: "Session error." });
+    if (err) return res.status(500).render("trainer-login", { title: res.locals.t('trainer_login_title') + " — Baseline Skills", error: "Session error." });
     req.session.instructorId = instructor.id;
     res.redirect("/trainer/dashboard");
   });
@@ -265,27 +265,27 @@ router.get("/trainer/dashboard", auth.requireInstructor, (req, res) => {
     .filter((c) => c.recipientType === "instructor" && c.recipientId === instructor.id);
   const totalEarnedCents = earnings.reduce((sum, e) => sum + e.commissionCents, 0);
   const payouts = store.readAll("payouts").filter((p) => p.recipientType === "instructor" && p.recipientId === instructor.id).sort((a, b) => new Date(b.periodEnd) - new Date(a.periodEnd));
-  res.render("trainer-dashboard", { title: "Trainer Dashboard — Baseline Skills", noindex: true, instructor, courses, referralCode, earnings, totalEarnedCents, payouts });
+  res.render("trainer-dashboard", { title: res.locals.t('dash_trainer_eyebrow') + " — Baseline Skills", noindex: true, instructor, courses, referralCode, earnings, totalEarnedCents, payouts });
 });
 
 router.get("/trainer/logout", (req, res) => { req.session.destroy(() => res.redirect("/")); });
 
 // ==================== Become an Affiliate ====================
 router.get("/become-an-affiliate", (req, res) => {
-  res.render("become-an-affiliate", { title: "Become an Affiliate — Baseline Skills", error: null });
+  res.render("become-an-affiliate", { title: res.locals.t('title_become_affiliate') + " — Baseline Skills", error: null });
 });
 
 router.post("/become-an-affiliate/apply", applicationRateLimiter, handleRoeUpload("become-an-affiliate"), (req, res) => {
   const { name, email, password, organization } = req.body;
   if (!name || !email || !password || !req.file) {
-    return res.status(400).render("become-an-affiliate", { title: "Become an Affiliate — Baseline Skills", error: "Name, email, password, and the signed Rules of Engagement PDF are all required." });
+    return res.status(400).render("become-an-affiliate", { title: res.locals.t('title_become_affiliate') + " — Baseline Skills", error: "Name, email, password, and the signed Rules of Engagement PDF are all required." });
   }
   if (password.length < onboardingCfg.PASSWORD_MIN_LENGTH) {
-    return res.status(400).render("become-an-affiliate", { title: "Become an Affiliate — Baseline Skills", error: `Password must be at least ${onboardingCfg.PASSWORD_MIN_LENGTH} characters.` });
+    return res.status(400).render("become-an-affiliate", { title: res.locals.t('title_become_affiliate') + " — Baseline Skills", error: `Password must be at least ${onboardingCfg.PASSWORD_MIN_LENGTH} characters.` });
   }
   const existing = store.findOne("affiliates", (a) => a.email.toLowerCase() === email.toLowerCase());
   if (existing && existing.status !== "rejected") {
-    return res.status(400).render("become-an-affiliate", { title: "Become an Affiliate — Baseline Skills", error: "An application or account with that email already exists." });
+    return res.status(400).render("become-an-affiliate", { title: res.locals.t('title_become_affiliate') + " — Baseline Skills", error: "An application or account with that email already exists." });
   }
 
   let affiliate;
@@ -307,33 +307,33 @@ router.post("/become-an-affiliate/apply", applicationRateLimiter, handleRoeUploa
     sentAt: new Date().toISOString(), acknowledgedAt: new Date().toISOString(),
   });
 
-  res.render("application-submitted", { title: "Application submitted — Baseline Skills", type: "affiliate" });
+  res.render("application-submitted", { title: res.locals.t('appsub_title') + " — Baseline Skills", type: "affiliate" });
 });
 
 router.get("/affiliate/login", (req, res) => {
   if (req.session.affiliateId) return res.redirect("/affiliate/dashboard");
-  res.render("affiliate-login", { title: "Affiliate login — Baseline Skills", error: null, success: req.query.success || null });
+  res.render("affiliate-login", { title: res.locals.t('affiliate_login_title') + " — Baseline Skills", error: null, success: req.query.success || null });
 });
 
 router.post("/affiliate/login", (req, res) => {
   const attemptStatus = affiliateLoginAttempts.check(req);
   if (attemptStatus.blocked) {
     res.set("Retry-After", attemptStatus.retryAfterSeconds);
-    return res.status(429).render("affiliate-login", { title: "Affiliate login — Baseline Skills", error: "Too many failed login attempts. Please wait 15 minutes and try again." });
+    return res.status(429).render("affiliate-login", { title: res.locals.t('affiliate_login_title') + " — Baseline Skills", error: "Too many failed login attempts. Please wait 15 minutes and try again." });
   }
   const { email, password } = req.body;
   const affiliate = store.findOne("affiliates", (a) => a.email.toLowerCase() === String(email || "").toLowerCase());
   if (!affiliate || !auth.verifyPassword(password, affiliate.passwordHash)) {
     affiliateLoginAttempts.recordFailure(req);
-    return res.status(400).render("affiliate-login", { title: "Affiliate login — Baseline Skills", error: "Incorrect email or password." });
+    return res.status(400).render("affiliate-login", { title: res.locals.t('affiliate_login_title') + " — Baseline Skills", error: "Incorrect email or password." });
   }
   if (affiliate.status !== "approved") {
     affiliateLoginAttempts.recordFailure(req);
-    return res.status(403).render("affiliate-login", { title: "Affiliate login — Baseline Skills", error: `Your application is currently ${affiliate.status}. We'll email you once it's reviewed.` });
+    return res.status(403).render("affiliate-login", { title: res.locals.t('affiliate_login_title') + " — Baseline Skills", error: `Your application is currently ${affiliate.status}. We'll email you once it's reviewed.` });
   }
   affiliateLoginAttempts.recordSuccess(req);
   auth.regenerateSessionKeepingLang(req, (err) => {
-    if (err) return res.status(500).render("affiliate-login", { title: "Affiliate login — Baseline Skills", error: "Session error." });
+    if (err) return res.status(500).render("affiliate-login", { title: res.locals.t('affiliate_login_title') + " — Baseline Skills", error: "Session error." });
     req.session.affiliateId = affiliate.id;
     res.redirect("/affiliate/dashboard");
   });
@@ -353,7 +353,7 @@ router.get("/affiliate/dashboard", auth.requireAffiliate, (req, res) => {
   const totalEarnedCents = earnings.reduce((sum, e) => sum + (e ? e.commissionCents : 0), 0);
   const quarterlyRevenueCents = commissions.affiliateQuarterlyRevenueCents(affiliate.id, new Date().toISOString());
   const payouts = store.readAll("payouts").filter((p) => p.recipientType === "affiliate" && p.recipientId === affiliate.id).sort((a, b) => new Date(b.periodEnd) - new Date(a.periodEnd));
-  res.render("affiliate-dashboard", { title: "Affiliate Dashboard — Baseline Skills", noindex: true, affiliate, referralCode, registrations, earnings, totalEarnedCents, quarterlyRevenueCents, payouts });
+  res.render("affiliate-dashboard", { title: res.locals.t('dash_affiliate_eyebrow') + " — Baseline Skills", noindex: true, affiliate, referralCode, registrations, earnings, totalEarnedCents, quarterlyRevenueCents, payouts });
 });
 
 router.get("/affiliate/logout", (req, res) => { req.session.destroy(() => res.redirect("/")); });

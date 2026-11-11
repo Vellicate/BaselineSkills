@@ -42,7 +42,7 @@ const regRateLimiter = createRateLimiter({
 // ---- Registration form ----
 router.get("/courses/:slug/register", (req, res) => {
   const course = store.findOne("courses", (c) => c.slug === req.params.slug && c.published);
-  if (!course) return res.status(404).render("404", { title: "Course not found" });
+  if (!course) return res.status(404).render("404", { title: res.locals.t('title_course_not_found') });
   // Referral capture — simplified to session-based rather than the full
   // 30-day cookie REFERRAL_ATTRIBUTION_WINDOW_DAYS implies; a visitor who
   // clicks a referral link and registers within the same session is
@@ -65,7 +65,7 @@ router.get("/courses/:slug/register", (req, res) => {
   const examDiscountPercent = discounts.effectiveDiscountPercent(course, sessionStartDate, couponValidation && couponValidation.valid ? couponCode : null);
   const examFinalPriceCents = examProduct ? Math.round(examProduct.priceCents * (1 - examDiscountPercent / 100)) : null;
   res.render("register", {
-    title: `Register — ${course.title}`, course,
+    title: res.locals.t('title_register_course', course.title), course,
     finalPrice: discounts.finalPriceCentsForSession(course, sessionStartDate, couponValidation && couponValidation.valid ? couponCode : null),
     discountInfo, selectedSessionStartDate: sessionStartDate, selectedDeliveryMode,
     examProduct, examFinalPriceCents,
@@ -119,7 +119,7 @@ router.get("/courses/:slug/register/pricing-preview", (req, res) => {
 // ---- Submit registration ----
 router.post("/courses/:slug/register", regRateLimiter, async (req, res) => {
   const course = store.findOne("courses", (c) => c.slug === req.params.slug && c.published);
-  if (!course) return res.status(404).render("404", { title: "Course not found" });
+  if (!course) return res.status(404).render("404", { title: res.locals.t('title_course_not_found') });
 
   const { name, email, phone, address, company, role, sessionStartDate, deliveryMode, notes, addExam, couponCode } = req.body;
   const resolvedDeliveryMode = deliveryMode || (course.sessions[0] && course.sessions[0].mode) || "";
@@ -141,7 +141,7 @@ router.post("/courses/:slug/register", regRateLimiter, async (req, res) => {
   // of data the GET route builds — kept as one local helper rather than
   // repeating this object at every early-return below.
   const rerender = (status, error, extra = {}) => res.status(status).render("register", {
-    title: `Register — ${course.title}`, course,
+    title: res.locals.t('title_register_course', course.title), course,
     finalPrice: pricing.calculatePricing({ course, deliveryMode: resolvedDeliveryMode, participantCount: 1, sessionStartDate: resolvedSessionStartDate, couponCode: validCoupon }).finalTotalCents,
     discountInfo, selectedSessionStartDate: resolvedSessionStartDate, selectedDeliveryMode: resolvedDeliveryMode,
     examProduct, examFinalPriceCents, couponCode, couponValidation, countries: COUNTRIES,
@@ -511,9 +511,9 @@ async function reconcileExistingOrder(reg) {
 
 router.get("/register/resume/:regId", async (req, res) => {
   let reg = store.findOne("registrations", (r) => r.id === req.params.regId);
-  if (!reg) return res.status(404).render("404", { title: "Registration not found" });
+  if (!reg) return res.status(404).render("404", { title: res.locals.t('title_registration_not_found') });
   const course = store.findOne("courses", (c) => c.id === reg.courseId);
-  if (!course) return res.status(404).render("404", { title: "Course not found" });
+  if (!course) return res.status(404).render("404", { title: res.locals.t('title_course_not_found') });
   if (reg.status === "pending_payment") reg = await reconcileExistingOrder(reg);
   if (reg.status !== "pending_payment") {
     // Already confirmed (possibly just now, by the reconciliation check
@@ -523,7 +523,7 @@ router.get("/register/resume/:regId", async (req, res) => {
     // different way of saying the same thing.
     return res.redirect(`/register/success?reg=${reg.id}`);
   }
-  res.render("resume-confirm", { title: "Confirm your details — Baseline Skills", noindex: true, registration: reg, course });
+  res.render("resume-confirm", { title: res.locals.t('resume_title') + " — Baseline Skills", noindex: true, registration: reg, course });
 });
 
 // Recomputes what a registration should be charged, for the resume flow's
@@ -572,12 +572,12 @@ router.get("/register/resume/:regId/pricing-preview", (req, res) => {
 
 router.post("/register/resume/:regId", async (req, res) => {
   let reg = store.findOne("registrations", (r) => r.id === req.params.regId);
-  if (!reg) return res.status(404).render("404", { title: "Registration not found" });
+  if (!reg) return res.status(404).render("404", { title: res.locals.t('title_registration_not_found') });
   if (reg.status !== "pending_payment") {
     return res.redirect(`/register/success?reg=${reg.id}`);
   }
   const course = store.findOne("courses", (c) => c.id === reg.courseId);
-  if (!course) return res.status(404).render("404", { title: "Course not found" });
+  if (!course) return res.status(404).render("404", { title: res.locals.t('title_course_not_found') });
 
   // Safety-critical: re-check with the provider before creating any new
   // order. See reconcileExistingOrder above — this is what actually
@@ -605,7 +605,7 @@ router.post("/register/resume/:regId", async (req, res) => {
     const { couponValidation, priceResult, examFinalPriceCents, vatAmountCents, grandTotalCents } = repriceForResume(course, reg, couponCode);
     if (!couponValidation || !couponValidation.valid) {
       return res.render("resume-confirm", {
-        title: "Confirm your details — Baseline Skills", noindex: true, registration: reg, course,
+        title: res.locals.t('resume_title') + " — Baseline Skills", noindex: true, registration: reg, course,
         couponError: res.locals.t("coupon_reason_" + (couponValidation ? couponValidation.reasonKey : "code_not_found")),
         appliedCouponCode: couponCode,
       });
@@ -639,13 +639,13 @@ router.post("/register/resume/:regId", async (req, res) => {
 
 router.get("/register/choose-payment", (req, res) => {
   const reg = store.findOne("registrations", (r) => r.id === req.query.reg);
-  if (!reg) return res.status(404).render("404", { title: "Registration not found" });
-  res.render("choose-payment", { title: "Choose a payment method — Baseline Skills", registration: reg, providers: payments.availableProvidersForCountry(reg.vatCountry) });
+  if (!reg) return res.status(404).render("404", { title: res.locals.t('title_registration_not_found') });
+  res.render("choose-payment", { title: res.locals.t('choose_payment_title') + " — Baseline Skills", registration: reg, providers: payments.availableProvidersForCountry(reg.vatCountry) });
 });
 
 router.post("/register/choose-payment", async (req, res) => {
   const reg = store.findOne("registrations", (r) => r.id === req.body.reg);
-  if (!reg) return res.status(404).render("404", { title: "Registration not found" });
+  if (!reg) return res.status(404).render("404", { title: res.locals.t('title_registration_not_found') });
   const course = store.findOne("courses", (c) => c.id === reg.courseId);
   if (!payments.isValidProvider(req.body.provider) || !payments.isConfigured(req.body.provider)) {
     return res.redirect(`/register/choose-payment?reg=${reg.id}`);
@@ -656,13 +656,13 @@ router.post("/register/choose-payment", async (req, res) => {
 // ---- Checkout page: loads Paddle.js and opens the overlay for this registration's transaction ----
 router.get("/register/checkout/:provider", (req, res) => {
   const providerName = req.params.provider;
-  if (!payments.isValidProvider(providerName)) return res.status(404).render("404", { title: "Unknown payment method" });
+  if (!payments.isValidProvider(providerName)) return res.status(404).render("404", { title: res.locals.t('title_unknown_payment_method') });
   const reg = store.findOne("registrations", (r) => r.id === req.query.reg);
   const orderIdField = orderIdFieldFor(providerName);
-  if (!reg || !reg[orderIdField]) return res.status(404).render("404", { title: "Registration not found" });
+  if (!reg || !reg[orderIdField]) return res.status(404).render("404", { title: res.locals.t('title_registration_not_found') });
   const course = store.findOne("courses", (c) => c.id === reg.courseId);
   const clientConfig = payments.getClientConfig(providerName);
-  res.render("checkout", { title: "Complete payment — Baseline Skills", noindex: true, registration: reg, course, clientConfig, provider: providerName, orderId: reg[orderIdField] });
+  res.render("checkout", { title: res.locals.t('title_complete_payment') + " — Baseline Skills", noindex: true, registration: reg, course, clientConfig, provider: providerName, orderId: reg[orderIdField] });
 });
 
 // ---- Shared finalize step: used by both the Paddle webhook and the no-Paddle fallback ----
@@ -882,7 +882,7 @@ async function finalizeRegistration(registrationId, opts = {}) {
 router.get("/register/success", async (req, res) => {
   const regId = req.query.reg;
   const reg = store.findOne("registrations", (r) => r.id === regId);
-  if (!reg) return res.status(404).render("404", { title: "Registration not found" });
+  if (!reg) return res.status(404).render("404", { title: res.locals.t('title_registration_not_found') });
 
   // The webhook is the authoritative confirmation path (see below) — this
   // redirect-based check exists only as a fallback in case the webhook is
@@ -890,12 +890,12 @@ router.get("/register/success", async (req, res) => {
   // webhook has already been delivered and processed.
   const finalReg = store.findOne("registrations", (r) => r.id === regId);
   const course = store.findOne("courses", (c) => c.id === finalReg.courseId);
-  res.render("register-success", { title: "Registration confirmed — Baseline Skills", noindex: true, registration: finalReg, course });
+  res.render("register-success", { title: res.locals.t('title_registration_confirmed') + " — Baseline Skills", noindex: true, registration: finalReg, course });
 });
 
 router.get("/register/cancel", (req, res) => {
   const reg = store.findOne("registrations", (r) => r.id === req.query.reg);
-  res.render("register-cancel", { title: "Registration not completed — Baseline Skills", noindex: true, registration: reg });
+  res.render("register-cancel", { title: res.locals.t('title_registration_not_completed') + " — Baseline Skills", noindex: true, registration: reg });
 });
 
 // Pairs with checkout.ejs's onError handler above — logs an unhandled

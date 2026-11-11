@@ -26,20 +26,20 @@ const authRateLimiter = createRateLimiter({
 
 router.get("/signup", (req, res) => {
   if (req.session.learnerId) return res.redirect("/account");
-  res.render("signup", { title: "Create your account — Baseline Skills", error: null });
+  res.render("signup", { title: res.locals.t('title_create_account') + " — Baseline Skills", error: null });
 });
 
 router.post("/signup", authRateLimiter, (req, res) => {
   const { name, email, password, country, phone } = req.body;
   if (!name || !email || !password) {
-    return res.status(400).render("signup", { title: "Create your account — Baseline Skills", error: "Name, email, and password are required." });
+    return res.status(400).render("signup", { title: res.locals.t('title_create_account') + " — Baseline Skills", error: "Name, email, and password are required." });
   }
   if (password.length < cfg.PASSWORD_MIN_LENGTH) {
-    return res.status(400).render("signup", { title: "Create your account — Baseline Skills", error: `Password must be at least ${cfg.PASSWORD_MIN_LENGTH} characters.` });
+    return res.status(400).render("signup", { title: res.locals.t('title_create_account') + " — Baseline Skills", error: `Password must be at least ${cfg.PASSWORD_MIN_LENGTH} characters.` });
   }
   const existing = store.findOne("learners", l => l.email.toLowerCase() === email.toLowerCase());
   if (existing) {
-    return res.status(400).render("signup", { title: "Create your account — Baseline Skills", error: "An account with that email already exists — try logging in instead." });
+    return res.status(400).render("signup", { title: res.locals.t('title_create_account') + " — Baseline Skills", error: "An account with that email already exists — try logging in instead." });
   }
 
   const learner = store.insert("learners", {
@@ -51,7 +51,7 @@ router.post("/signup", authRateLimiter, (req, res) => {
   });
 
   auth.regenerateSessionKeepingLang(req, (err) => {
-    if (err) return res.status(500).render("signup", { title: "Create your account — Baseline Skills", error: "Session error — please try again." });
+    if (err) return res.status(500).render("signup", { title: res.locals.t('title_create_account') + " — Baseline Skills", error: "Session error — please try again." });
     req.session.learnerId = learner.id;
     res.redirect(security.safeNextPath(req.query.next));
   });
@@ -59,7 +59,7 @@ router.post("/signup", authRateLimiter, (req, res) => {
 
 router.get("/login", (req, res) => {
   if (req.session.learnerId) return res.redirect("/account");
-  res.render("login", { title: "Log in — Baseline Skills", error: null, next: security.safeNextPath(req.query.next, "") });
+  res.render("login", { title: res.locals.t('login_log_in') + " — Baseline Skills", error: null, next: security.safeNextPath(req.query.next, "") });
 });
 
 const loginAttempts = security.createLoginAttemptTracker({
@@ -73,7 +73,7 @@ router.post("/login", (req, res) => {
   const attemptStatus = loginAttempts.check(req);
   if (attemptStatus.blocked) {
     res.set("Retry-After", attemptStatus.retryAfterSeconds);
-    return res.status(429).render("login", { title: "Log in — Baseline Skills", error: "Too many failed login attempts. Please wait 15 minutes and try again.", next: security.safeNextPath(req.body.next, "") });
+    return res.status(429).render("login", { title: res.locals.t('login_log_in') + " — Baseline Skills", error: "Too many failed login attempts. Please wait 15 minutes and try again.", next: security.safeNextPath(req.body.next, "") });
   }
 
   const { email, password } = req.body;
@@ -81,12 +81,12 @@ router.post("/login", (req, res) => {
 
   if (!learner || !auth.verifyPassword(password, learner.passwordHash)) {
     loginAttempts.recordFailure(req);
-    return res.status(400).render("login", { title: "Log in — Baseline Skills", error: "Incorrect email or password.", next: security.safeNextPath(req.body.next, "") });
+    return res.status(400).render("login", { title: res.locals.t('login_log_in') + " — Baseline Skills", error: "Incorrect email or password.", next: security.safeNextPath(req.body.next, "") });
   }
 
   loginAttempts.recordSuccess(req);
   auth.regenerateSessionKeepingLang(req, (err) => {
-    if (err) return res.status(500).render("login", { title: "Log in — Baseline Skills", error: "Session error — please try again.", next: "" });
+    if (err) return res.status(500).render("login", { title: res.locals.t('login_log_in') + " — Baseline Skills", error: "Session error — please try again.", next: "" });
     req.session.learnerId = learner.id;
     res.redirect(security.safeNextPath(req.body.next));
   });
@@ -117,7 +117,7 @@ router.get("/account", auth.requireLearner, (req, res) => {
   const coursesById = {};
   store.readAll("courses").forEach(c => { coursesById[c.id] = c; });
   const pendingFeedback = store.readAll("feedback").filter(f => f.learnerId === learner.id && f.rating === null);
-  res.render("account", { title: "My Account — Baseline Skills", noindex: true, learner, registrations, invoicesByRegistration, certificates, coursesById, pendingFeedback, success: req.query.success });
+  res.render("account", { title: res.locals.t('account_eyebrow') + " — Baseline Skills", noindex: true, learner, registrations, invoicesByRegistration, certificates, coursesById, pendingFeedback, success: req.query.success });
 });
 
 // Submits (fills in) a pending feedback prompt created at purchase or
@@ -137,7 +137,7 @@ router.get("/account/certificates/:id/download", auth.requireLearner, (req, res)
   if (!certificate || certificate.learnerId !== req.session.learnerId) return res.status(403).send("You don't have access to this certificate.");
   const certificatesLib = require("../lib/certificates");
   const filePath = path.join(certificatesLib.CERTIFICATE_DIR, certificate.certificateUrl);
-  if (!fs.existsSync(filePath)) return res.status(404).render("404", { title: "Certificate file not found" });
+  if (!fs.existsSync(filePath)) return res.status(404).render("404", { title: res.locals.t('title_certificate_file_not_found') });
   res.download(filePath, `${certificate.certificateNumber}.pdf`);
 });
 
@@ -149,7 +149,7 @@ router.get("/account/certificates/:id/badge", auth.requireLearner, (req, res) =>
   if (!certificate || certificate.learnerId !== req.session.learnerId) return res.status(403).send("You don't have access to this badge.");
   const certificatesLib = require("../lib/certificates");
   const filePath = path.join(certificatesLib.BADGE_DIR, certificate.badgeUrl);
-  if (!fs.existsSync(filePath)) return res.status(404).render("404", { title: "Badge file not found" });
+  if (!fs.existsSync(filePath)) return res.status(404).render("404", { title: res.locals.t('title_badge_file_not_found') });
   res.download(filePath, `${certificate.certificateNumber}-badge.pdf`);
 });
 
@@ -159,14 +159,14 @@ router.get("/account/certificates/:id/badge", auth.requireLearner, (req, res) =>
 // UI for anyone else.
 router.get("/account/invoices/:id/download", auth.requireLearner, (req, res) => {
   const invoice = store.findOne("invoices", (i) => i.id === req.params.id);
-  if (!invoice || !invoice.registrationId) return res.status(404).render("404", { title: "Invoice not found" });
+  if (!invoice || !invoice.registrationId) return res.status(404).render("404", { title: res.locals.t('title_invoice_not_found') });
   const registration = store.findOne("registrations", (r) => r.id === invoice.registrationId);
   const learner = store.findOne("learners", (l) => l.id === req.session.learnerId);
   const owns = registration && (registration.learnerId === learner.id || registration.email.toLowerCase() === learner.email.toLowerCase());
   if (!owns) return res.status(403).send("You don't have access to this invoice.");
 
   const filePath = path.join(invoicesLib.INVOICE_DIR, invoice.pdfUrl);
-  if (!fs.existsSync(filePath)) return res.status(404).render("404", { title: "Invoice file not found" });
+  if (!fs.existsSync(filePath)) return res.status(404).render("404", { title: res.locals.t('title_invoice_file_not_found') });
   res.download(filePath, `${invoice.invoiceNumber}.pdf`);
 });
 
@@ -178,14 +178,14 @@ router.get("/account/invoices/:id/download", auth.requireLearner, (req, res) => 
 // /set-password route below — no second reset mechanism to keep in sync.
 router.get("/forgot-password", (req, res) => {
   const captcha = generateCaptcha(req.session);
-  res.render("forgot-password", { title: "Forgot Password — Baseline Skills", error: null, sent: false, captchaQuestion: captcha.question, captchaA: captcha.a, captchaB: captcha.b });
+  res.render("forgot-password", { title: res.locals.t('title_forgot_password') + " — Baseline Skills", error: null, sent: false, captchaQuestion: captcha.question, captchaA: captcha.a, captchaB: captcha.b });
 });
 
 router.post("/forgot-password", authRateLimiter, async (req, res) => {
   const { email, captchaAnswer } = req.body;
   if (!verifyCaptcha(req.session, captchaAnswer)) {
     const captcha = generateCaptcha(req.session);
-    return res.status(400).render("forgot-password", { title: "Forgot Password — Baseline Skills", error: res.locals.t("captcha_wrong_answer"), sent: false, captchaQuestion: captcha.question, captchaA: captcha.a, captchaB: captcha.b });
+    return res.status(400).render("forgot-password", { title: res.locals.t('title_forgot_password') + " — Baseline Skills", error: res.locals.t("captcha_wrong_answer"), sent: false, captchaQuestion: captcha.question, captchaA: captcha.a, captchaB: captcha.b });
   }
   const learner = email ? store.findOne("learners", (l) => l.email === email.toLowerCase()) : null;
   if (learner) {
@@ -204,32 +204,32 @@ router.post("/forgot-password", authRateLimiter, async (req, res) => {
     });
   }
   // Same response either way — see comment above.
-  res.render("forgot-password", { title: "Forgot Password — Baseline Skills", error: null, sent: true, captchaQuestion: null });
+  res.render("forgot-password", { title: res.locals.t('title_forgot_password') + " — Baseline Skills", error: null, sent: true, captchaQuestion: null });
 });
 
 router.get("/set-password", (req, res) => {
   const learner = store.findOne("learners", (l) => l.passwordResetToken === req.query.token);
   if (!learner || new Date(learner.passwordResetExpires) < new Date()) {
-    return res.status(400).render("set-password", { title: "Set your password — Baseline Skills", error: "This link is invalid or has expired. Please contact us for a new one.", token: null });
+    return res.status(400).render("set-password", { title: res.locals.t('setpw_title') + " — Baseline Skills", error: "This link is invalid or has expired. Please contact us for a new one.", token: null });
   }
-  res.render("set-password", { title: "Set your password — Baseline Skills", error: null, token: req.query.token });
+  res.render("set-password", { title: res.locals.t('setpw_title') + " — Baseline Skills", error: null, token: req.query.token });
 });
 
 router.post("/set-password", authRateLimiter, (req, res) => {
   const { token, password } = req.body;
   const learner = store.findOne("learners", (l) => l.passwordResetToken === token);
   if (!learner || new Date(learner.passwordResetExpires) < new Date()) {
-    return res.status(400).render("set-password", { title: "Set your password — Baseline Skills", error: "This link is invalid or has expired. Please contact us for a new one.", token: null });
+    return res.status(400).render("set-password", { title: res.locals.t('setpw_title') + " — Baseline Skills", error: "This link is invalid or has expired. Please contact us for a new one.", token: null });
   }
   if (!password || password.length < cfg.PASSWORD_MIN_LENGTH) {
-    return res.status(400).render("set-password", { title: "Set your password — Baseline Skills", error: `Password must be at least ${cfg.PASSWORD_MIN_LENGTH} characters.`, token });
+    return res.status(400).render("set-password", { title: res.locals.t('setpw_title') + " — Baseline Skills", error: `Password must be at least ${cfg.PASSWORD_MIN_LENGTH} characters.`, token });
   }
   store.update("learners", learner.id, {
     passwordHash: auth.hashPassword(password),
     passwordResetToken: null, passwordResetExpires: null,
   });
   auth.regenerateSessionKeepingLang(req, (err) => {
-    if (err) return res.status(500).render("set-password", { title: "Set your password — Baseline Skills", error: "Session error — please try again.", token: null });
+    if (err) return res.status(500).render("set-password", { title: res.locals.t('setpw_title') + " — Baseline Skills", error: "Session error — please try again.", token: null });
     req.session.learnerId = learner.id;
     res.redirect("/account?success=Password+set");
   });
