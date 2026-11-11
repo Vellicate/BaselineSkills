@@ -55,7 +55,19 @@
         </div>
       </form>
       <% if (modules.length > 0) { %>
-        <a href="/trainer/lms/courses/<%= course.id %>/preview" class="btn btn-outline btn-sm" style="margin-top:12px" target="_blank" rel="noopener">Preview course</a>
+        <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+          <a href="/trainer/lms/courses/<%= course.id %>/preview" class="btn btn-outline btn-sm" target="_blank" rel="noopener">Preview course (all content)</a>
+          <% if (course.lmsDeliveryModes.length > 1) { %>
+            <% const modeLabels2 = { RECORDED: 'Recorded', LIVE_ONLINE: 'Live Online', HYBRID: 'Hybrid' }; %>
+            <span style="font-size:.8rem;color:var(--muted)">or preview as a specific mode:</span>
+            <% course.lmsDeliveryModes.forEach(mode => { %>
+              <a href="/trainer/lms/courses/<%= course.id %>/preview?mode=<%= mode %>" class="btn btn-outline btn-sm" target="_blank" rel="noopener"><%= modeLabels2[mode] || mode %></a>
+            <% }) %>
+          <% } %>
+        </div>
+        <% if (course.lmsDeliveryModes.length > 1) { %>
+          <p style="font-size:.78rem;color:var(--muted);margin-top:4px">"All content" shows every lesson regardless of mode restrictions, so you can manage it -- it does not reflect what any one student actually sees. Use a specific mode above to verify what's really hidden from it.</p>
+        <% } %>
       <% } %>
     <% } %>
   </div>

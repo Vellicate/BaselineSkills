@@ -15,10 +15,16 @@ const lessonToShow = activeLesson || firstLesson;
   <div class="container">
     <% const lmsModeLabel = (m) => ({ LIVE_ONLINE: t('lms_mode_live_online'), RECORDED: t('lms_mode_recorded'), HYBRID: t('lms_mode_hybrid') }[m] || m); %>
     <% if (isTeacherPreview) { %>
-      <span class="pill" style="background:#FFF6DF;color:#7a4e02;margin-bottom:8px;display:inline-block"><%= t('player_teacher_preview') %></span>
+      <span class="pill" style="background:#FFF6DF;color:#7a4e02;margin-bottom:8px;display:inline-block">
+        <%= t('player_teacher_preview') %><%= typeof previewMode !== 'undefined' && previewMode ? ' — previewing as ' + lmsModeLabel(previewMode) : '' %>
+      </span>
     <% } %>
     <h1 style="font-size:1.6rem;margin:0"><%= course.title %></h1>
-    <p style="font-size:.85rem;color:var(--muted);margin:6px 0 0"><%= lmsModeLabel(course.lmsDeliveryMode) %></p>
+    <p style="font-size:.85rem;color:var(--muted);margin:6px 0 0">
+      <%= (typeof studentMode !== 'undefined' && studentMode) ? lmsModeLabel(studentMode)
+        : (typeof previewMode !== 'undefined' && previewMode) ? lmsModeLabel(previewMode)
+        : (course.lmsDeliveryModes || []).map(lmsModeLabel).join(' + ') %>
+    </p>
 
     <% if (typeof liveSession !== 'undefined' && liveSession) { %>
       <!-- Part G: live-session info for LIVE_ONLINE/HYBRID -- this

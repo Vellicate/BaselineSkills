@@ -437,26 +437,34 @@ router.post("/trainer/lms/courses/:courseId/modules/reorder", loadOwnedCourse, (
 // Section 18's "must not accidentally grant enrolled-student permissions"
 // is about student-side access control, not about blocking the owning
 // teacher from seeing their own draft content.
+function previewModules(course, previewMode) {
+  const modules = modulesWithLessons(course.id);
+  if (!previewMode) return modules;
+  return modules.map((m) => ({ ...m, lessons: m.lessons.filter((l) => lmsAccess.studentModeAllowsLesson(l, previewMode)) }));
+}
+
 router.get("/trainer/lms/courses/:courseId/preview", loadOwnedCourse, (req, res) => {
+  const previewMode = ["LIVE_ONLINE", "RECORDED", "HYBRID"].includes(req.query.mode) ? req.query.mode : null;
   res.render("lms/course-player", {
     title: `Preview — ${req.lmsCourse.title}`,
     course: req.lmsCourse,
-    modules: modulesWithLessons(req.lmsCourse.id),
-    isTeacherPreview: true,
+    modules: previewModules(req.lmsCourse, previewMode),
+    isTeacherPreview: true, previewMode,
     activeLesson: null,
     completedLessonIds: new Set(),
   });
 });
 
 router.get("/trainer/lms/courses/:courseId/preview/lessons/:lessonId", loadOwnedCourse, (req, res) => {
-  const modules = modulesWithLessons(req.lmsCourse.id);
+  const previewMode = ["LIVE_ONLINE", "RECORDED", "HYBRID"].includes(req.query.mode) ? req.query.mode : null;
+  const modules = previewModules(req.lmsCourse, previewMode);
   const lesson = modules.flatMap((m) => m.lessons).find((l) => l.id === req.params.lessonId);
   if (!lesson) return res.status(404).render("404", { title: "Lesson not found" });
   res.render("lms/course-player", {
     title: `Preview — ${req.lmsCourse.title}`,
     course: req.lmsCourse,
     modules,
-    isTeacherPreview: true,
+    isTeacherPreview: true, previewMode,
     activeLesson: lesson,
     completedLessonIds: new Set(),
   });

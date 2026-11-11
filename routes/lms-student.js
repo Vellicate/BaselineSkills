@@ -43,11 +43,6 @@ router.use(security.requireSameOrigin);
 // unresolved student mode (no matching registration, or a format with no
 // LMS equivalent) never sees a mode-restricted lesson, erring toward
 // showing too little rather than content meant for a different mode.
-function studentModeAllowsLesson(lesson, studentMode) {
-  if (!lesson.applicableModes || lesson.applicableModes.length === 0) return true;
-  return !!studentMode && lesson.applicableModes.includes(studentMode);
-}
-
 function modulesWithLessons(courseId) {
   return store.readAll("lms_modules")
     .filter((m) => m.courseId === courseId)
@@ -192,7 +187,7 @@ router.get("/student/lms/courses/:courseId", loadAccessibleCourse, (req, res) =>
   const studentMode = lmsAccess.studentDeliveryModeForCourse(learnerId, req.lmsCourse);
   const modules = modulesWithLessons(req.lmsCourse.id).map((m) => ({
     ...m,
-    lessons: m.lessons.filter((l) => lmsAccess.canView(learnerId, l, req.lmsCourse) && studentModeAllowsLesson(l, studentMode)),
+    lessons: m.lessons.filter((l) => lmsAccess.canView(learnerId, l, req.lmsCourse) && lmsAccess.studentModeAllowsLesson(l, studentMode)),
   }));
   const completedLessonIds = new Set(
     learnerId
@@ -215,14 +210,14 @@ router.get("/student/lms/courses/:courseId/lessons/:lessonId", loadAccessibleCou
   const rawLesson = store.findOne("lms_lessons", (l) => l.id === req.params.lessonId);
   const learnerId = req.session.learnerId || null;
   const studentMode = lmsAccess.studentDeliveryModeForCourse(learnerId, req.lmsCourse);
-  if (!rawLesson || !lmsAccess.canView(learnerId, rawLesson, req.lmsCourse) || !studentModeAllowsLesson(rawLesson, studentMode)) {
+  if (!rawLesson || !lmsAccess.canView(learnerId, rawLesson, req.lmsCourse) || !lmsAccess.studentModeAllowsLesson(rawLesson, studentMode)) {
     return res.status(403).render("lms/access-denied", {
       title: res.locals.t('denied_default_title') + " — Baseline Skills", course: req.lmsCourse, reason: "lesson_locked",
     });
   }
   const modules = modulesWithLessons(req.lmsCourse.id).map((m) => ({
     ...m,
-    lessons: m.lessons.filter((l) => lmsAccess.canView(learnerId, l, req.lmsCourse) && studentModeAllowsLesson(l, studentMode)),
+    lessons: m.lessons.filter((l) => lmsAccess.canView(learnerId, l, req.lmsCourse) && lmsAccess.studentModeAllowsLesson(l, studentMode)),
   }));
   // Re-derived from the asset-attached modules array above, not the raw
   // rawLesson used only for the access-gate check -- store.findOne alone
