@@ -120,6 +120,19 @@ function loadOwnedLesson(req, res, next) {
   next();
 }
 
+// Shared by the lesson create and edit routes below. HTML form submission
+// collapses a single checked checkbox to a bare string rather than a
+// one-element array (only 2+ checked values arrive as an array), so both
+// shapes are normalized here. Returns null (not []) when nothing was
+// checked, since that's the "common to every mode" state every lesson
+// created before this feature existed already has -- an empty array
+// would read ambiguously as "applies to no mode at all."
+function normalizeApplicableModes(raw) {
+  const modes = Array.isArray(raw) ? raw : (raw ? [raw] : []);
+  const valid = modes.filter((m) => ["LIVE_ONLINE", "RECORDED", "HYBRID"].includes(m));
+  return valid.length > 0 ? valid : null;
+}
+
 function modulesWithLessons(courseId) {
   return store.readAll("lms_modules")
     .filter((m) => m.courseId === courseId)
@@ -174,11 +187,19 @@ router.get("/trainer/lms/courses/:courseId", loadOwnedCourse, (req, res) => {
 });
 
 router.post("/trainer/lms/courses/:courseId/delivery-mode", loadOwnedCourse, (req, res) => {
-  const mode = req.body.lmsDeliveryMode;
-  if (!["LIVE_ONLINE", "RECORDED", "HYBRID"].includes(mode)) {
-    return res.status(400).send("Invalid delivery mode.");
+  // A course's LMS content can now be configured for more than one mode
+  // at once (checkboxes), not just a single choice -- req.body.lmsDeliveryModes
+  // arrives as an array when 2+ boxes are checked, but as a bare string
+  // when exactly one is (a quirk of how HTML form submission collapses a
+  // single same-named field), so both shapes are normalized to an array
+  // here rather than assuming the array shape.
+  const raw = req.body.lmsDeliveryModes;
+  const modes = Array.isArray(raw) ? raw : (raw ? [raw] : []);
+  const validModes = modes.filter((m) => ["LIVE_ONLINE", "RECORDED", "HYBRID"].includes(m));
+  if (validModes.length === 0) {
+    return res.status(400).send("Choose at least one delivery mode.");
   }
-  store.update("courses", req.lmsCourse.id, { lmsDeliveryMode: mode });
+  store.update("courses", req.lmsCourse.id, { lmsDeliveryModes: validModes, lmsDeliveryMode: validModes[0] });
   res.redirect(`/trainer/lms/courses/${req.lmsCourse.id}`);
 });
 
@@ -297,6 +318,7 @@ router.post("/trainer/lms/modules/:moduleId/lessons", loadOwnedModule, (req, res
       isPublished: false,
       previewEnabled: false,
       downloadAllowed: false,
+      applicableModes: normalizeApplicableModes(req.body.applicableModes),
       createdAt: new Date().toISOString(),
     });
     if (req.file) saveContentAsset(lesson.id, req.file);
@@ -338,6 +360,7 @@ router.post("/trainer/lms/lessons/:lessonId/edit", loadOwnedLesson, (req, res) =
       title,
       description: (req.body.description || "").trim(),
       bodyHtml: req.lmsLesson.contentType === "RICH_TEXT" ? sanitizeLessonHtml(req.body.bodyHtml) : req.lmsLesson.bodyHtml,
+      applicableModes: normalizeApplicableModes(req.body.applicableModes),
       updatedAt: new Date().toISOString(),
     });
     if (req.file) saveContentAsset(req.lmsLesson.id, req.file);

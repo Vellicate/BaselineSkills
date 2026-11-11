@@ -23,7 +23,7 @@
           <% active.forEach(s => { %>
             <div class="card">
               <h3 style="margin:0 0 4px"><%= s.course.title %></h3>
-              <p style="font-size:.8rem;color:var(--muted);margin:0 0 10px"><%= lmsModeLabel(s.course.lmsDeliveryMode) %></p>
+              <p style="font-size:.8rem;color:var(--muted);margin:0 0 10px"><%= s.studentMode ? lmsModeLabel(s.studentMode) : s.course.lmsDeliveryModes.map(lmsModeLabel).join(' + ') %></p>
               <% if (s.progressPercent != null) { %>
                 <div style="background:var(--line);border-radius:999px;height:8px;overflow:hidden;margin-bottom:6px">
                   <div style="background:var(--navy);height:100%;width:<%= s.progressPercent %>%"></div>
@@ -53,7 +53,7 @@
           <% upcoming.forEach(s => { %>
             <div class="card">
               <h3 style="margin:0 0 4px"><%= s.course.title %></h3>
-              <p style="font-size:.8rem;color:var(--muted);margin:0 0 10px"><%= lmsModeLabel(s.course.lmsDeliveryMode) %></p>
+              <p style="font-size:.8rem;color:var(--muted);margin:0 0 10px"><%= s.studentMode ? lmsModeLabel(s.studentMode) : s.course.lmsDeliveryModes.map(lmsModeLabel).join(' + ') %></p>
               <p style="font-size:.85rem;margin:0"><%= t('mylearning_becomes_available', new Date(s.startDate).toLocaleDateString()) %></p>
             </div>
           <% }) %>

@@ -31,7 +31,8 @@
     <% }) %>
   <% } %>
   <% if (report.courseFound) { %>
-    <% checks.push({ label: 'Course has an LMS delivery mode set (appears on the student dashboard)', pass: !!report.course.lmsDeliveryMode, detail: report.course.lmsDeliveryMode || 'lmsDeliveryMode is not set on this course at all -- it will never appear on any student\'s LMS dashboard regardless of registration status. Set it from the course\'s LMS builder (Recorded/Live Online/Hybrid).' }); %>
+    <% const hasLmsModes = report.course.lmsDeliveryModes && report.course.lmsDeliveryModes.length > 0; %>
+    <% checks.push({ label: 'Course has at least one LMS delivery mode set (appears on the student dashboard)', pass: hasLmsModes, detail: hasLmsModes ? report.course.lmsDeliveryModes.join(', ') : 'lmsDeliveryModes is not set on this course at all -- it will never appear on any student\'s LMS dashboard regardless of registration status. Set it from the course\'s LMS builder (Recorded/Live Online/Hybrid).' }); %>
     <% checks.push({ label: 'Course access window is currently open', pass: report.windowStatus === 'open', detail: `window status: ${report.windowStatus}` + (report.windowStatus === 'not_started' ? ' -- lmsAccessStartDate is in the future.' : report.windowStatus === 'ended' ? ' -- lmsAccessEndDate has passed.' : '') }); %>
     <% checks.push({ label: 'Course has at least one module', pass: report.modulesCount > 0, detail: `${report.modulesCount} module(s)` }); %>
     <% checks.push({ label: 'Course has at least one published lesson', pass: report.publishedLessonsCount > 0, detail: `${report.publishedLessonsCount} published of ${report.lessonsCount} total lesson(s)` + (report.lessonsCount > 0 && report.publishedLessonsCount === 0 ? ' -- lessons exist but none are published yet.' : '') }); %>

@@ -37,6 +37,45 @@ function lastActivityForLearner(courseId, learnerId) {
 
 router.use(security.requireSameOrigin);
 
+// "Classroom" has no direct LMS equivalent (it's an in-person format with
+// no inherent self-paced/live-online distinction) -- mapped to LIVE_ONLINE
+// since both are synchronous, instructor-led sessions from the LMS
+// content's point of view. Anything else unmapped (Corporate On-site,
+// Private Cohort) falls through to null, which studentModeAllowsLesson
+// treats the same as "no registration found": the student sees only
+// content common to every mode, never a mode-specific lesson they can't
+// be confidently matched to.
+const COMMERCIAL_TO_LMS_MODE = {
+  "Live Online": "LIVE_ONLINE",
+  "Recorded": "RECORDED",
+  "Hybrid": "HYBRID",
+  "Classroom": "LIVE_ONLINE",
+};
+
+function studentDeliveryModeForCourse(learnerId, course) {
+  if (!learnerId) return null;
+  const learner = store.findOne("learners", (l) => l.id === learnerId);
+  if (!learner) return null;
+  const registration = store.readAll("registrations")
+    .filter((r) => r.courseId === course.id &&
+      (r.learnerId === learner.id || r.email.toLowerCase() === learner.email.toLowerCase()) &&
+      (r.status === "confirmed" || r.status === "invoice_pending") && r.grantsAccess !== 0)
+    .sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""))[0];
+  if (!registration) return null;
+  return COMMERCIAL_TO_LMS_MODE[registration.deliveryMode] || null;
+}
+
+// A lesson with no applicableModes restriction is common to every mode the
+// course supports -- shown regardless. A restricted lesson is only shown
+// when the student's own resolved mode is one of the listed ones; an
+// unresolved student mode (no matching registration, or a format with no
+// LMS equivalent) never sees a mode-restricted lesson, erring toward
+// showing too little rather than content meant for a different mode.
+function studentModeAllowsLesson(lesson, studentMode) {
+  if (!lesson.applicableModes || lesson.applicableModes.length === 0) return true;
+  return !!studentMode && lesson.applicableModes.includes(studentMode);
+}
+
 function modulesWithLessons(courseId) {
   return store.readAll("lms_modules")
     .filter((m) => m.courseId === courseId)
@@ -64,7 +103,7 @@ function modulesWithLessons(courseId) {
 // specific denial page, which is route-layer concern, not policy.
 function loadAccessibleCourse(req, res, next) {
   const course = store.findOne("courses", (c) => c.id === req.params.courseId);
-  if (!course || !course.lmsDeliveryMode) return res.status(404).render("404", { title: res.locals.t('title_course_not_found') });
+  if (!course || !course.lmsDeliveryModes || course.lmsDeliveryModes.length === 0) return res.status(404).render("404", { title: res.locals.t('title_course_not_found') });
 
   // Checked before enrollment/preview at all -- Section 37 lists the date
   // window as its own top-level requirement, and Section 28 says a
@@ -108,8 +147,8 @@ router.get("/student/lms", auth.requireLearner, (req, res) => {
   );
   const courseIds = new Set(registrations.map((r) => r.courseId));
   const registeredCourses = store.readAll("courses").filter((c) => courseIds.has(c.id));
-  const lmsCourses = registeredCourses.filter((c) => c.lmsDeliveryMode);
-  const notYetBuilt = registeredCourses.filter((c) => !c.lmsDeliveryMode).map((course) => ({ course }));
+  const lmsCourses = registeredCourses.filter((c) => c.lmsDeliveryModes && c.lmsDeliveryModes.length > 0);
+  const notYetBuilt = registeredCourses.filter((c) => !c.lmsDeliveryModes || c.lmsDeliveryModes.length === 0).map((course) => ({ course }));
 
   // Part D: categorized, not a flat list -- each course goes into exactly
   // one bucket, decided server-side from real records (enrollment_progress
@@ -127,16 +166,18 @@ router.get("/student/lms", auth.requireLearner, (req, res) => {
     const windowStatus = lmsAccess.courseAccessWindowStatus(course);
     const lastActivity = lastActivityForLearner(course.id, learner.id);
 
+    const studentMode = studentDeliveryModeForCourse(learner.id, course);
+
     if (progressRow) {
       const certificate = store.findOne("certificates", (c) => c.learnerId === learner.id && c.courseId === course.id);
       completed.push({ course, completedAt: progressRow.completedAt, certificate });
     } else if (windowStatus === "not_started") {
-      upcoming.push({ course, startDate: course.lmsAccessStartDate });
+      upcoming.push({ course, startDate: course.lmsAccessStartDate, studentMode });
     } else if (windowStatus === "ended") {
       expired.push({ course, endDate: course.lmsAccessEndDate });
     } else {
       active.push({
-        course, progressPercent: progress.percentComplete,
+        course, progressPercent: progress.percentComplete, studentMode,
         nextLesson: progress.nextLesson, lastActivity, endDate: course.lmsAccessEndDate,
       });
     }
@@ -154,7 +195,8 @@ router.get("/student/lms", auth.requireLearner, (req, res) => {
 // the course's first/soonest session, since a course can run multiple
 // sessions and a student should see the one they're actually enrolled in.
 function liveSessionInfoForLearner(learnerId, course) {
-  if (!["LIVE_ONLINE", "HYBRID"].includes(course.lmsDeliveryMode)) return null;
+  const studentMode = studentDeliveryModeForCourse(learnerId, course);
+  if (!["LIVE_ONLINE", "HYBRID"].includes(studentMode)) return null;
   const learner = store.findOne("learners", (l) => l.id === learnerId);
   if (!learner) return null;
   const registration = store.readAll("registrations")
@@ -168,9 +210,10 @@ function liveSessionInfoForLearner(learnerId, course) {
 
 router.get("/student/lms/courses/:courseId", loadAccessibleCourse, (req, res) => {
   const learnerId = req.session.learnerId || null;
+  const studentMode = studentDeliveryModeForCourse(learnerId, req.lmsCourse);
   const modules = modulesWithLessons(req.lmsCourse.id).map((m) => ({
     ...m,
-    lessons: m.lessons.filter((l) => lmsAccess.canView(learnerId, l, req.lmsCourse)),
+    lessons: m.lessons.filter((l) => lmsAccess.canView(learnerId, l, req.lmsCourse) && studentModeAllowsLesson(l, studentMode)),
   }));
   const completedLessonIds = new Set(
     learnerId
@@ -183,7 +226,7 @@ router.get("/student/lms/courses/:courseId", loadAccessibleCourse, (req, res) =>
     : null;
   res.render("lms/course-player", {
     title: `${req.lmsCourse.title} — Baseline Skills`,
-    course: req.lmsCourse, modules, isTeacherPreview: false, activeLesson: null, completedLessonIds,
+    course: req.lmsCourse, modules, isTeacherPreview: false, activeLesson: null, completedLessonIds, studentMode,
     videoResumePosition: progress ? progress.lastPositionSeconds : 0,
     liveSession: learnerId ? liveSessionInfoForLearner(learnerId, req.lmsCourse) : null,
   });
@@ -192,14 +235,15 @@ router.get("/student/lms/courses/:courseId", loadAccessibleCourse, (req, res) =>
 router.get("/student/lms/courses/:courseId/lessons/:lessonId", loadAccessibleCourse, (req, res) => {
   const rawLesson = store.findOne("lms_lessons", (l) => l.id === req.params.lessonId);
   const learnerId = req.session.learnerId || null;
-  if (!rawLesson || !lmsAccess.canView(learnerId, rawLesson, req.lmsCourse)) {
+  const studentMode = studentDeliveryModeForCourse(learnerId, req.lmsCourse);
+  if (!rawLesson || !lmsAccess.canView(learnerId, rawLesson, req.lmsCourse) || !studentModeAllowsLesson(rawLesson, studentMode)) {
     return res.status(403).render("lms/access-denied", {
       title: res.locals.t('denied_default_title') + " — Baseline Skills", course: req.lmsCourse, reason: "lesson_locked",
     });
   }
   const modules = modulesWithLessons(req.lmsCourse.id).map((m) => ({
     ...m,
-    lessons: m.lessons.filter((l) => lmsAccess.canView(learnerId, l, req.lmsCourse)),
+    lessons: m.lessons.filter((l) => lmsAccess.canView(learnerId, l, req.lmsCourse) && studentModeAllowsLesson(l, studentMode)),
   }));
   // Re-derived from the asset-attached modules array above, not the raw
   // rawLesson used only for the access-gate check -- store.findOne alone
@@ -217,7 +261,7 @@ router.get("/student/lms/courses/:courseId/lessons/:lessonId", loadAccessibleCou
     : null;
   res.render("lms/course-player", {
     title: `${lesson.title} — ${req.lmsCourse.title}`,
-    course: req.lmsCourse, modules, isTeacherPreview: false, activeLesson: lesson, completedLessonIds,
+    course: req.lmsCourse, modules, isTeacherPreview: false, activeLesson: lesson, completedLessonIds, studentMode,
     videoResumePosition: progress ? progress.lastPositionSeconds : 0,
     liveSession: learnerId ? liveSessionInfoForLearner(learnerId, req.lmsCourse) : null,
   });

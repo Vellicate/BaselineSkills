@@ -5,7 +5,8 @@
     <a href="/trainer/lms" style="font-size:.85rem;color:var(--muted)">&larr; My LMS courses</a>
     <h1 style="font-size:1.8rem;margin-top:8px"><%= course.title %></h1>
 
-    <% if (!course.lmsDeliveryMode) { %>
+    <% const hasLmsModes = course.lmsDeliveryModes && course.lmsDeliveryModes.length > 0; %>
+    <% if (!hasLmsModes) { %>
       <!-- No delivery mode chosen yet: this IS "creating the course" from
            the teacher's point of view, and a plain, unlabeled <select>
            reading "Choose one..." next to a large "Add a module" card
@@ -14,25 +15,28 @@
            not obviously recognize a small native dropdown as that
            button. Made unmissable instead: a full-width banner with
            three real, clearly-labeled choices, shown only until a choice
-           is made. -->
+           is made. Checkboxes, not a single pick, since a course can be
+           built for more than one mode at once -- e.g. sold as both
+           Recorded and Live Online, with some lessons common to both and
+           some specific to one (set per-lesson once modules exist). -->
       <div class="card" style="margin-top:16px;background:var(--bg-soft,#F1F5F9);border:2px solid var(--navy)">
         <h3 style="margin-top:0">Choose how this course will be delivered</h3>
-        <p style="color:var(--muted);font-size:.9rem;margin-bottom:16px">This is the first step -- pick one to start building this course's content.</p>
-        <form method="POST" action="/trainer/lms/courses/<%= course.id %>/delivery-mode" style="display:flex;gap:12px;flex-wrap:wrap">
-          <button type="submit" name="lmsDeliveryMode" value="RECORDED" class="btn btn-navy">Recorded (self-paced)</button>
-          <button type="submit" name="lmsDeliveryMode" value="LIVE_ONLINE" class="btn btn-outline">Live Online</button>
-          <button type="submit" name="lmsDeliveryMode" value="HYBRID" class="btn btn-outline">Hybrid</button>
+        <p style="color:var(--muted);font-size:.9rem;margin-bottom:16px">This is the first step -- pick one or more to start building this course's content. A course sold under several delivery formats can have its LMS content built for all of them at once, with some lessons shared and some specific to one.</p>
+        <form method="POST" action="/trainer/lms/courses/<%= course.id %>/delivery-mode" style="display:flex;gap:16px;flex-wrap:wrap;align-items:center">
+          <label style="display:flex;align-items:center;gap:6px;font-weight:600;cursor:pointer"><input type="checkbox" name="lmsDeliveryModes" value="RECORDED"> Recorded (self-paced)</label>
+          <label style="display:flex;align-items:center;gap:6px;font-weight:600;cursor:pointer"><input type="checkbox" name="lmsDeliveryModes" value="LIVE_ONLINE"> Live Online</label>
+          <label style="display:flex;align-items:center;gap:6px;font-weight:600;cursor:pointer"><input type="checkbox" name="lmsDeliveryModes" value="HYBRID"> Hybrid</label>
+          <button type="submit" class="btn btn-navy">Save</button>
         </form>
       </div>
     <% } else { %>
-      <form method="POST" action="/trainer/lms/courses/<%= course.id %>/delivery-mode" style="margin-top:12px;display:flex;align-items:center;gap:10px">
-        <label for="lmsDeliveryMode" style="font-size:.85rem;font-weight:600">Delivery mode</label>
-        <select name="lmsDeliveryMode" id="lmsDeliveryMode" onchange="this.form.submit()">
-          <option value="LIVE_ONLINE" <%= course.lmsDeliveryMode === 'LIVE_ONLINE' ? 'selected' : '' %>>Live Online</option>
-          <option value="RECORDED" <%= course.lmsDeliveryMode === 'RECORDED' ? 'selected' : '' %>>Recorded</option>
-          <option value="HYBRID" <%= course.lmsDeliveryMode === 'HYBRID' ? 'selected' : '' %>>Hybrid</option>
-        </select>
+      <form method="POST" action="/trainer/lms/courses/<%= course.id %>/delivery-mode" style="margin-top:12px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+        <span style="font-size:.85rem;font-weight:600">Delivery modes</span>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" name="lmsDeliveryModes" value="RECORDED" <%= course.lmsDeliveryModes.includes('RECORDED') ? 'checked' : '' %> onchange="this.form.submit()"> Recorded</label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" name="lmsDeliveryModes" value="LIVE_ONLINE" <%= course.lmsDeliveryModes.includes('LIVE_ONLINE') ? 'checked' : '' %> onchange="this.form.submit()"> Live Online</label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" name="lmsDeliveryModes" value="HYBRID" <%= course.lmsDeliveryModes.includes('HYBRID') ? 'checked' : '' %> onchange="this.form.submit()"> Hybrid</label>
       </form>
+      <p style="font-size:.78rem;color:var(--muted);margin-top:4px">A lesson applies to all of these by default. Open "Edit" on a lesson to restrict it to specific modes only.</p>
       <form method="POST" action="/trainer/lms/courses/<%= course.id %>/access-window" style="margin-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
         <label for="lmsAccessStartDate" style="font-size:.85rem;font-weight:600">Available from</label>
         <input type="date" name="lmsAccessStartDate" id="lmsAccessStartDate" value="<%= course.lmsAccessStartDate || '' %>">
@@ -48,7 +52,7 @@
   </div>
 </section>
 
-<% if (course.lmsDeliveryMode) { %>
+<% if (hasLmsModes) { %>
 <section class="section">
   <div class="container" style="max-width:820px">
 
@@ -196,6 +200,21 @@
         <p style="font-size:.78rem;color:var(--muted);margin:6px 0 0" id="lesson-file-hint"></p>
       </div>
 
+      <% if (course.lmsDeliveryModes && course.lmsDeliveryModes.length > 1) { %>
+      <div class="form-field">
+        <label>Applies to</label>
+        <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:4px">
+          <% const modeLabels = { RECORDED: 'Recorded', LIVE_ONLINE: 'Live Online', HYBRID: 'Hybrid' }; %>
+          <% course.lmsDeliveryModes.forEach(mode => { %>
+            <label style="display:flex;align-items:center;gap:6px;font-weight:400;cursor:pointer">
+              <input type="checkbox" class="lesson-applicable-mode" name="applicableModes" value="<%= mode %>"> <%= modeLabels[mode] || mode %>
+            </label>
+          <% }) %>
+        </div>
+        <p style="font-size:.78rem;color:var(--muted);margin:4px 0 0">Leave all unchecked for a lesson common to every mode above. Check one or more to show it only to students in those modes.</p>
+      </div>
+      <% } %>
+
       <div id="lesson-form-status" style="font-size:.8rem;color:var(--muted);min-height:1.2em"></div>
       <button type="submit" class="btn btn-navy" id="lesson-save-btn">Save lesson</button>
     </form>
@@ -255,6 +274,8 @@ function openLessonEditor(moduleId, lesson) {
   document.getElementById('lesson-description').value = lesson ? (lesson.description || '') : '';
   editor.innerHTML = lesson ? (lesson.bodyHtml || '') : '';
   fileInput.value = '';
+  const applicableModes = (lesson && lesson.applicableModes) || [];
+  document.querySelectorAll('.lesson-applicable-mode').forEach((cb) => { cb.checked = applicableModes.includes(cb.value); });
 
   const contentType = lesson ? lesson.contentType : 'RICH_TEXT';
   document.getElementById('lesson-content-type-field').style.display = 'block';

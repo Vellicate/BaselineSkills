@@ -21,8 +21,9 @@
             <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
               <div>
                 <h3 style="margin:0 0 4px"><%= s.course.title %></h3>
+                <% const lmsModeLabel = (m) => ({ LIVE_ONLINE: t('lms_mode_live_online'), RECORDED: t('lms_mode_recorded'), HYBRID: t('lms_mode_hybrid') }[m] || m); %>
                 <p style="margin:0;color:var(--muted);font-size:.85rem">
-                  <%= s.course.lmsDeliveryMode ? s.course.lmsDeliveryMode.replace('_',' ') : 'No delivery mode set yet' %>
+                  <%= (s.course.lmsDeliveryModes && s.course.lmsDeliveryModes.length > 0) ? s.course.lmsDeliveryModes.map(lmsModeLabel).join(' + ') : 'No delivery mode set yet' %>
                 </p>
               </div>
               <% if (s.course.published) { %><span class="pill" style="background:#F0FDF4;color:#166534">Live on site</span><% } else { %><span class="pill">Draft</span><% } %>
