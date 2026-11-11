@@ -37,34 +37,6 @@ function lastActivityForLearner(courseId, learnerId) {
 
 router.use(security.requireSameOrigin);
 
-// "Classroom" has no direct LMS equivalent (it's an in-person format with
-// no inherent self-paced/live-online distinction) -- mapped to LIVE_ONLINE
-// since both are synchronous, instructor-led sessions from the LMS
-// content's point of view. Anything else unmapped (Corporate On-site,
-// Private Cohort) falls through to null, which studentModeAllowsLesson
-// treats the same as "no registration found": the student sees only
-// content common to every mode, never a mode-specific lesson they can't
-// be confidently matched to.
-const COMMERCIAL_TO_LMS_MODE = {
-  "Live Online": "LIVE_ONLINE",
-  "Recorded": "RECORDED",
-  "Hybrid": "HYBRID",
-  "Classroom": "LIVE_ONLINE",
-};
-
-function studentDeliveryModeForCourse(learnerId, course) {
-  if (!learnerId) return null;
-  const learner = store.findOne("learners", (l) => l.id === learnerId);
-  if (!learner) return null;
-  const registration = store.readAll("registrations")
-    .filter((r) => r.courseId === course.id &&
-      (r.learnerId === learner.id || r.email.toLowerCase() === learner.email.toLowerCase()) &&
-      (r.status === "confirmed" || r.status === "invoice_pending") && r.grantsAccess !== 0)
-    .sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""))[0];
-  if (!registration) return null;
-  return COMMERCIAL_TO_LMS_MODE[registration.deliveryMode] || null;
-}
-
 // A lesson with no applicableModes restriction is common to every mode the
 // course supports -- shown regardless. A restricted lesson is only shown
 // when the student's own resolved mode is one of the listed ones; an
@@ -105,21 +77,27 @@ function loadAccessibleCourse(req, res, next) {
   const course = store.findOne("courses", (c) => c.id === req.params.courseId);
   if (!course || !course.lmsDeliveryModes || course.lmsDeliveryModes.length === 0) return res.status(404).render("404", { title: res.locals.t('title_course_not_found') });
 
+  const learnerId = req.session.learnerId || null;
+
   // Checked before enrollment/preview at all -- Section 37 lists the date
   // window as its own top-level requirement, and Section 28 says a
   // student outside it "must receive an appropriate access response"
   // regardless of enrollment status. No need to even compute preview
-  // eligibility if the window itself is closed to everyone.
-  const windowStatus = lmsAccess.courseAccessWindowStatus(course);
+  // eligibility if the window itself is closed to everyone. Resolved per
+  // the learner's own mode (null for a not-yet-registered visitor, which
+  // falls back to the course-wide window) rather than a single course-wide
+  // date, now that a course can have different windows per mode.
+  const gateMode = lmsAccess.studentDeliveryModeForCourse(learnerId, course);
+  const windowStatus = lmsAccess.courseAccessWindowStatus(course, gateMode);
   if (windowStatus !== "open") {
+    const { startDate, endDate } = lmsAccess.resolvedAccessWindow(course, gateMode);
     return res.status(403).render("lms/access-denied", {
       title: res.locals.t('denied_default_title') + " — Baseline Skills",
-      course,
+      course: { ...course, lmsAccessStartDate: startDate, lmsAccessEndDate: endDate },
       reason: windowStatus, // "not_started" or "ended"
     });
   }
 
-  const learnerId = req.session.learnerId || null;
   const enrolled = lmsAccess.isEnrolled(learnerId, course.id);
 
   if (!enrolled) {
@@ -163,22 +141,23 @@ router.get("/student/lms", auth.requireLearner, (req, res) => {
     const progressRow = store.findOne("enrollment_progress", (p) =>
       p.learnerId === learner.id && p.courseId === course.id && !p.moduleId && p.completedAt
     );
-    const windowStatus = lmsAccess.courseAccessWindowStatus(course);
+    const studentMode = lmsAccess.studentDeliveryModeForCourse(learner.id, course);
+    const windowStatus = lmsAccess.courseAccessWindowStatus(course, studentMode);
     const lastActivity = lastActivityForLearner(course.id, learner.id);
 
-    const studentMode = studentDeliveryModeForCourse(learner.id, course);
+    const { startDate: effectiveStartDate, endDate: effectiveEndDate } = lmsAccess.resolvedAccessWindow(course, studentMode);
 
     if (progressRow) {
       const certificate = store.findOne("certificates", (c) => c.learnerId === learner.id && c.courseId === course.id);
       completed.push({ course, completedAt: progressRow.completedAt, certificate });
     } else if (windowStatus === "not_started") {
-      upcoming.push({ course, startDate: course.lmsAccessStartDate, studentMode });
+      upcoming.push({ course, startDate: effectiveStartDate, studentMode });
     } else if (windowStatus === "ended") {
-      expired.push({ course, endDate: course.lmsAccessEndDate });
+      expired.push({ course, endDate: effectiveEndDate });
     } else {
       active.push({
         course, progressPercent: progress.percentComplete, studentMode,
-        nextLesson: progress.nextLesson, lastActivity, endDate: course.lmsAccessEndDate,
+        nextLesson: progress.nextLesson, lastActivity, endDate: effectiveEndDate,
       });
     }
   });
@@ -195,7 +174,7 @@ router.get("/student/lms", auth.requireLearner, (req, res) => {
 // the course's first/soonest session, since a course can run multiple
 // sessions and a student should see the one they're actually enrolled in.
 function liveSessionInfoForLearner(learnerId, course) {
-  const studentMode = studentDeliveryModeForCourse(learnerId, course);
+  const studentMode = lmsAccess.studentDeliveryModeForCourse(learnerId, course);
   if (!["LIVE_ONLINE", "HYBRID"].includes(studentMode)) return null;
   const learner = store.findOne("learners", (l) => l.id === learnerId);
   if (!learner) return null;
@@ -210,7 +189,7 @@ function liveSessionInfoForLearner(learnerId, course) {
 
 router.get("/student/lms/courses/:courseId", loadAccessibleCourse, (req, res) => {
   const learnerId = req.session.learnerId || null;
-  const studentMode = studentDeliveryModeForCourse(learnerId, req.lmsCourse);
+  const studentMode = lmsAccess.studentDeliveryModeForCourse(learnerId, req.lmsCourse);
   const modules = modulesWithLessons(req.lmsCourse.id).map((m) => ({
     ...m,
     lessons: m.lessons.filter((l) => lmsAccess.canView(learnerId, l, req.lmsCourse) && studentModeAllowsLesson(l, studentMode)),
@@ -235,7 +214,7 @@ router.get("/student/lms/courses/:courseId", loadAccessibleCourse, (req, res) =>
 router.get("/student/lms/courses/:courseId/lessons/:lessonId", loadAccessibleCourse, (req, res) => {
   const rawLesson = store.findOne("lms_lessons", (l) => l.id === req.params.lessonId);
   const learnerId = req.session.learnerId || null;
-  const studentMode = studentDeliveryModeForCourse(learnerId, req.lmsCourse);
+  const studentMode = lmsAccess.studentDeliveryModeForCourse(learnerId, req.lmsCourse);
   if (!rawLesson || !lmsAccess.canView(learnerId, rawLesson, req.lmsCourse) || !studentModeAllowsLesson(rawLesson, studentMode)) {
     return res.status(403).render("lms/access-denied", {
       title: res.locals.t('denied_default_title') + " — Baseline Skills", course: req.lmsCourse, reason: "lesson_locked",

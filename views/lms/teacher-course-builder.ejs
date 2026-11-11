@@ -37,13 +37,22 @@
         <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" name="lmsDeliveryModes" value="HYBRID" <%= course.lmsDeliveryModes.includes('HYBRID') ? 'checked' : '' %> onchange="this.form.submit()"> Hybrid</label>
       </form>
       <p style="font-size:.78rem;color:var(--muted);margin-top:4px">A lesson applies to all of these by default. Open "Edit" on a lesson to restrict it to specific modes only.</p>
-      <form method="POST" action="/trainer/lms/courses/<%= course.id %>/access-window" style="margin-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-        <label for="lmsAccessStartDate" style="font-size:.85rem;font-weight:600">Available from</label>
-        <input type="date" name="lmsAccessStartDate" id="lmsAccessStartDate" value="<%= course.lmsAccessStartDate || '' %>">
-        <label for="lmsAccessEndDate" style="font-size:.85rem;font-weight:600">Until</label>
-        <input type="date" name="lmsAccessEndDate" id="lmsAccessEndDate" value="<%= course.lmsAccessEndDate || '' %>">
-        <button type="submit" class="btn btn-outline btn-sm">Save dates</button>
-        <span style="font-size:.78rem;color:var(--muted)">Leave blank for no restriction on that end.</span>
+      <form method="POST" action="/trainer/lms/courses/<%= course.id %>/access-window" style="margin-top:12px;display:flex;flex-direction:column;gap:10px;align-items:flex-start">
+        <% const modeLabels = { RECORDED: 'Recorded', LIVE_ONLINE: 'Live Online', HYBRID: 'Hybrid' }; %>
+        <% course.lmsDeliveryModes.forEach(mode => { %>
+          <% const w = (course.lmsAccessWindows && course.lmsAccessWindows[mode]) || {}; %>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <span style="font-size:.85rem;font-weight:700;min-width:90px"><%= modeLabels[mode] || mode %></span>
+            <label for="lmsAccessStartDate_<%= mode %>" style="font-size:.85rem;font-weight:600">Available from</label>
+            <input type="date" name="lmsAccessStartDate_<%= mode %>" id="lmsAccessStartDate_<%= mode %>" value="<%= w.startDate || '' %>">
+            <label for="lmsAccessEndDate_<%= mode %>" style="font-size:.85rem;font-weight:600">Until</label>
+            <input type="date" name="lmsAccessEndDate_<%= mode %>" id="lmsAccessEndDate_<%= mode %>" value="<%= w.endDate || '' %>">
+          </div>
+        <% }) %>
+        <div style="display:flex;align-items:center;gap:10px">
+          <button type="submit" class="btn btn-outline btn-sm">Save dates</button>
+          <span style="font-size:.78rem;color:var(--muted)">Leave blank for no restriction on that end. Each mode's dates are independent.</span>
+        </div>
       </form>
       <% if (modules.length > 0) { %>
         <a href="/trainer/lms/courses/<%= course.id %>/preview" class="btn btn-outline btn-sm" style="margin-top:12px" target="_blank" rel="noopener">Preview course</a>

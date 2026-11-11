@@ -1574,7 +1574,8 @@ router.get("/lms-access-check", auth.requireSuperAdmin, (req, res) => {
     const moduleIds = new Set(modules.map((m) => m.id));
     const lessons = store.readAll("lms_lessons").filter((l) => moduleIds.has(l.moduleId));
     const publishedLessons = lessons.filter((l) => l.isPublished);
-    const windowStatus = course ? lmsAccess.courseAccessWindowStatus(course) : null;
+    const diagnosedMode = learner && course ? lmsAccess.studentDeliveryModeForCourse(learner.id, course) : null;
+    const windowStatus = course ? lmsAccess.courseAccessWindowStatus(course, diagnosedMode) : null;
     const isEnrolledResult = learner && course ? lmsAccess.isEnrolled(learner.id, course.id) : false;
 
     // Every asset a published lesson actually needs to serve (video/PDF/
@@ -1597,7 +1598,7 @@ router.get("/lms-access-check", auth.requireSuperAdmin, (req, res) => {
       learnerFound: !!learner, learner,
       registrations,
       modulesCount: modules.length, lessonsCount: lessons.length, publishedLessonsCount: publishedLessons.length,
-      windowStatus, isEnrolledResult,
+      windowStatus, isEnrolledResult, diagnosedMode,
       assetChecks, lmsContentDir: LMS_CONTENT_DIR, dataDirSet: !!process.env.DATA_DIR,
     };
   }

@@ -210,14 +210,19 @@ router.post("/trainer/lms/courses/:courseId/delivery-mode", loadOwnedCourse, (re
 // accessible (start after end means courseAccessWindowStatus() can never
 // return "open").
 router.post("/trainer/lms/courses/:courseId/access-window", loadOwnedCourse, (req, res) => {
-  const startDate = (req.body.lmsAccessStartDate || "").trim() || null;
-  const endDate = (req.body.lmsAccessEndDate || "").trim() || null;
-  if (startDate && isNaN(new Date(startDate).getTime())) return res.status(400).send("Invalid start date.");
-  if (endDate && isNaN(new Date(endDate).getTime())) return res.status(400).send("Invalid end date.");
-  if (startDate && endDate && new Date(endDate) < new Date(startDate)) {
-    return res.status(400).send("End date must be on or after the start date.");
+  const modes = req.lmsCourse.lmsDeliveryModes && req.lmsCourse.lmsDeliveryModes.length > 0 ? req.lmsCourse.lmsDeliveryModes : [];
+  const windows = {};
+  for (const mode of modes) {
+    const startDate = (req.body[`lmsAccessStartDate_${mode}`] || "").trim() || null;
+    const endDate = (req.body[`lmsAccessEndDate_${mode}`] || "").trim() || null;
+    if (startDate && isNaN(new Date(startDate).getTime())) return res.status(400).send(`Invalid start date for ${mode}.`);
+    if (endDate && isNaN(new Date(endDate).getTime())) return res.status(400).send(`Invalid end date for ${mode}.`);
+    if (startDate && endDate && new Date(endDate) < new Date(startDate)) {
+      return res.status(400).send(`End date must be on or after the start date for ${mode}.`);
+    }
+    windows[mode] = { startDate, endDate };
   }
-  store.update("courses", req.lmsCourse.id, { lmsAccessStartDate: startDate, lmsAccessEndDate: endDate });
+  store.update("courses", req.lmsCourse.id, { lmsAccessWindows: windows });
   res.redirect(`/trainer/lms/courses/${req.lmsCourse.id}`);
 });
 
