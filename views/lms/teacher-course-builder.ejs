@@ -221,9 +221,9 @@
         <p style="font-size:.78rem;color:var(--muted);margin:6px 0 0" id="lesson-file-hint"></p>
       </div>
 
-      <% if (course.lmsDeliveryModes && course.lmsDeliveryModes.length > 1) { %>
-      <div class="form-field">
-        <label>Applies to</label>
+      <% if (course.lmsDeliveryModes && course.lmsDeliveryModes.length > 0) { %>
+      <div class="form-field" style="background:var(--bg-soft,#F1F5F9);border:1px solid var(--line);border-radius:8px;padding:12px">
+        <label>Training mode</label>
         <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:4px">
           <% const modeLabels = { RECORDED: 'Recorded', LIVE_ONLINE: 'Live Online', HYBRID: 'Hybrid' }; %>
           <% course.lmsDeliveryModes.forEach(mode => { %>
@@ -232,7 +232,7 @@
             </label>
           <% }) %>
         </div>
-        <p style="font-size:.78rem;color:var(--muted);margin:4px 0 0">Leave all unchecked for a lesson common to every mode above. Check one or more to show it only to students in those modes.</p>
+        <p style="font-size:.78rem;color:var(--muted);margin:4px 0 0">Choose which mode(s) this lesson will be visible and accessible in. Leave all unchecked for a lesson common to every mode above.</p>
       </div>
       <% } %>
 
