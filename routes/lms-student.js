@@ -107,7 +107,9 @@ router.get("/student/lms", auth.requireLearner, (req, res) => {
     r.grantsAccess !== 0
   );
   const courseIds = new Set(registrations.map((r) => r.courseId));
-  const lmsCourses = store.readAll("courses").filter((c) => courseIds.has(c.id) && c.lmsDeliveryMode);
+  const registeredCourses = store.readAll("courses").filter((c) => courseIds.has(c.id));
+  const lmsCourses = registeredCourses.filter((c) => c.lmsDeliveryMode);
+  const notYetBuilt = registeredCourses.filter((c) => !c.lmsDeliveryMode).map((course) => ({ course }));
 
   // Part D: categorized, not a flat list -- each course goes into exactly
   // one bucket, decided server-side from real records (enrollment_progress
@@ -140,7 +142,7 @@ router.get("/student/lms", auth.requireLearner, (req, res) => {
     }
   });
 
-  res.render("lms/student-dashboard", { title: res.locals.t('mylearning_eyebrow') + " — Baseline Skills", active, upcoming, completed, expired });
+  res.render("lms/student-dashboard", { title: res.locals.t('mylearning_eyebrow') + " — Baseline Skills", active, upcoming, completed, expired, notYetBuilt });
 });
 
 // Part G: live-session info for LIVE_ONLINE/HYBRID courses, shown on the

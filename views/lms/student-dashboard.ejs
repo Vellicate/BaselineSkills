@@ -10,7 +10,7 @@
 <section class="section">
   <div class="container">
     <% const lmsModeLabel = (m) => ({ LIVE_ONLINE: t('lms_mode_live_online'), RECORDED: t('lms_mode_recorded'), HYBRID: t('lms_mode_hybrid') }[m] || m); %>
-    <% if (active.length === 0 && upcoming.length === 0 && completed.length === 0 && expired.length === 0) { %>
+    <% if (active.length === 0 && upcoming.length === 0 && completed.length === 0 && expired.length === 0 && notYetBuilt.length === 0) { %>
       <div class="card" style="text-align:center;padding:48px 24px">
         <p class="lead" style="color:var(--muted);margin:0"><%= t('mylearning_no_courses') %></p>
         <a href="/courses" class="btn btn-navy" style="margin-top:16px"><%= t('mylearning_browse_courses') %></a>
@@ -79,11 +79,23 @@
 
       <% if (expired.length > 0) { %>
         <h2 style="font-size:1.3rem;margin-bottom:16px"><%= t('mylearning_expired') %></h2>
-        <div class="why-grid" style="grid-template-columns:repeat(2,1fr);gap:20px">
+        <div class="why-grid" style="grid-template-columns:repeat(2,1fr);gap:20px<%= notYetBuilt.length > 0 ? ';margin-bottom:36px' : '' %>">
           <% expired.forEach(s => { %>
             <div class="card">
               <h3 style="margin:0 0 4px"><%= s.course.title %></h3>
               <p style="font-size:.85rem;color:var(--muted);margin:0"><%= t('mylearning_access_ended', new Date(s.endDate).toLocaleDateString()) %></p>
+            </div>
+          <% }) %>
+        </div>
+      <% } %>
+
+      <% if (notYetBuilt.length > 0) { %>
+        <h2 style="font-size:1.3rem;margin-bottom:16px"><%= t('mylearning_not_yet_built') %></h2>
+        <div class="why-grid" style="grid-template-columns:repeat(2,1fr);gap:20px">
+          <% notYetBuilt.forEach(s => { %>
+            <div class="card">
+              <h3 style="margin:0 0 4px"><%= s.course.title %></h3>
+              <p style="font-size:.85rem;color:var(--muted);margin:0"><%= t('mylearning_not_yet_built_desc') %></p>
             </div>
           <% }) %>
         </div>
