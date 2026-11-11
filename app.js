@@ -4,7 +4,8 @@ const session = require("express-session");
 const FileStore = require("session-file-store")(session);
 const bodyParser = require("body-parser");
 const path = require("path");
-const { DATA_DIR } = require("./lib/db");
+const store = require("./lib/db");
+const { DATA_DIR } = store;
 
 // Creates the SQLite database + tables if they don't exist yet, then
 // imports existing JSON data (or bundled seeds on a completely fresh
@@ -174,7 +175,32 @@ app.use(
 // than patching around it in the error handler.
 app.use((req, res, next) => {
   res.locals.isAdmin = !!(req.session && req.session.adminId);
+  res.locals.currentAdminUsername = null;
+  if (req.session && req.session.adminId) {
+    const admin = store.findOne("admins", (a) => a.id === req.session.adminId);
+    if (admin) res.locals.currentAdminUsername = admin.username;
+  }
   res.locals.isLoggedInLearner = !!(req.session && req.session.learnerId);
+  res.locals.isLoggedInInstructor = !!(req.session && req.session.instructorId);
+  res.locals.isLoggedInAffiliate = !!(req.session && req.session.affiliateId);
+
+  // Unified "who's logged in" info for the shared site header's avatar/
+  // user menu -- a session only ever has one of these three IDs set at a
+  // time (each login route calls regenerateSessionKeepingLang, which
+  // clears everything else on sign-in), so checking them in sequence is
+  // just picking whichever is actually present, not resolving a priority
+  // between simultaneous states.
+  res.locals.currentUser = null;
+  if (req.session && req.session.learnerId) {
+    const learner = store.findOne("learners", (l) => l.id === req.session.learnerId);
+    if (learner) res.locals.currentUser = { name: learner.name, accountUrl: "/account", logoutUrl: "/logout" };
+  } else if (req.session && req.session.instructorId) {
+    const instructor = store.findOne("instructors", (i) => i.id === req.session.instructorId);
+    if (instructor) res.locals.currentUser = { name: instructor.name, accountUrl: "/trainer/lms", logoutUrl: "/trainer/logout" };
+  } else if (req.session && req.session.affiliateId) {
+    const affiliate = store.findOne("affiliates", (a) => a.id === req.session.affiliateId);
+    if (affiliate) res.locals.currentUser = { name: affiliate.name, accountUrl: "/affiliate/dashboard", logoutUrl: "/affiliate/logout" };
+  }
   res.locals.currencySymbol = require("./lib/currency").currencySymbol;
   res.locals.discounts = require("./lib/discounts");
   res.locals.courseFieldLimits = require("./lib/discounts").loadConfig().courseFieldLimits;

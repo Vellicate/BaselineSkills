@@ -200,12 +200,18 @@
       <span class="topbar-title">Admin portal</span>
     </div>
 
-    <div class="admin-user">
-      <span class="user-avatar">A</span>
-      <span>
-        <strong>Administrator</strong>
-        <small>Content manager</small>
-      </span>
+    <div class="admin-user nav-dropdown">
+      <a href="/admin/account" style="display:flex;align-items:center;gap:10px;cursor:pointer">
+        <span class="user-avatar"><%= currentAdminUsername ? currentAdminUsername.charAt(0).toUpperCase() : 'A' %></span>
+        <span>
+          <strong><%= currentAdminUsername || 'Administrator' %></strong>
+          <small>Content manager</small>
+        </span>
+      </a>
+      <ul class="nav-dropdown-menu" style="right:0;left:auto">
+        <li><a href="/admin/account">My Account</a></li>
+        <li><a href="/admin/logout">Sign out</a></li>
+      </ul>
     </div>
   </header>
 

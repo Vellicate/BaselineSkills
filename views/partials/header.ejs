@@ -95,7 +95,21 @@
         <% if (typeof isLoggedInLearner !== 'undefined' && isLoggedInLearner) { %>
           <li><a href="/student/lms" class="<%= typeof currentPath !== 'undefined' && currentPath.startsWith('/student/lms') ? 'active' : '' %>"><span><%= t('nav_my_learning') %></span></a></li>
         <% } %>
-        <li><a href="<%= typeof isLoggedInLearner !== 'undefined' && isLoggedInLearner ? '/account' : '/login' %>"><span><%= typeof isLoggedInLearner !== 'undefined' && isLoggedInLearner ? t('nav_account') : t('nav_login') %></span></a></li>
+        <% if (typeof currentUser !== 'undefined' && currentUser) { %>
+          <% const avatarInitials = currentUser.name.split(' ').map(n => n[0]).slice(0,2).join('').toUpperCase(); %>
+          <li class="nav-dropdown">
+            <a href="<%= currentUser.accountUrl %>" style="display:flex;align-items:center;gap:8px">
+              <span aria-hidden="true" style="width:28px;height:28px;border-radius:50%;background:var(--navy,#0F5C56);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;flex-shrink:0"><%= avatarInitials %></span>
+              <span><%= currentUser.name %> ▾</span>
+            </a>
+            <ul class="nav-dropdown-menu">
+              <li><a href="<%= currentUser.accountUrl %>"><%= t('nav_account') %></a></li>
+              <li><a href="<%= currentUser.logoutUrl %>"><%= t('nav_logout') %></a></li>
+            </ul>
+          </li>
+        <% } else { %>
+          <li><a href="/login"><span><%= t('nav_login') %></span></a></li>
+        <% } %>
       </ul>
     </nav>
 
