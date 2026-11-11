@@ -63,6 +63,7 @@
             <div style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap;max-width:100%">
               <button type="button" class="btn btn-outline btn-sm module-move-up" aria-label="Move module up">&uarr;</button>
               <button type="button" class="btn btn-outline btn-sm module-move-down" aria-label="Move module down">&darr;</button>
+              <button type="button" class="btn btn-outline btn-sm module-edit-btn" data-module="<%= JSON.stringify({ id: mod.id, title: mod.title, description: mod.description }) %>">Edit</button>
               <form method="POST" action="/trainer/lms/modules/<%= mod.id %>/delete" onsubmit="return confirm('Delete this module and all its lessons?')">
                 <button type="submit" class="btn btn-outline btn-sm" style="color:#B91C1C">Delete</button>
               </form>
@@ -201,7 +202,43 @@
   </div>
 </div>
 
+<div id="module-modal" class="modal-backdrop" aria-hidden="true" onclick="if(event.target===this) closeModuleEditor()">
+  <div class="modal-card" style="max-width:480px" role="dialog" aria-modal="true" aria-labelledby="module-modal-title">
+    <button type="button" onclick="closeModuleEditor()" aria-label="Close" style="position:absolute;top:16px;right:16px;background:none;border:none;font-size:1.4rem;cursor:pointer">&times;</button>
+    <h3 id="module-modal-title">Edit module</h3>
+    <form id="module-form" method="POST">
+      <div class="form-field">
+        <label for="module-title">Title</label>
+        <input type="text" id="module-title" name="title" required>
+      </div>
+      <div class="form-field">
+        <label for="module-description">Description (optional)</label>
+        <input type="text" id="module-description" name="description">
+      </div>
+      <button type="submit" class="btn btn-navy">Save module</button>
+    </form>
+  </div>
+</div>
+
 <script>
+function openModuleEditor(mod) {
+  document.getElementById('module-title').value = mod.title;
+  document.getElementById('module-description').value = mod.description || '';
+  document.getElementById('module-form').action = '/trainer/lms/modules/' + mod.id + '/edit';
+  document.getElementById('module-modal').classList.add('active');
+  document.getElementById('module-modal').setAttribute('aria-hidden', 'false');
+  document.getElementById('module-title').focus();
+}
+function closeModuleEditor() {
+  document.getElementById('module-modal').classList.remove('active');
+  document.getElementById('module-modal').setAttribute('aria-hidden', 'true');
+}
+document.querySelectorAll('.module-edit-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    openModuleEditor(JSON.parse(this.dataset.module));
+  });
+});
+
 function openLessonEditor(moduleId, lesson) {
   const form = document.getElementById('lesson-form');
   const editor = document.getElementById('lesson-body-editor');
@@ -295,7 +332,7 @@ document.getElementById('lesson-form').addEventListener('submit', function() {
   }
 });
 document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape') closeLessonEditor();
+  if (e.key === 'Escape') { closeLessonEditor(); closeModuleEditor(); }
 });
 
 // Reordering: move-up/move-down buttons work everywhere (including
