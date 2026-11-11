@@ -63,6 +63,17 @@ document.addEventListener('DOMContentLoaded', () => {
   </div>
 
   <div class="form-field">
+    <label>Certifying body (optional)</label>
+    <select name="standardsBodyId">
+      <option value="">None — show as "Skills Mastery"</option>
+      <% standardsBodies.forEach(body => { %>
+        <option value="<%= body.id %>" <%= currentStandardsBodyId === body.id ? 'selected' : '' %>><%= body.name %></option>
+      <% }) %>
+    </select>
+    <p style="font-size:.8rem;color:var(--muted);margin-top:4px">Shows a "🏅 <name>" badge on this course's cards instead of the generic "⚡ Skills Mastery" tag. Add new bodies under <a href="/admin/standards-bodies" target="_blank">Standards Bodies</a>.</p>
+  </div>
+
+  <div class="form-field">
     <label>Short summary (shown on cards) * <span style="font-weight:400;color:var(--muted)">(text, max <%= courseFieldLimits.SUMMARY_MAX %> characters)</span></label>
     <input type="text" name="summary" required maxlength="<%= courseFieldLimits.SUMMARY_MAX %>" data-maxlen="<%= courseFieldLimits.SUMMARY_MAX %>" data-counter-id="count-summary" oninput="updateCharCount(this)" value="<%= course ? course.summary : '' %>">
     <span id="count-summary" style="font-size:.78rem;color:var(--muted)"></span>

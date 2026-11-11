@@ -450,6 +450,23 @@ function syncAdditionalCategories(courseId, submitted) {
   });
 }
 
+// A course has at most one certifying body today -- submittedBodyId empty
+// or absent means "None" was chosen, which clears any existing mapping
+// rather than leaving a stale one pointing at a body the admin just
+// unselected.
+function syncCourseStandardsMapping(courseId, submittedBodyId) {
+  const existing = store.findOne("course_standards_mapping", (m) => m.courseId === courseId);
+  if (!submittedBodyId) {
+    if (existing) store.remove("course_standards_mapping", existing.id);
+    return;
+  }
+  if (existing) {
+    store.update("course_standards_mapping", existing.id, { standardsBodyId: submittedBodyId });
+  } else {
+    store.insert("course_standards_mapping", { id: newId("mapping"), courseId, standardsBodyId: submittedBodyId, syllabusVersion: null, accreditationStatus: "accredited" });
+  }
+}
+
 // The course-details form and the FAQ/exam-product/materials forms below
 // it on the same admin page are separate <form> elements — HTML doesn't
 // allow nesting one form inside another. A client-side script (see
@@ -784,12 +801,14 @@ function handleCourseFileUploads(req, res, next) {
     const isEdit = req.params.id != null;
     const course = isEdit ? store.findOne("courses", (c) => c.id === req.params.id) : null;
     const knownMessages = ["Brochure must be a PDF file", "Course outline must be a PDF file"];
+    const existingMapping = isEdit && course ? store.findOne("course_standards_mapping", (m) => m.courseId === course.id) : null;
     res.status(400).render("admin/course-form", {
       title: isEdit ? `Edit ${course ? course.title : ""} — Baseline Skills` : "New course — Baseline Skills",
       course,
       mode: isEdit ? "edit" : "new",
       trainers: store.readAll("trainers"),
       categories: store.readAll("categories"),
+      standardsBodies: store.readAll("standards_bodies"), currentStandardsBodyId: existingMapping ? existingMapping.standardsBodyId : null,
       faqs: isEdit && course ? store.readAll("faqs").filter(f => f.scope === "course" && f.courseId === course.id).sort((a, b) => a.order - b.order) : [],
       examProduct: isEdit && course ? store.findOne("certification_exams", e => e.courseId === course.id) : null,
       materials: isEdit && course ? store.readAll("materials").filter(m => m.courseId === course.id) : [],
@@ -833,6 +852,7 @@ router.get("/courses/new", (req, res) => {
     mode: "new", 
     trainers: store.readAll("trainers"),
     categories: store.readAll("categories"),
+    standardsBodies: store.readAll("standards_bodies"), currentStandardsBodyId: null,
     ...getAlerts(req)
   });
 });
@@ -843,6 +863,7 @@ router.post("/courses/new", handleCourseFileUploads, (req, res) => {
     return res.status(400).render("admin/course-form", {
       title: "New course — Baseline Skills", course: courseForRedisplay(req.body, null), mode: "new",
       trainers: store.readAll("trainers"), categories: store.readAll("categories"),
+      standardsBodies: store.readAll("standards_bodies"), currentStandardsBodyId: req.body.standardsBodyId || null,
       faqs: [], examProduct: null, materials: [], courseDiscounts: [],
       fieldErrors: errors, error: `${errors.length} field${errors.length !== 1 ? "s need" : " needs"} attention — see below.`,
     });
@@ -851,12 +872,14 @@ router.post("/courses/new", handleCourseFileUploads, (req, res) => {
     const course = courseFromForm(req.body, { id: newId("course") }, req.files);
     store.insert("courses", course);
     syncAdditionalCategories(course.id, req.body.additionalCategories);
+    syncCourseStandardsMapping(course.id, req.body.standardsBodyId);
     res.redirect("/admin/courses?success=Course+created+successfully");
   } catch (e) {
     console.error("[admin] course creation failed:", e.message, "\n", e.stack);
     res.status(500).render("admin/course-form", {
       title: "New course — Baseline Skills", course: courseForRedisplay(req.body, null), mode: "new",
       trainers: store.readAll("trainers"), categories: store.readAll("categories"),
+      standardsBodies: store.readAll("standards_bodies"), currentStandardsBodyId: req.body.standardsBodyId || null,
       faqs: [], examProduct: null, materials: [], courseDiscounts: [],
       fieldErrors: [], error: `Something went wrong saving this course. Nothing was saved — please try again, and if this keeps happening, contact support with what you were entering. (Technical detail: ${e.message})`,
     });
@@ -868,12 +891,14 @@ router.get("/courses/:id/edit", auth.requireCourseAccess(r => r.params.id), (req
   const course = store.findOne("courses", (c) => c.id === req.params.id);
   if (!course) return res.status(404).send("Course not found");
   course.additionalCategories = store.readAll("course_categories").filter((cc) => cc.courseId === course.id).map((cc) => cc.category);
+  const existingMapping = store.findOne("course_standards_mapping", (m) => m.courseId === course.id);
   res.render("admin/course-form", { 
     title: `Edit ${course.title} — Baseline Skills`, 
     course, 
     mode: "edit", 
     trainers: store.readAll("trainers"),
     categories: store.readAll("categories"),
+    standardsBodies: store.readAll("standards_bodies"), currentStandardsBodyId: existingMapping ? existingMapping.standardsBodyId : null,
     faqs: store.readAll("faqs").filter(f => f.scope === "course" && f.courseId === course.id).sort((a, b) => a.order - b.order),
     examProduct: store.findOne("certification_exams", e => e.courseId === course.id),
     materials: store.readAll("materials").filter(m => m.courseId === course.id),
@@ -890,6 +915,7 @@ router.post("/courses/:id/edit", auth.requireCourseAccess(r => r.params.id), han
     return res.status(400).render("admin/course-form", {
       title: `Edit ${existing.title} — Baseline Skills`, course: courseForRedisplay(req.body, existing), mode: "edit",
       trainers: store.readAll("trainers"), categories: store.readAll("categories"),
+      standardsBodies: store.readAll("standards_bodies"), currentStandardsBodyId: req.body.standardsBodyId || null,
       faqs: store.readAll("faqs").filter(f => f.scope === "course" && f.courseId === existing.id).sort((a, b) => a.order - b.order),
       examProduct: store.findOne("certification_exams", e => e.courseId === existing.id),
       materials: store.readAll("materials").filter(m => m.courseId === existing.id),
@@ -901,12 +927,14 @@ router.post("/courses/:id/edit", auth.requireCourseAccess(r => r.params.id), han
     const updated = courseFromForm(req.body, existing, req.files);
     store.update("courses", req.params.id, updated);
     syncAdditionalCategories(req.params.id, req.body.additionalCategories);
+    syncCourseStandardsMapping(req.params.id, req.body.standardsBodyId);
     res.redirect("/admin/courses?success=Course+updated+successfully");
   } catch (e) {
     console.error(`[admin] course update failed for ${req.params.id}:`, e.message, "\n", e.stack);
     res.status(500).render("admin/course-form", {
       title: `Edit ${existing.title} — Baseline Skills`, course: courseForRedisplay(req.body, existing), mode: "edit",
       trainers: store.readAll("trainers"), categories: store.readAll("categories"),
+      standardsBodies: store.readAll("standards_bodies"), currentStandardsBodyId: req.body.standardsBodyId || null,
       faqs: store.readAll("faqs").filter(f => f.scope === "course" && f.courseId === existing.id).sort((a, b) => a.order - b.order),
       examProduct: store.findOne("certification_exams", e => e.courseId === existing.id),
       materials: store.readAll("materials").filter(m => m.courseId === existing.id),
@@ -1952,6 +1980,50 @@ router.post("/categories/:id/delete", auth.requireSuperAdmin, (req, res) => {
   }
   store.remove("categories", req.params.id);
   res.redirect("/admin/categories?success=Category+deleted");
+});
+
+// ==================== Standards Bodies (certifying bodies) ====================
+router.get("/standards-bodies", (req, res) => {
+  const bodies = store.readAll("standards_bodies").sort((a, b) => a.name.localeCompare(b.name));
+  const mappings = store.readAll("course_standards_mapping");
+  // How many courses are currently assigned to each body -- shown so an
+  // admin can see the impact before trying to delete one, same reasoning
+  // as the Categories usage count.
+  const usageCount = {};
+  bodies.forEach((body) => {
+    usageCount[body.id] = mappings.filter((m) => m.standardsBodyId === body.id).length;
+  });
+  res.render("admin/standards-bodies-list", {
+    title: "Manage standards bodies — Baseline Skills",
+    bodies, usageCount,
+    ...getAlerts(req),
+  });
+});
+
+router.post("/standards-bodies/new", auth.requireSuperAdmin, (req, res) => {
+  const name = (req.body.name || "").trim();
+  const description = (req.body.description || "").trim();
+  if (!name) {
+    return res.redirect("/admin/standards-bodies?error=Name+is+required");
+  }
+  const existing = store.findOne("standards_bodies", (b) => b.name.toLowerCase() === name.toLowerCase());
+  if (existing) {
+    return res.redirect("/admin/standards-bodies?error=That+standards+body+already+exists");
+  }
+  const slug = slugify(name, { lower: true, strict: true });
+  store.insert("standards_bodies", { id: newId("body"), slug, name, description });
+  res.redirect("/admin/standards-bodies?success=Standards+body+added");
+});
+
+router.post("/standards-bodies/:id/delete", auth.requireSuperAdmin, (req, res) => {
+  const body = store.findOne("standards_bodies", (b) => b.id === req.params.id);
+  if (!body) return res.status(404).send("Standards body not found");
+  const inUse = store.readAll("course_standards_mapping").filter((m) => m.standardsBodyId === body.id).length;
+  if (inUse > 0) {
+    return res.redirect(`/admin/standards-bodies?error=Can't+delete+"${encodeURIComponent(body.name)}"+—+${inUse}+course(s)+still+use+it.+Reassign+those+courses+first.`);
+  }
+  store.remove("standards_bodies", req.params.id);
+  res.redirect("/admin/standards-bodies?success=Standards+body+deleted");
 });
 
 // ==================== Blogs ====================

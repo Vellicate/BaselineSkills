@@ -89,9 +89,7 @@ function certifyingBodyLabel(course) {
   if (!mapping) return null;
   const body = store.findOne("standards_bodies", (b) => b.id === mapping.standardsBodyId);
   if (!body) return null;
-  if (body.slug === "ireb") return "IREB";
-  if (body.slug === "iiba") return "IIBA";
-  return null;
+  return body.name;
 }
 
 // Centralizes the computed values a course card needs — certifying body,

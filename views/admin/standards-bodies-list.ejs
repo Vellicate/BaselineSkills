@@ -1,0 +1,44 @@
+<%- include('partials/head') %>
+
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+  <div>
+    <h1 style="font-size:1.6rem;margin:0">Standards Bodies</h1>
+    <p style="color:var(--muted);font-size:.9rem;margin:4px 0 0">These are the certifying bodies (IREB, IIBA, etc.) a course can be assigned to from its edit page. A body can't be deleted while any course still uses it.</p>
+  </div>
+</div>
+
+<% if (typeof error !== 'undefined' && error) { %>
+  <div class="alert alert-error" style="margin-bottom:16px"><%= error %></div>
+<% } %>
+<% if (typeof success !== 'undefined' && success) { %>
+  <div class="alert alert-success" style="margin-bottom:16px"><%= success %></div>
+<% } %>
+
+<form method="POST" action="/admin/standards-bodies/new" class="card" style="margin-bottom:24px;padding:20px">
+  <div class="form-row">
+    <div class="form-field"><label>Name</label><input type="text" name="name" placeholder="e.g. PMI" required></div>
+    <div class="form-field"><label>Description</label><input type="text" name="description" placeholder="Shown on the body's own certification page"></div>
+  </div>
+  <button type="submit" class="btn btn-gold">+ Add Standards Body</button>
+</form>
+
+<table class="admin-table">
+  <thead><tr><th>Name</th><th>Slug</th><th>Courses assigned</th><th>Actions</th></tr></thead>
+  <tbody>
+    <% bodies.forEach(body => { %>
+    <tr>
+      <td><strong><%= body.name %></strong><% if (body.description) { %><p style="margin:2px 0 0;color:var(--muted);font-size:.8rem;max-width:480px"><%= body.description %></p><% } %></td>
+      <td style="color:var(--muted);font-size:.85rem"><%= body.slug %></td>
+      <td><%= usageCount[body.id] %> course<%= usageCount[body.id] !== 1 ? 's' : '' %></td>
+      <td class="admin-actions">
+        <form method="POST" action="/admin/standards-bodies/<%= body.id %>/delete" style="display:inline" onsubmit="return confirm('Delete <%= body.name %>?')">
+          <button class="btn btn-outline btn-sm" type="submit" style="color:#b91c1c;border-color:#fecaca" <%= usageCount[body.id] > 0 ? 'disabled title="In use — reassign courses first"' : '' %>>Delete</button>
+        </form>
+      </td>
+    </tr>
+    <% }) %>
+    <% if (bodies.length===0) { %><tr><td colspan="4" style="color:var(--muted)">No standards bodies yet — add one above.</td></tr><% } %>
+  </tbody>
+</table>
+
+<%- include('partials/foot') %>
