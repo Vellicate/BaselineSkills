@@ -2,9 +2,9 @@
 
 <section class="course-header">
   <div class="container">
-    <span class="tag">For Teams</span>
-    <h1 style="color:#fff;margin-top:14px"><%= heading %></h1>
-    <p style="color:rgba(255,255,255,.8);max-width:640px"><%= intro %></p>
+    <span class="tag"><%= t('teams_tag') %></span>
+    <h1 style="color:#fff;margin-top:14px"><%= formType === 'team-cohorts' ? t('heading_team_cohorts') : t('heading_request_conversation') %></h1>
+    <p style="color:rgba(255,255,255,.8);max-width:640px"><%= formType === 'team-cohorts' ? t('intro_team_cohorts') : t('intro_request_conversation') %></p>
   </div>
 </section>
 
@@ -12,9 +12,9 @@
   <div class="container" style="max-width:560px">
     <% if (typeof success !== 'undefined' && success) { %>
       <div class="card" style="text-align:center;padding:32px">
-        <h3>Thank you — we've received your request.</h3>
-        <p style="color:var(--muted)">Someone from our team will be in touch shortly.</p>
-        <a href="/" class="btn btn-outline" style="margin-top:12px">Back to homepage</a>
+        <h3><%= t('teams_thank_you') %></h3>
+        <p style="color:var(--muted)"><%= t('teams_someone_in_touch') %></p>
+        <a href="/" class="btn btn-outline" style="margin-top:12px"><%= t('teams_back_to_homepage') %></a>
       </div>
     <% } else { %>
       <% if (typeof error !== 'undefined' && error) { %>
@@ -23,33 +23,33 @@
 
       <% if (formType === 'team-cohorts') { %>
       <form method="POST" action="/for-teams/team-cohorts" class="card">
-        <div class="form-field"><label>Name *</label><input type="text" name="name" required value="<%= typeof form !== 'undefined' ? form.name : '' %>"></div>
-        <div class="form-field"><label>Organization *</label><input type="text" name="company" required value="<%= typeof form !== 'undefined' ? form.company : '' %>"></div>
-        <div class="form-field"><label>Work email *</label><input type="email" name="email" required value="<%= typeof form !== 'undefined' ? form.email : '' %>"></div>
-        <div class="form-field"><label>Number of participants *</label><input type="text" name="teamSize" required value="<%= typeof form !== 'undefined' ? form.teamSize : '' %>"></div>
-        <div class="form-field"><label>Course / interest</label><input type="text" name="courseInterest" placeholder="e.g. CPRE Foundation" value="<%= typeof form !== 'undefined' ? form.courseInterest : '' %>"></div>
+        <div class="form-field"><label><%= t('common_name') %> *</label><input type="text" name="name" required value="<%= typeof form !== 'undefined' ? form.name : '' %>"></div>
+        <div class="form-field"><label><%= t('common_organization') %> *</label><input type="text" name="company" required value="<%= typeof form !== 'undefined' ? form.company : '' %>"></div>
+        <div class="form-field"><label><%= t('common_work_email') %> *</label><input type="email" name="email" required value="<%= typeof form !== 'undefined' ? form.email : '' %>"></div>
+        <div class="form-field"><label><%= t('common_num_participants') %> *</label><input type="text" name="teamSize" required value="<%= typeof form !== 'undefined' ? form.teamSize : '' %>"></div>
+        <div class="form-field"><label><%= t('teams_course_interest') %></label><input type="text" name="courseInterest" placeholder="e.g. CPRE Foundation" value="<%= typeof form !== 'undefined' ? form.courseInterest : '' %>"></div>
         <div class="form-field">
-          <label>Preferred delivery format</label>
+          <label><%= t('teams_preferred_format') %></label>
           <select name="deliveryMode">
-            <option value="Live Online">Live Online</option>
-            <option value="In Person">In Person</option>
-            <option value="Either">Either</option>
+            <option value="Live Online"><%= t('common_live_online') %></option>
+            <option value="In Person"><%= t('format_in_person') %></option>
+            <option value="Either"><%= t('format_either') %></option>
           </select>
         </div>
-        <div class="form-field"><label>Message (preferred dates, location, or anything else)</label><textarea name="message" rows="4"><%= typeof form !== 'undefined' ? form.message : '' %></textarea></div>
-        <p style="font-size:.8rem;color:var(--muted)">By submitting, you agree to be contacted about this request. We don't share your details outside Baseline Skills.</p>
-        <button type="submit" class="btn btn-navy">Submit Request</button>
+        <div class="form-field"><label><%= t('teams_message_hint') %></label><textarea name="message" rows="4"><%= typeof form !== 'undefined' ? form.message : '' %></textarea></div>
+        <p style="font-size:.8rem;color:var(--muted)"><%= t('teams_consent') %></p>
+        <button type="submit" class="btn btn-navy"><%= t('teams_submit_request') %></button>
       </form>
       <% } else { %>
       <form method="POST" action="/for-teams/request-conversation" class="card">
-        <div class="form-field"><label>Name *</label><input type="text" name="name" required value="<%= typeof form !== 'undefined' ? form.name : '' %>"></div>
-        <div class="form-field"><label>Organization</label><input type="text" name="company" value="<%= typeof form !== 'undefined' ? form.company : '' %>"></div>
-        <div class="form-field"><label>Email *</label><input type="email" name="email" required value="<%= typeof form !== 'undefined' ? form.email : '' %>"></div>
-        <div class="form-field"><label>Phone</label><input type="text" name="phone" value="<%= typeof form !== 'undefined' ? form.phone : '' %>"></div>
-        <div class="form-field"><label>Reason for contacting</label><input type="text" name="courseInterest" value="<%= typeof form !== 'undefined' ? form.courseInterest : '' %>"></div>
-        <div class="form-field"><label>Message</label><textarea name="message" rows="4"><%= typeof form !== 'undefined' ? form.message : '' %></textarea></div>
-        <p style="font-size:.8rem;color:var(--muted)">By submitting, you agree to be contacted about this request. We don't share your details outside Baseline Skills.</p>
-        <button type="submit" class="btn btn-navy">Request Conversation</button>
+        <div class="form-field"><label><%= t('common_name') %> *</label><input type="text" name="name" required value="<%= typeof form !== 'undefined' ? form.name : '' %>"></div>
+        <div class="form-field"><label><%= t('common_organization') %></label><input type="text" name="company" value="<%= typeof form !== 'undefined' ? form.company : '' %>"></div>
+        <div class="form-field"><label><%= t('common_email') %> *</label><input type="email" name="email" required value="<%= typeof form !== 'undefined' ? form.email : '' %>"></div>
+        <div class="form-field"><label><%= t('common_phone') %></label><input type="text" name="phone" value="<%= typeof form !== 'undefined' ? form.phone : '' %>"></div>
+        <div class="form-field"><label><%= t('teams_reason_contacting') %></label><input type="text" name="courseInterest" value="<%= typeof form !== 'undefined' ? form.courseInterest : '' %>"></div>
+        <div class="form-field"><label><%= t('common_message') %></label><textarea name="message" rows="4"><%= typeof form !== 'undefined' ? form.message : '' %></textarea></div>
+        <p style="font-size:.8rem;color:var(--muted)"><%= t('teams_consent') %></p>
+        <button type="submit" class="btn btn-navy"><%= t('teams_submit_conversation') %></button>
       </form>
       <% } %>
     <% } %>

@@ -2,10 +2,10 @@
 
 <section class="section-tight" style="background:#fff;border-bottom:1px solid var(--line)">
   <div class="container">
-    <span class="eyebrow">Trainer Dashboard</span>
-    <h1 style="font-size:2rem">Welcome, <%= instructor.name %>.</h1>
-    <p class="lead"><a href="/trainer/logout">Log out</a></p>
-    <a href="/trainer/lms" class="btn btn-navy" style="margin-top:12px">Manage course content (modules, lessons, quizzes, assignments)</a>
+    <span class="eyebrow"><%= t('dash_trainer_eyebrow') %></span>
+    <h1 style="font-size:2rem"><%= t('account_welcome', instructor.name) %></h1>
+    <p class="lead"><a href="/trainer/logout"><%= t('account_log_out') %></a></p>
+    <a href="/trainer/lms" class="btn btn-navy" style="margin-top:12px"><%= t('dash_manage_content') %></a>
   </div>
 </section>
 
@@ -13,15 +13,15 @@
   <div class="container">
     <% if (referralCode) { %>
     <div class="card" style="margin-bottom:24px">
-      <h3 style="margin-top:0">Your referral link</h3>
+      <h3 style="margin-top:0"><%= t('dash_your_referral_link') %></h3>
       <p style="font-family:monospace;background:var(--surface-2, #f5f5f5);padding:8px 12px;border-radius:6px;display:inline-block">https://www.baselineskills.com/courses/[course-slug]?ref=<%= referralCode.code %></p>
-      <p style="color:var(--muted);font-size:.85rem">Share this link — anyone who registers through it is attributed to you.</p>
+      <p style="color:var(--muted);font-size:.85rem"><%= t('dash_share_link_trainer') %></p>
     </div>
     <% } %>
 
-    <h2>Courses you teach</h2>
+    <h2><%= t('dash_courses_you_teach') %></h2>
     <% if (courses.length === 0) { %>
-      <p class="lead">No courses assigned to you yet — an admin will link your account to your course(s).</p>
+      <p class="lead"><%= t('dash_no_courses_assigned') %></p>
     <% } else { %>
     <div class="grid-3">
       <% courses.forEach(c => { %>
@@ -30,11 +30,11 @@
     </div>
     <% } %>
 
-    <h2 style="margin-top:32px">Earnings</h2>
-    <p class="lead">Total earned to date: <strong><%= currencySymbol() %><%= (totalEarnedCents/100).toFixed(2) %></strong></p>
+    <h2 style="margin-top:32px"><%= t('dash_earnings') %></h2>
+    <p class="lead"><%- t('dash_total_earned', '<strong>' + currencySymbol() + (totalEarnedCents/100).toFixed(2) + '</strong>') %></p>
     <% if (earnings.length > 0) { %>
     <table class="admin-table" style="background:#fff">
-      <thead><tr><th>Tier</th><th>Rate</th><th>Gross</th><th>Commission</th></tr></thead>
+      <thead><tr><th><%= t('dash_th_tier') %></th><th><%= t('dash_th_rate') %></th><th><%= t('dash_th_gross') %></th><th><%= t('dash_th_commission') %></th></tr></thead>
       <tbody>
         <% earnings.forEach(e => { %>
           <tr><td><%= e.tier %></td><td><%= e.ratePercent %>%</td><td><%= currencySymbol() %><%= (e.grossCourseRevenueCents/100).toFixed(2) %></td><td><%= currencySymbol() %><%= (e.commissionCents/100).toFixed(2) %></td></tr>
@@ -47,12 +47,12 @@
 
 <section class="section" style="padding-top:0">
   <div class="container">
-    <h2>Payout history</h2>
+    <h2><%= t('dash_payout_history') %></h2>
     <% if (payouts.length === 0) { %>
-      <p class="lead">No payouts issued yet — completed sales accrue above until an admin generates a payout for a given period.</p>
+      <p class="lead"><%= t('dash_no_payouts_trainer') %></p>
     <% } else { %>
     <table class="admin-table" style="background:#fff">
-      <thead><tr><th>Period</th><th>Amount</th><th>Status</th></tr></thead>
+      <thead><tr><th><%= t('dash_th_period') %></th><th><%= t('dash_th_amount') %></th><th><%= t('success_status_label') %></th></tr></thead>
       <tbody>
         <% payouts.forEach(p => { %>
           <tr><td><%= p.periodStart %> – <%= p.periodEnd %></td><td><%= currencySymbol() %><%= (p.totalAmountCents/100).toFixed(2) %></td><td><%= p.status %></td></tr>

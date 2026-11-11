@@ -2,11 +2,10 @@
 
 <section class="course-header">
   <div class="container">
-    <span class="tag">Certification</span>
-    <h1 style="color:#fff;margin-top:14px">Certification Exams</h1>
+    <span class="tag"><%= t('course_certification_tag') %></span>
+    <h1 style="color:#fff;margin-top:14px"><%= t('exams_tag') %></h1>
     <p style="color:rgba(255,255,255,.8);max-width:640px">
-      A certification exam is administered independently of the training you take —
-      passing it, not attending the course, is what earns the credential.
+      <%= t('exams_lead') %>
     </p>
   </div>
 </section>
@@ -14,7 +13,7 @@
 <section class="section">
   <div class="container">
     <% if (exams.length === 0) { %>
-      <p class="lead">New learning opportunities are coming soon. Explore our <a href="/courses">courses</a> or <a href="/contact">tell us what you'd like to learn</a>.</p>
+      <p class="lead"><%- t('exams_empty', '<a href="/courses">' + t('exams_courses_link') + '</a>', '<a href="/contact">' + t('exams_tell_us_link') + '</a>') %></p>
     <% } else { %>
     <div class="grid-3">
       <% exams.forEach(exam => { %>
@@ -23,22 +22,21 @@
           <% if (exam.level) { %><span class="tag" style="margin-left:6px"><%= exam.level %></span><% } %>
           <h3 style="margin-top:12px"><%= exam.certificationName %></h3>
           <% if (exam.examName && exam.examName !== exam.certificationName) { %>
-            <p style="color:var(--muted);font-size:.85rem">Exam: <%= exam.examName %></p>
+            <p style="color:var(--muted);font-size:.85rem"><%= t('exams_exam_label', exam.examName) %></p>
           <% } %>
           <% if (exam.description) { %><p style="color:var(--muted);font-size:.9rem;flex:1;white-space:pre-line"><%= exam.description %></p><% } %>
           <ul style="font-size:.85rem;color:var(--muted);padding-left:18px;margin:10px 0">
-            <% if (exam.eligibility) { %><li>Eligibility: <%= exam.eligibility %></li><% } %>
-            <% if (exam.durationMinutes) { %><li>Duration: <%= exam.durationMinutes %> minutes</li><% } %>
-            <% if (exam.format) { %><li>Format: <%= exam.format %></li><% } %>
-            <% if (exam.examProvider) { %><li>Administered by: <%= exam.examProvider %></li><% } %>
-            <li>Exam fee: <%= currencySymbol(exam.course ? exam.course.currency : null) %><%= (exam.priceCents/100).toFixed(2) %></li>
+            <% if (exam.eligibility) { %><li><%= t('exams_eligibility_label', exam.eligibility) %></li><% } %>
+            <% if (exam.durationMinutes) { %><li><%= t('exams_duration_label', exam.durationMinutes) %></li><% } %>
+            <% if (exam.format) { %><li><%= t('exams_format_label', exam.format) %></li><% } %>
+            <% if (exam.examProvider) { %><li><%= t('exams_administered_by', exam.examProvider) %></li><% } %>
+            <li><%= t('exams_fee_label', currencySymbol(exam.course ? exam.course.currency : null) + (exam.priceCents/100).toFixed(2)) %></li>
           </ul>
           <p style="font-size:.8rem;color:var(--muted);font-style:italic">
-            This is a certification examination, administered independently of Baseline
-            Skills — it is distinct from the training course itself.
+            <%= t('exams_independent_note') %>
           </p>
           <% if (exam.course) { %>
-            <a href="/courses/<%= exam.course.slug %>" class="btn btn-outline btn-sm" style="margin-top:8px">Related preparation course</a>
+            <a href="/courses/<%= exam.course.slug %>" class="btn btn-outline btn-sm" style="margin-top:8px"><%= t('exams_related_prep_course') %></a>
           <% } %>
         </div>
       <% }) %>

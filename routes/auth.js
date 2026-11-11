@@ -50,7 +50,7 @@ router.post("/signup", authRateLimiter, (req, res) => {
     createdAt: new Date().toISOString(),
   });
 
-  req.session.regenerate((err) => {
+  auth.regenerateSessionKeepingLang(req, (err) => {
     if (err) return res.status(500).render("signup", { title: "Create your account — Baseline Skills", error: "Session error — please try again." });
     req.session.learnerId = learner.id;
     res.redirect(security.safeNextPath(req.query.next));
@@ -85,7 +85,7 @@ router.post("/login", (req, res) => {
   }
 
   loginAttempts.recordSuccess(req);
-  req.session.regenerate((err) => {
+  auth.regenerateSessionKeepingLang(req, (err) => {
     if (err) return res.status(500).render("login", { title: "Log in — Baseline Skills", error: "Session error — please try again.", next: "" });
     req.session.learnerId = learner.id;
     res.redirect(security.safeNextPath(req.body.next));
@@ -228,7 +228,7 @@ router.post("/set-password", authRateLimiter, (req, res) => {
     passwordHash: auth.hashPassword(password),
     passwordResetToken: null, passwordResetExpires: null,
   });
-  req.session.regenerate((err) => {
+  auth.regenerateSessionKeepingLang(req, (err) => {
     if (err) return res.status(500).render("set-password", { title: "Set your password — Baseline Skills", error: "Session error — please try again.", token: null });
     req.session.learnerId = learner.id;
     res.redirect("/account?success=Password+set");

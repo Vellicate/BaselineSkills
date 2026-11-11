@@ -24,7 +24,7 @@
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
   "itemListElement": [
-    { "@type": "ListItem", "position": 1, "name": "Courses", "item": "https://www.baselineskills.com/courses" },
+    { "@type": "ListItem", "position": 1, "name": t('nav_courses'), "item": "https://www.baselineskills.com/courses" },
     { "@type": "ListItem", "position": 2, "name": body.name, "item": `https://www.baselineskills.com/certifications/${body.slug}` },
   ],
 }) %>
@@ -32,8 +32,8 @@
 
 <section class="course-header">
   <div class="container">
-    <span class="tag">Certification Body</span>
-    <h1 style="color:#fff;margin-top:14px"><%= body.name %> Certification Training</h1>
+    <span class="tag"><%= t('certbody_tag') %></span>
+    <h1 style="color:#fff;margin-top:14px"><%= t('certbody_training_title', body.name) %></h1>
   </div>
 </section>
 
@@ -41,16 +41,16 @@
   <div class="container" style="max-width:800px">
     <p class="lead"><%= body.description %></p>
 
-    <h2 style="margin-top:36px"><%= body.name %> Courses at Baseline Skills</h2>
+    <h2 style="margin-top:36px"><%= t('certbody_courses_title', body.name) %></h2>
     <% if (courses.length === 0) { %>
-      <p class="lead">No <%= body.name %> courses are currently listed — <a href="/contact">contact us</a> for upcoming availability.</p>
+      <p class="lead"><%- t('certbody_no_courses', body.name, '<a href="/contact">' + t('verify_contact_us_link_text') + '</a>') %></p>
     <% } else { %>
     <div class="grid-3">
       <% courses.forEach(c => { %>
         <div class="card">
           <h4><%= c.title %></h4>
           <p style="font-size:.85rem;color:var(--muted)"><%= c.summary %></p>
-          <a href="/courses/<%= c.slug %>" class="btn btn-outline btn-sm">View course</a>
+          <a href="/courses/<%= c.slug %>" class="btn btn-outline btn-sm"><%= t('view_course_lowercase') %></a>
         </div>
       <% }) %>
     </div>

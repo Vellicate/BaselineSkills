@@ -1,9 +1,9 @@
 <%- include('partials/header') %>
 <section class="section" style="text-align:center">
   <div class="container">
-    <h1>Page not found</h1>
-    <p class="lead">The page you're looking for doesn't exist.</p>
-    <a href="/" class="btn btn-navy">Back to home</a>
+    <h1><%= t('err404_title') %></h1>
+    <p class="lead"><%= t('err404_lead') %></p>
+    <a href="/" class="btn btn-navy"><%= t('err_back_to_home') %></a>
   </div>
 </section>
 <%- include('partials/footer') %>

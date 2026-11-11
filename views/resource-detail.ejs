@@ -36,18 +36,19 @@
 
     <% if (resource.downloadFilename) { %>
     <div class="card" style="margin-top:32px;max-width:460px">
-      <h3 style="margin-top:0">Download This Resource</h3>
-      <p style="color:var(--muted);font-size:.9rem">Enter your email and we'll send you the download link right away.</p>
+      <h3 style="margin-top:0"><%= t('resdetail_download_title') %></h3>
+      <p style="color:var(--muted);font-size:.9rem"><%= t('course_brochure_modal_desc') %></p>
       <div id="download-form-area">
-        <div class="form-field"><label>Email address</label><input type="email" id="download-email" placeholder="you@company.com"></div>
+        <div class="form-field"><label><%= t('common_email_address') %></label><input type="email" id="download-email" placeholder="you@company.com"></div>
         <div id="download-error" class="alert alert-error" style="display:none;margin-bottom:14px"></div>
-        <button type="button" class="btn btn-gold btn-block" onclick="submitResourceDownloadRequest()">Send Me the Download</button>
+        <button type="button" class="btn btn-gold btn-block" onclick="submitResourceDownloadRequest()"><%= t('resdetail_send_download') %></button>
       </div>
       <div id="download-success" style="display:none">
-        <div class="alert alert-success">Check your inbox — the download link is on its way.</div>
+        <div class="alert alert-success"><%= t('course_brochure_success') %></div>
       </div>
     </div>
     <script>
+    const i18nGenericError = <%- JSON.stringify(t('course_generic_error')) %>;
     async function submitResourceDownloadRequest() {
       const email = document.getElementById('download-email').value.trim();
       const errorBox = document.getElementById('download-error');
@@ -60,14 +61,14 @@
         });
         const data = await res.json();
         if (!res.ok) {
-          errorBox.textContent = data.error || 'Something went wrong. Please try again.';
+          errorBox.textContent = data.error || i18nGenericError;
           errorBox.style.display = 'block';
           return;
         }
         document.getElementById('download-form-area').style.display = 'none';
         document.getElementById('download-success').style.display = 'block';
       } catch (e) {
-        errorBox.textContent = 'Something went wrong. Please try again.';
+        errorBox.textContent = i18nGenericError;
         errorBox.style.display = 'block';
       }
     }
@@ -75,13 +76,13 @@
     <% } %>
 
     <% if (related.length > 0) { %>
-    <h3 style="margin-top:48px">More from <%= resource.category %></h3>
+    <h3 style="margin-top:48px"><%= t('resdetail_more_from', resource.category) %></h3>
     <div class="grid-3">
       <% related.forEach(r => { %>
         <div class="card">
           <h4><%= r.title %></h4>
           <p style="font-size:.85rem;color:var(--muted)"><%= r.excerpt %></p>
-          <a href="/resources/<%= r.slug %>" class="btn btn-outline btn-sm">Read more</a>
+          <a href="/resources/<%= r.slug %>" class="btn btn-outline btn-sm"><%= t('read_more_lowercase') %></a>
         </div>
       <% }) %>
     </div>

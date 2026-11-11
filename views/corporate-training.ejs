@@ -2,20 +2,20 @@
 
 <section class="course-header" style="padding:64px 0">
   <div class="container">
-    <span class="eyebrow" style="background:rgba(245,197,24,.2);color:#F5C518">Corporate Training</span>
-    <h1 style="color:#fff;max-width:720px">Build capability that shows up at work.</h1>
-    <p class="lead" style="color:rgba(255,255,255,.82);max-width:640px">Training creates value when people use what they learned. Baseline Skills works with teams to build practical capability around their real roles, processes and challenges.</p>
-    <a href="#proposal-form" class="btn btn-gold btn-lg" style="margin-top:16px" data-analytics-event="corporate_capability">Build capability with your team</a>
+    <span class="eyebrow" style="background:rgba(245,197,24,.2);color:#F5C518"><%= t('corp_eyebrow') %></span>
+    <h1 style="color:#fff;max-width:720px"><%= t('corp_title') %></h1>
+    <p class="lead" style="color:rgba(255,255,255,.82);max-width:640px"><%= t('corp_lead') %></p>
+    <a href="#proposal-form" class="btn btn-gold btn-lg" style="margin-top:16px" data-analytics-event="corporate_capability"><%= t('corp_cta_build_capability') %></a>
   </div>
 </section>
 
 <section class="section" style="background:#EAF5F3;padding-top:32px;padding-bottom:32px">
   <div class="container">
     <div class="why-grid-4">
-      <div class="lpa-card" style="background:#fff"><h4 style="margin:0;font-size:.95rem">Learn</h4></div>
-      <div class="lpa-card" style="background:#fff"><h4 style="margin:0;font-size:.95rem">Practise</h4></div>
-      <div class="lpa-card" style="background:#fff"><h4 style="margin:0;font-size:.95rem">Apply</h4></div>
-      <div class="lpa-card" style="background:#fff"><h4 style="margin:0;font-size:.95rem">Improve</h4></div>
+      <div class="lpa-card" style="background:#fff"><h4 style="margin:0;font-size:.95rem"><%= t('lpa_learn_title') %></h4></div>
+      <div class="lpa-card" style="background:#fff"><h4 style="margin:0;font-size:.95rem"><%= t('lpa_practise_title') %></h4></div>
+      <div class="lpa-card" style="background:#fff"><h4 style="margin:0;font-size:.95rem"><%= t('lpa_apply_title') %></h4></div>
+      <div class="lpa-card" style="background:#fff"><h4 style="margin:0;font-size:.95rem"><%= t('lpa_improve_title') %></h4></div>
     </div>
   </div>
 </section>
@@ -23,66 +23,67 @@
 <section class="section">
   <div class="container grid-2" style="align-items:start">
     <div>
-      <h2>What's included</h2>
+      <h2><%= t('corp_whats_included') %></h2>
       <ul style="padding-left:20px">
-        <li>Tailored learning objectives</li>
-        <li>Industry-specific case studies</li>
-        <li>Flexible scheduling</li>
-        <li>Skills assessment</li>
-        <li>Post-training support</li>
-        <li>Certification preparation</li>
+        <li><%= t('corp_item_objectives') %></li>
+        <li><%= t('corp_item_case_studies') %></li>
+        <li><%= t('corp_item_scheduling') %></li>
+        <li><%= t('corp_item_assessment') %></li>
+        <li><%= t('corp_item_support') %></li>
+        <li><%= t('corp_item_cert_prep') %></li>
       </ul>
 
-      <h2 style="margin-top:32px">How it works</h2>
+      <h2 style="margin-top:32px"><%= t('hero_howitworks_title') %></h2>
       <ol style="padding-left:20px">
-        <li>Discovery call</li>
-        <li>Needs analysis</li>
-        <li>Technical discussion</li>
-        <li>Customized proposal</li>
-        <li>Delivery</li>
-        <li>Feedback &amp; improvement</li>
+        <li><%= t('corp_step_discovery') %></li>
+        <li><%= t('corp_step_needs') %></li>
+        <li><%= t('corp_step_technical') %></li>
+        <li><%= t('corp_step_proposal') %></li>
+        <li><%= t('corp_step_delivery') %></li>
+        <li><%- t('corp_step_feedback') %></li>
       </ol>
 
-      <h2 style="margin-top:32px">Industries we serve</h2>
+      <h2 style="margin-top:32px"><%= t('corp_industries_title') %></h2>
       <div style="display:flex;flex-wrap:wrap;gap:10px">
-        <% ["Automotive","Embedded Systems","Aerospace","Industrial Automation","Medical Devices","IT & Digital Products"].forEach(i => { %>
+        <% [t('industry_automotive'), t('industry_embedded'), t('industry_aerospace'), t('industry_industrial'), t('industry_medical')].forEach(i => { %>
           <span class="pill"><%= i %></span>
         <% }) %>
+        <span class="pill"><%- t('industry_it') %></span>
       </div>
     </div>
 
     <div class="card" id="proposal-form">
-      <h3 style="margin-top:0">Request a corporate training proposal</h3>
+      <h3 style="margin-top:0"><%= t('corp_request_proposal_title') %></h3>
       <% if (typeof success !== 'undefined' && success) { %>
-        <div class="alert alert-success">Thanks — we've received your inquiry and will be in touch shortly.</div>
+        <div class="alert alert-success"><%= t('corp_inquiry_success') %></div>
       <% } %>
       <% if (typeof error !== 'undefined' && error) { %><div class="alert alert-error"><%= error %></div><% } %>
       <% if (typeof prefilledCourse !== 'undefined' && prefilledCourse) { %>
         <div class="alert" style="background:var(--bg-soft,#F1F5F9);color:var(--navy);margin-bottom:16px">
-          Inquiring about <strong><%= prefilledCourse.title %></strong><% if (typeof prefilledMode !== 'undefined' && prefilledMode) { %> &mdash; <%= prefilledMode %><% } %>
+          <%- t('corp_inquiring_about', '<strong>' + prefilledCourse.title + '</strong>') %><% if (typeof prefilledMode !== 'undefined' && prefilledMode) { %> &mdash; <%= prefilledMode %><% } %>
         </div>
       <% } %>
       <form method="POST" action="/corporate-training/inquiry">
-        <div class="form-field"><label>Full name *</label><input type="text" name="name" required></div>
-        <div class="form-field"><label>Company *</label><input type="text" name="company" required></div>
-        <div class="form-field"><label>Work email *</label><input type="email" name="email" required></div>
-        <div class="form-field"><label>Phone</label><input type="text" name="phone"></div>
+        <div class="form-field"><label><%= t('register_full_name') %> *</label><input type="text" name="name" required></div>
+        <div class="form-field"><label><%= t('common_company') %> *</label><input type="text" name="company" required></div>
+        <div class="form-field"><label><%= t('common_work_email') %> *</label><input type="email" name="email" required></div>
+        <div class="form-field"><label><%= t('common_phone') %></label><input type="text" name="phone"></div>
         <% if (typeof prefilledCourse !== 'undefined' && prefilledCourse) { %>
           <div class="form-field">
-            <label>Course</label>
+            <label><%= t('common_course') %></label>
             <input type="text" name="courseInterest" value="<%= prefilledCourse.title %>">
           </div>
           <div class="form-field">
-            <label>Delivery mode</label>
+            <label><%= t('register_delivery_mode') %></label>
             <input type="text" name="deliveryMode" value="<%= typeof prefilledMode !== 'undefined' && prefilledMode ? prefilledMode : '' %>" readonly>
           </div>
         <% } else { %>
-          <div class="form-field"><label>Course of interest (optional)</label><input type="text" name="courseInterest" placeholder="e.g. IREB CPRE Foundation Level"></div>
+          <div class="form-field"><label><%= t('corp_course_of_interest_optional') %></label><input type="text" name="courseInterest" placeholder="e.g. IREB CPRE Foundation Level"></div>
         <% } %>
-        <div class="form-field"><label>Expected number of participants</label><input type="text" name="teamSize" placeholder="e.g. 15-20"></div>
-        <div class="form-field"><label>Preferred dates (optional)</label><input type="text" name="preferredDates" placeholder="e.g. Q1 2027, or a specific week"></div>
-        <div class="form-field"><label>What are you looking to achieve?</label><textarea name="message" rows="3"></textarea></div>
-        <button type="submit" class="btn btn-navy btn-block">Request Proposal</button>
+        <div class="form-field"><label><%= t('corp_expected_participants') %></label><input type="text" name="teamSize" placeholder="e.g. 15-20"></div>
+        <div class="form-field"><label><%= t('corp_preferred_dates_optional') %></label><input type="text" name="preferredDates" placeholder="e.g. Q1 2027, or a specific week"></div>
+        <div class="form-field"><label><%= t('corp_looking_to_achieve') %></label><textarea name="message" rows="3"></textarea></div>
+        <button type="submit" class="btn btn-navy btn-block"><%= t('corp_request_proposal_button') %></button>
       </form>
     </div>
   </div>

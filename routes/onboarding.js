@@ -236,7 +236,7 @@ router.post("/trainer/login", (req, res) => {
     return res.status(403).render("trainer-login", { title: "Trainer login — Baseline Skills", error: `Your application is currently ${instructor.verificationStatus}. We'll email you once it's reviewed.` });
   }
   trainerLoginAttempts.recordSuccess(req);
-  req.session.regenerate((err) => {
+  auth.regenerateSessionKeepingLang(req, (err) => {
     if (err) return res.status(500).render("trainer-login", { title: "Trainer login — Baseline Skills", error: "Session error." });
     req.session.instructorId = instructor.id;
     res.redirect("/trainer/dashboard");
@@ -332,7 +332,7 @@ router.post("/affiliate/login", (req, res) => {
     return res.status(403).render("affiliate-login", { title: "Affiliate login — Baseline Skills", error: `Your application is currently ${affiliate.status}. We'll email you once it's reviewed.` });
   }
   affiliateLoginAttempts.recordSuccess(req);
-  req.session.regenerate((err) => {
+  auth.regenerateSessionKeepingLang(req, (err) => {
     if (err) return res.status(500).render("affiliate-login", { title: "Affiliate login — Baseline Skills", error: "Session error." });
     req.session.affiliateId = affiliate.id;
     res.redirect("/affiliate/dashboard");
