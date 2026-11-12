@@ -40,6 +40,7 @@
 
     <div class="grid-2 register-grid" style="align-items:start">
       <form method="POST" action="/courses/<%= course.slug %>/register" class="card" style="grid-column:1" id="registerForm">
+        <% if (typeof examOnly !== 'undefined' && examOnly) { %><input type="hidden" name="examOnly" value="true"><% } %>
         <h3 style="margin-top:0;font-size:1.05rem"><%= t('register_your_details') %></h3>
         <div class="form-row">
           <div class="form-field"><label><%= t('register_full_name') %> *</label><input type="text" name="name" id="purchaserName" required value="<%= typeof form!=='undefined' ? form.name||'' : '' %>"></div>
@@ -65,14 +66,14 @@
             <p class="form-hint"><%= t('register_vat_hint') %></p>
           </div>
         </div>
-        <div class="form-field" id="sessionFieldWrap">
+        <div class="form-field" id="sessionFieldWrap" <%- (typeof examOnly !== 'undefined' && examOnly) ? 'style="display:none"' : '' %>>
           <label><%= t('register_preferred_session') %></label>
           <select name="sessionStartDate" id="sessionStartDateSelect" onchange="changeSession(this.value)" style="width:100%">
             <% course.sessions.forEach(s => { const soldOut = s.seatsLeft !== null && s.seatsLeft !== undefined && s.seatsLeft <= 0; %><option value="<%= s.startDate %>" <%= s.startDate === selectedSessionStartDate ? 'selected' : '' %>><%= s.startDate %> — <%= s.mode %><%= soldOut ? ' (' + t('register_sold_out') + ')' : '' %></option><% }) %>
           </select>
           <p class="form-hint" id="sessionNotApplicableNote" style="display:none"><%= t('register_recorded_note') %></p>
         </div>
-        <div class="form-field">
+        <div class="form-field" <%- (typeof examOnly !== 'undefined' && examOnly) ? 'style="display:none"' : '' %>>
           <label><%= t('register_delivery_mode') %></label>
           <select name="deliveryMode" id="deliveryModeSelect" onchange="onDeliveryModeChange()">
             <% course.deliveryModes.filter(m => !["Corporate On-site","Private Cohort"].includes(m)).forEach(m => { %><option value="<%= m %>" <%= (typeof selectedDeliveryMode !== 'undefined' && selectedDeliveryMode === m) ? 'selected' : '' %>><%= m %></option><% }) %>
@@ -138,7 +139,7 @@
         <h4 style="margin-top:0"><%= course.title %></h4>
         <p style="font-size:.85rem;color:var(--muted)"><%= course.durationDays %> <%= course.durationDays>1 ? t('schedule_day_plural') : t('schedule_day_singular') %> &middot; <%= course.category %></p>
         <div id="pricingPreview" style="margin-top:16px;font-size:.92rem">
-          <div style="display:flex;justify-content:space-between;padding:4px 0"><span><%= t('register_training_label') %></span><span id="lineTraining"><%= currencySymbol(course.currency) %><%= (finalPrice/100).toFixed(2) %></span></div>
+          <div id="lineTrainingRow" style="display:<%= (typeof examOnly !== 'undefined' && examOnly) ? 'none' : 'flex' %>;justify-content:space-between;padding:4px 0"><span><%= t('register_training_label') %></span><span id="lineTraining"><%= currencySymbol(course.currency) %><%= (finalPrice/100).toFixed(2) %></span></div>
           <div style="display:flex;justify-content:space-between;padding:4px 0;display:none" id="lineExamRow"><span><%= t('register_cert_exam_label') %></span><span id="lineExam"></span></div>
           <div style="display:none;justify-content:space-between;padding:4px 0;color:#16847B" id="lineDiscountRow"><span id="lineDiscountLabel"><%= t('register_group_discount_label') %></span><span id="lineDiscount"></span></div>
           <div style="display:none;justify-content:space-between;padding:4px 0;color:var(--muted)" id="lineVatRow"><span id="lineVatLabel"><%= t('register_vat_label') %></span><span id="lineVat"></span></div>
@@ -163,6 +164,7 @@
 <script>
 const courseSlug = <%- JSON.stringify(course.slug) %>;
 const sessionStartDate = <%- JSON.stringify(selectedSessionStartDate) %>;
+const examOnly = <%- JSON.stringify(typeof examOnly !== 'undefined' && !!examOnly) %>;
 // Escaping "<" defends against a participant name/email containing the
 // closing-script-tag sequence and breaking out of this block early —
 // every "<" in JSON.stringify's output is necessarily inside one of the
@@ -372,6 +374,7 @@ function refreshPricingPreview(onResult) {
       + '&sessionStartDate=' + encodeURIComponent(sessionStartDate || '')
       + '&country=' + encodeURIComponent(country || '')
       + '&addExam=' + (addExam ? 'true' : 'false')
+      + '&examOnly=' + (examOnly ? 'true' : 'false')
       + '&couponCode=' + encodeURIComponent(appliedCouponCode || '');
     fetch(url)
       .then(r => r.json())

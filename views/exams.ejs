@@ -34,7 +34,7 @@
           </ul>
           <% if (exam.course) { %>
             <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
-              <a href="/courses/<%= exam.course.slug %>/register?addExam=true" class="btn btn-navy btn-sm"><%= t('exams_purchase_button') %></a>
+              <a href="/courses/<%= exam.course.slug %>/register?examOnly=true" class="btn btn-navy btn-sm"><%= t('exams_purchase_button') %></a>
               <a href="/courses/<%= exam.course.slug %>" class="btn btn-outline btn-sm"><%= t('exams_related_prep_course') %></a>
             </div>
           <% } %>

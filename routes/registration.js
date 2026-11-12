@@ -64,13 +64,18 @@ router.get("/courses/:slug/register", (req, res) => {
   const examProduct = store.findOne("certification_exams", (e) => e.courseId === course.id);
   const examDiscountPercent = discounts.effectiveDiscountPercent(course, sessionStartDate, couponValidation && couponValidation.valid ? couponCode : null);
   const examFinalPriceCents = examProduct ? Math.round(examProduct.priceCents * (1 - examDiscountPercent / 100)) : null;
-  const examSelected = req.query.addExam === "true" && !!examProduct;
+  // examOnly means buying just the certification exam, with no training
+  // price at all -- the exam is necessarily selected (there's nothing
+  // else on offer), and the course's own contribution to the displayed
+  // total is excluded entirely rather than shown alongside a 0.
+  const examOnly = req.query.examOnly === "true" && !!examProduct;
+  const examSelected = examOnly || (req.query.addExam === "true" && !!examProduct);
   const basePriceCents = discounts.finalPriceCentsForSession(course, sessionStartDate, couponValidation && couponValidation.valid ? couponCode : null);
   res.render("register", {
     title: res.locals.t('title_register_course', course.title), course,
-    finalPrice: basePriceCents + (examSelected ? examFinalPriceCents : 0),
+    finalPrice: (examOnly ? 0 : basePriceCents) + (examSelected ? examFinalPriceCents : 0),
     discountInfo, selectedSessionStartDate: sessionStartDate, selectedDeliveryMode,
-    examProduct, examFinalPriceCents, examSelected,
+    examProduct, examFinalPriceCents, examSelected, examOnly,
     couponCode, couponValidation, countries: COUNTRIES,
   });
 });
@@ -103,11 +108,12 @@ router.get("/courses/:slug/register/pricing-preview", (req, res) => {
   // visitor sees before submitting is never a different number from what
   // they're actually charged.
   const examProduct = store.findOne("certification_exams", (e) => e.courseId === course.id);
-  const examSelected = req.query.addExam === "true" && !!examProduct;
+  const examOnly = req.query.examOnly === "true" && !!examProduct;
+  const examSelected = examOnly || (req.query.addExam === "true" && !!examProduct);
   const examDiscountPercent = discounts.effectiveDiscountPercent(course, sessionStartDate, validCoupon);
   const examPriceCents = examSelected ? Math.round(examProduct.priceCents * (1 - examDiscountPercent / 100)) : 0;
 
-  const taxableAmountCents = (result.finalTotalCents || 0) + examPriceCents;
+  const taxableAmountCents = (examOnly ? 0 : (result.finalTotalCents || 0)) + examPriceCents;
   const { rate: vatRatePercent, vatAmountCents } = vat.calculateVat(taxableAmountCents, req.query.country || null);
   const grandTotalCents = taxableAmountCents + vatAmountCents;
 
@@ -124,6 +130,13 @@ router.post("/courses/:slug/register", regRateLimiter, async (req, res) => {
   if (!course) return res.status(404).render("404", { title: res.locals.t('title_course_not_found') });
 
   const { name, email, phone, address, company, role, sessionStartDate, deliveryMode, notes, addExam, couponCode } = req.body;
+  const examOnly = req.body.examOnly === "true";
+  // examOnly is always treated as having the exam selected -- there's
+  // nothing else being bought -- and courseContributionCents is used in
+  // place of priceResult.finalTotalCents at every point below where it's
+  // summed with the exam price, so the course's own cost never enters
+  // the taxable amount, the stored baseTotalCents, or what's actually
+  // charged for an exam-only purchase.
   const resolvedDeliveryMode = deliveryMode || (course.sessions[0] && course.sessions[0].mode) || "";
   // Part 1C: Recorded has no session at all -- resolved from the mode
   // first, so a submitted date (or the fallback to the course's first
@@ -137,16 +150,16 @@ router.post("/courses/:slug/register", regRateLimiter, async (req, res) => {
   const examProduct = store.findOne("certification_exams", (e) => e.courseId === course.id);
   const examDiscountPercent = discounts.effectiveDiscountPercent(course, resolvedSessionStartDate, validCoupon);
   const examFinalPriceCents = examProduct ? Math.round(examProduct.priceCents * (1 - examDiscountPercent / 100)) : null;
-  const examSelected = !!addExam && !!examProduct;
+  const examSelected = (examOnly || !!addExam) && !!examProduct;
 
   // Re-rendering the form on any validation failure needs the same shape
   // of data the GET route builds — kept as one local helper rather than
   // repeating this object at every early-return below.
   const rerender = (status, error, extra = {}) => res.status(status).render("register", {
     title: res.locals.t('title_register_course', course.title), course,
-    finalPrice: pricing.calculatePricing({ course, deliveryMode: resolvedDeliveryMode, participantCount: 1, sessionStartDate: resolvedSessionStartDate, couponCode: validCoupon }).finalTotalCents,
+    finalPrice: (examOnly ? 0 : pricing.calculatePricing({ course, deliveryMode: resolvedDeliveryMode, participantCount: 1, sessionStartDate: resolvedSessionStartDate, couponCode: validCoupon }).finalTotalCents) + (examSelected ? examFinalPriceCents : 0),
     discountInfo, selectedSessionStartDate: resolvedSessionStartDate, selectedDeliveryMode: resolvedDeliveryMode,
-    examProduct, examFinalPriceCents, couponCode, couponValidation, countries: COUNTRIES,
+    examProduct, examFinalPriceCents, examSelected, examOnly, couponCode, couponValidation, countries: COUNTRIES,
     error, form: req.body, resumeUrl: null, duplicateEmails: [],
     ...extra,
   });
@@ -278,6 +291,10 @@ router.post("/courses/:slug/register", regRateLimiter, async (req, res) => {
   // participant count — never the browser's own arithmetic, which only
   // ever drove the live preview, not this.
   const priceResult = pricing.calculatePricing({ course, deliveryMode: resolvedDeliveryMode, participantCount, sessionStartDate: resolvedSessionStartDate, couponCode: validCoupon });
+  const courseContributionCents = examOnly ? 0 : priceResult.finalTotalCents;
+  const effectiveBaseTotalCents = examOnly ? 0 : priceResult.baseTotalCents;
+  const effectiveDiscountPercent = examOnly ? 0 : priceResult.discountPercent;
+  const effectiveDiscountAmountCents = examOnly ? 0 : priceResult.discountAmountCents;
 
   // VAT: computed on the actual taxable amount (the discounted training
   // total plus the exam fee if selected), from the purchaser's own
@@ -286,7 +303,7 @@ router.post("/courses/:slug/register", regRateLimiter, async (req, res) => {
   // just a lookup key into the admin-managed vat_rates table, not a
   // number the client could inflate or zero out directly.
   const purchaserCountry = (req.body.country || "").trim().toUpperCase();
-  const taxableAmountCents = priceResult.finalTotalCents + (examSelected ? examFinalPriceCents : 0);
+  const taxableAmountCents = courseContributionCents + (examSelected ? examFinalPriceCents : 0);
   const { rate: vatRatePercent, vatAmountCents } = vat.calculateVat(taxableAmountCents, purchaserCountry);
 
   const groupRegistrationId = participantCount > 1 || !purchaserIsParticipant ? newId("group") : null;
@@ -323,7 +340,7 @@ router.post("/courses/:slug/register", regRateLimiter, async (req, res) => {
       courseId: course.id, courseTitle: course.title, learnerId,
       name: p.name, email: p.email, phone: p.phone || "",
       address: isThisThePurchaser ? (address || "") : "", company: isThisThePurchaser ? (company || "") : "", role: isThisThePurchaser ? (role || "") : "",
-      sessionStartDate: resolvedSessionStartDate, deliveryMode: resolvedDeliveryMode, notes: isThisThePurchaser ? (notes || "") : "",
+      sessionStartDate: examOnly ? "" : resolvedSessionStartDate, deliveryMode: examOnly ? "" : resolvedDeliveryMode, notes: isThisThePurchaser ? (notes || "") : "",
       // The group's pricing/exam charge lives once, on the purchaser's
       // row only (Part 14) — every other participant's row charges
       // nothing individually, since the purchaser paid for the group.
@@ -331,7 +348,7 @@ router.post("/courses/:slug/register", regRateLimiter, async (req, res) => {
       // both charge whatever priceCentsCharged says, so it must already
       // be VAT-inclusive, not a separate amount the payment provider
       // would need to add itself.
-      priceCentsCharged: isThisThePurchaser ? (priceResult.finalTotalCents + (examSelected ? examFinalPriceCents : 0) + vatAmountCents) : 0,
+      priceCentsCharged: isThisThePurchaser ? (courseContributionCents + (examSelected ? examFinalPriceCents : 0) + vatAmountCents) : 0,
       certificationExamId: isThisThePurchaser && examSelected ? examProduct.id : null,
       examPriceCentsCharged: isThisThePurchaser && examSelected ? examFinalPriceCents : null,
       vatAmountCents: isThisThePurchaser ? vatAmountCents : 0, vatCountry: isThisThePurchaser ? (purchaserCountry || null) : null,
@@ -339,10 +356,11 @@ router.post("/courses/:slug/register", regRateLimiter, async (req, res) => {
       status: "pending_payment",
       groupRegistrationId, isPurchaser: isThisThePurchaser ? 1 : 0,
       participantCount: isThisThePurchaser ? participantCount : 1,
-      baseTotalCents: isThisThePurchaser ? priceResult.baseTotalCents : null,
-      groupDiscountPercent: isThisThePurchaser ? priceResult.discountPercent : 0,
-      groupDiscountAmountCents: isThisThePurchaser ? priceResult.discountAmountCents : 0,
-      grantsAccess: 1,
+      baseTotalCents: isThisThePurchaser ? effectiveBaseTotalCents : null,
+      groupDiscountPercent: isThisThePurchaser ? effectiveDiscountPercent : 0,
+      groupDiscountAmountCents: isThisThePurchaser ? effectiveDiscountAmountCents : 0,
+      grantsAccess: examOnly ? 0 : 1,
+      examOnly: examOnly ? 1 : 0,
       createdAt: nowIso,
       _passwordSetToken: passwordSetToken, // consumed for the email below, not a real column
     };
@@ -364,17 +382,18 @@ router.post("/courses/:slug/register", regRateLimiter, async (req, res) => {
       id: newId("reg"),
       courseId: course.id, courseTitle: course.title, learnerId,
       name, email, phone: phone || "", address: address || "", company: company || "", role: role || "",
-      sessionStartDate: resolvedSessionStartDate, deliveryMode: resolvedDeliveryMode, notes: notes || "",
-      priceCentsCharged: priceResult.finalTotalCents + (examSelected ? examFinalPriceCents : 0) + vatAmountCents,
+      sessionStartDate: examOnly ? "" : resolvedSessionStartDate, deliveryMode: examOnly ? "" : resolvedDeliveryMode, notes: notes || "",
+      priceCentsCharged: courseContributionCents + (examSelected ? examFinalPriceCents : 0) + vatAmountCents,
       certificationExamId: examSelected ? examProduct.id : null,
       examPriceCentsCharged: examSelected ? examFinalPriceCents : null,
       vatAmountCents, vatCountry: purchaserCountry || null,
       currency: course.currency,
       status: "pending_payment",
       groupRegistrationId, isPurchaser: 1,
-      participantCount, baseTotalCents: priceResult.baseTotalCents,
-      groupDiscountPercent: priceResult.discountPercent, groupDiscountAmountCents: priceResult.discountAmountCents,
+      participantCount, baseTotalCents: effectiveBaseTotalCents,
+      groupDiscountPercent: effectiveDiscountPercent, groupDiscountAmountCents: effectiveDiscountAmountCents,
       grantsAccess: 0,
+      examOnly: examOnly ? 1 : 0,
       createdAt: nowIso,
       _passwordSetToken: passwordSetToken,
     };
@@ -543,10 +562,11 @@ function repriceForResume(course, reg, couponCode) {
   const examDiscountPercent = discounts.effectiveDiscountPercent(course, reg.sessionStartDate, validCoupon);
   const examFinalPriceCents = examProduct ? Math.round(examProduct.priceCents * (1 - examDiscountPercent / 100)) : 0;
   const priceResult = pricing.calculatePricing({ course, deliveryMode: reg.deliveryMode, participantCount: reg.participantCount || 1, sessionStartDate: reg.sessionStartDate, couponCode: validCoupon });
-  const taxableAmountCents = priceResult.finalTotalCents + examFinalPriceCents;
+  const courseContributionCents = reg.examOnly ? 0 : priceResult.finalTotalCents;
+  const taxableAmountCents = courseContributionCents + examFinalPriceCents;
   const { rate: vatRatePercent, vatAmountCents } = vat.calculateVat(taxableAmountCents, reg.vatCountry || "");
   const grandTotalCents = taxableAmountCents + vatAmountCents;
-  return { couponValidation, priceResult, examFinalPriceCents, vatRatePercent, vatAmountCents, grandTotalCents };
+  return { couponValidation, priceResult, courseContributionCents, examFinalPriceCents, vatRatePercent, vatAmountCents, grandTotalCents };
 }
 
 // Live preview for the "Apply" button on the resume-confirm page — never
@@ -564,9 +584,9 @@ router.get("/register/resume/:regId/pricing-preview", (req, res) => {
     couponValid: couponCode ? !!(couponValidation && couponValidation.valid) : null,
     couponReason: couponValidation && !couponValidation.valid ? res.locals.t("coupon_reason_" + couponValidation.reasonKey) : null,
     currencySymbol: currencySymbol(course.currency),
-    baseTotalCents: priceResult.baseTotalCents,
-    discountPercent: priceResult.discountPercent,
-    discountAmountCents: priceResult.discountAmountCents,
+    baseTotalCents: reg.examOnly ? 0 : priceResult.baseTotalCents,
+    discountPercent: reg.examOnly ? 0 : priceResult.discountPercent,
+    discountAmountCents: reg.examOnly ? 0 : priceResult.discountAmountCents,
     examPriceCents: examFinalPriceCents,
     vatRatePercent, vatAmountCents, grandTotalCents,
   });
@@ -614,9 +634,9 @@ router.post("/register/resume/:regId", async (req, res) => {
     }
     updatedReg = store.update("registrations", reg.id, {
       priceCentsCharged: grandTotalCents,
-      baseTotalCents: priceResult.baseTotalCents,
-      groupDiscountPercent: priceResult.discountPercent,
-      groupDiscountAmountCents: priceResult.discountAmountCents,
+      baseTotalCents: reg.examOnly ? 0 : priceResult.baseTotalCents,
+      groupDiscountPercent: reg.examOnly ? 0 : priceResult.discountPercent,
+      groupDiscountAmountCents: reg.examOnly ? 0 : priceResult.discountAmountCents,
       examPriceCentsCharged: reg.certificationExamId ? examFinalPriceCents : reg.examPriceCentsCharged,
       vatAmountCents,
     });
