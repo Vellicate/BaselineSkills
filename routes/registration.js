@@ -64,11 +64,13 @@ router.get("/courses/:slug/register", (req, res) => {
   const examProduct = store.findOne("certification_exams", (e) => e.courseId === course.id);
   const examDiscountPercent = discounts.effectiveDiscountPercent(course, sessionStartDate, couponValidation && couponValidation.valid ? couponCode : null);
   const examFinalPriceCents = examProduct ? Math.round(examProduct.priceCents * (1 - examDiscountPercent / 100)) : null;
+  const examSelected = req.query.addExam === "true" && !!examProduct;
+  const basePriceCents = discounts.finalPriceCentsForSession(course, sessionStartDate, couponValidation && couponValidation.valid ? couponCode : null);
   res.render("register", {
     title: res.locals.t('title_register_course', course.title), course,
-    finalPrice: discounts.finalPriceCentsForSession(course, sessionStartDate, couponValidation && couponValidation.valid ? couponCode : null),
+    finalPrice: basePriceCents + (examSelected ? examFinalPriceCents : 0),
     discountInfo, selectedSessionStartDate: sessionStartDate, selectedDeliveryMode,
-    examProduct, examFinalPriceCents,
+    examProduct, examFinalPriceCents, examSelected,
     couponCode, couponValidation, countries: COUNTRIES,
   });
 });

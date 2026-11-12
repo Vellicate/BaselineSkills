@@ -32,11 +32,11 @@
             <% if (exam.examProvider) { %><li><%= t('exams_administered_by', exam.examProvider) %></li><% } %>
             <li><%= t('exams_fee_label', currencySymbol(exam.course ? exam.course.currency : null) + (exam.priceCents/100).toFixed(2)) %></li>
           </ul>
-          <p style="font-size:.8rem;color:var(--muted);font-style:italic">
-            <%= t('exams_independent_note') %>
-          </p>
           <% if (exam.course) { %>
-            <a href="/courses/<%= exam.course.slug %>" class="btn btn-outline btn-sm" style="margin-top:8px"><%= t('exams_related_prep_course') %></a>
+            <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+              <a href="/courses/<%= exam.course.slug %>/register?addExam=true" class="btn btn-navy btn-sm"><%= t('exams_purchase_button') %></a>
+              <a href="/courses/<%= exam.course.slug %>" class="btn btn-outline btn-sm"><%= t('exams_related_prep_course') %></a>
+            </div>
           <% } %>
         </div>
       <% }) %>

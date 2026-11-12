@@ -443,9 +443,27 @@ function carryCourseFieldsInto(targetForm) {
 <div class="card" style="margin-top:32px">
   <h3>Certification exam for this course</h3>
   <% if (examProduct) { %>
-    <p><strong><%= examProduct.certificationName %></strong> (<%= examProduct.certificationBody %>) — <%= currencySymbol(course ? course.currency : null) %><%= (examProduct.priceCents/100).toFixed(2) %></p>
-    <p style="color:var(--muted);font-size:.9rem"><%= examProduct.description %></p>
-    <form method="POST" action="/admin/certification-exams/<%= examProduct.id %>/delete" onsubmit="return confirm('Remove this exam product?')"><button type="submit" class="btn btn-outline btn-sm">Remove</button></form>
+  <form method="POST" action="/admin/certification-exams/<%= examProduct.id %>/edit" onsubmit="carryCourseFieldsInto(this)">
+    <div class="form-row">
+      <div class="form-field"><label>Certification name</label><input type="text" name="certificationName" required value="<%= examProduct.certificationName %>"></div>
+      <div class="form-field"><label>Certification body</label><input type="text" name="certificationBody" required value="<%= examProduct.certificationBody %>"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-field"><label>Exam price (€)</label><input type="number" step="0.01" name="price" required value="<%= (examProduct.priceCents/100).toFixed(2) %>"></div>
+      <div class="form-field"><label>Exam provider</label><input type="text" name="examProvider" placeholder="e.g. iSQI" value="<%= examProduct.examProvider || '' %>"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-field"><label>Level</label><input type="text" name="level" placeholder="e.g. Foundation" value="<%= examProduct.level || '' %>"></div>
+      <div class="form-field"><label>Duration (minutes)</label><input type="number" name="durationMinutes" value="<%= examProduct.durationMinutes || '' %>"></div>
+      <div class="form-field"><label>Format</label><input type="text" name="format" placeholder="e.g. 45 multiple choice questions" value="<%= examProduct.format || '' %>"></div>
+    </div>
+    <div class="form-field"><label>Description</label><textarea name="description" rows="4"><%= examProduct.description || '' %></textarea></div>
+    <div class="form-field"><label>Eligibility</label><input type="text" name="eligibility" placeholder="e.g. No prerequisites" value="<%= examProduct.eligibility || '' %>"></div>
+    <div style="display:flex;gap:10px;margin-top:8px">
+      <button type="submit" class="btn btn-navy">Save Exam Product</button>
+    </div>
+  </form>
+  <form method="POST" action="/admin/certification-exams/<%= examProduct.id %>/delete" onsubmit="return confirm('Remove this exam product?')" style="margin-top:8px"><button type="submit" class="btn btn-outline btn-sm" style="color:#b91c1c;border-color:#fecaca">Remove</button></form>
   <% } else { %>
   <form method="POST" action="/admin/courses/<%= course.id %>/certification-exams/new" onsubmit="carryCourseFieldsInto(this)">
     <div class="form-row">
@@ -455,6 +473,11 @@ function carryCourseFieldsInto(targetForm) {
     <div class="form-row">
       <div class="form-field"><label>Exam price (€)</label><input type="number" step="0.01" name="price" required></div>
       <div class="form-field"><label>Exam provider</label><input type="text" name="examProvider" placeholder="e.g. iSQI"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-field"><label>Level</label><input type="text" name="level" placeholder="e.g. Foundation"></div>
+      <div class="form-field"><label>Duration (minutes)</label><input type="number" name="durationMinutes"></div>
+      <div class="form-field"><label>Format</label><input type="text" name="format" placeholder="e.g. 45 multiple choice questions"></div>
     </div>
     <div class="form-field"><label>Description</label><textarea name="description" rows="2"></textarea></div>
     <div class="form-field"><label>Eligibility</label><input type="text" name="eligibility" placeholder="e.g. No prerequisites"></div>

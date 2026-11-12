@@ -1140,7 +1140,7 @@ router.post("/faqs/:id/move-down", requireFaqCourseAccess, moveFaq("down"));
 // ==================== Certification Exam Products ====================
 router.post("/courses/:courseId/certification-exams/new", auth.requireCourseAccess(r => r.params.courseId), (req, res) => {
   saveCarriedCourseFieldsIfPresent(req);
-  const { certificationName, certificationBody, price, examProvider, description, eligibility } = req.body;
+  const { certificationName, certificationBody, price, examProvider, description, eligibility, level, durationMinutes, format } = req.body;
   if (!certificationName || !certificationBody || !price) return res.redirect(`/admin/courses/${req.params.courseId}/edit`);
   const priceCents = Math.round(Number(price) * 100);
   if (!Number.isFinite(priceCents) || priceCents <= 0) {
@@ -1151,9 +1151,34 @@ router.post("/courses/:courseId/certification-exams/new", auth.requireCourseAcce
     certificationName, certificationBody, examName: certificationName,
     priceCents,
     description: description || "", eligibility: eligibility || "", examProvider: examProvider || "",
+    level: level || "", durationMinutes: durationMinutes ? Number(durationMinutes) : null, format: format || "",
     availability: "available", createdAt: new Date().toISOString(),
   });
   res.redirect(`/admin/courses/${req.params.courseId}/edit?success=Exam+product+added`);
+});
+
+router.post("/certification-exams/:id/edit", (req, res, next) => {
+  const exam = store.findOne("certification_exams", e => e.id === req.params.id);
+  if (!exam || !exam.courseId) return res.status(404).send("Exam product not found");
+  return auth.requireCourseAccess(() => exam.courseId)(req, res, next);
+}, (req, res) => {
+  const exam = store.findOne("certification_exams", e => e.id === req.params.id);
+  saveCarriedCourseFieldsIfPresent(req);
+  const { certificationName, certificationBody, price, examProvider, description, eligibility, level, durationMinutes, format } = req.body;
+  if (!certificationName || !certificationBody || !price) {
+    return res.redirect(`/admin/courses/${exam.courseId}/edit?error=Certification+name,+body,+and+price+are+required`);
+  }
+  const priceCents = Math.round(Number(price) * 100);
+  if (!Number.isFinite(priceCents) || priceCents <= 0) {
+    return res.redirect(`/admin/courses/${exam.courseId}/edit?error=Exam+price+must+be+a+positive+amount`);
+  }
+  store.update("certification_exams", exam.id, {
+    certificationName, certificationBody, examName: certificationName,
+    priceCents,
+    description: description || "", eligibility: eligibility || "", examProvider: examProvider || "",
+    level: level || "", durationMinutes: durationMinutes ? Number(durationMinutes) : null, format: format || "",
+  });
+  res.redirect(`/admin/courses/${exam.courseId}/edit?success=Exam+product+updated`);
 });
 
 router.post("/certification-exams/:id/delete", (req, res, next) => {

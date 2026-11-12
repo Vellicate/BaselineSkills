@@ -121,7 +121,7 @@
         <% if (examProduct) { %>
         <div class="form-field" style="border:1px solid var(--line);border-radius:8px;padding:14px;margin-top:10px">
           <label style="display:flex;align-items:start;gap:10px;cursor:pointer">
-            <input type="checkbox" name="addExam" value="1" style="margin-top:4px">
+            <input type="checkbox" name="addExam" value="1" style="margin-top:4px" <%= typeof examSelected !== 'undefined' && examSelected ? 'checked' : '' %>>
             <span>
               <strong><%= t('register_add_exam', examProduct.certificationName) %></strong> (<%= examProduct.certificationBody %>) — <%= currencySymbol(course.currency) %><%= (examFinalPriceCents/100).toFixed(2) %> <%= t('register_per_participant') %>
               <br><span style="color:var(--muted);font-size:.85rem;white-space:pre-line"><%= examProduct.description %></span>
