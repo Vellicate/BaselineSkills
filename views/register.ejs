@@ -165,6 +165,7 @@
 const courseSlug = <%- JSON.stringify(course.slug) %>;
 const sessionStartDate = <%- JSON.stringify(selectedSessionStartDate) %>;
 const examOnly = <%- JSON.stringify(typeof examOnly !== 'undefined' && !!examOnly) %>;
+const serverDeliveryMode = <%- JSON.stringify(typeof selectedDeliveryMode !== 'undefined' ? selectedDeliveryMode : '') %>;
 // Escaping "<" defends against a participant name/email containing the
 // closing-script-tag sequence and breaking out of this block early —
 // every "<" in JSON.stringify's output is necessarily inside one of the
@@ -437,6 +438,7 @@ document.addEventListener('change', function (e) {
   if (e.target && e.target.name === 'addExam') refreshPricingPreview();
 });
 
+if (serverDeliveryMode) document.getElementById('deliveryModeSelect').value = serverDeliveryMode;
 renderParticipantBlocks();
 onDeliveryModeChange(); // apply the Recorded-hides-session rule to whatever mode loaded pre-selected
 

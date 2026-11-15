@@ -43,6 +43,7 @@ const regRateLimiter = createRateLimiter({
 router.get("/courses/:slug/register", (req, res) => {
   const course = store.findOne("courses", (c) => c.slug === req.params.slug && c.published);
   if (!course) return res.status(404).render("404", { title: res.locals.t('title_course_not_found') });
+  const loggedInLearner = req.session.learnerId ? store.findOne("learners", (l) => l.id === req.session.learnerId) : null;
   // Referral capture — simplified to session-based rather than the full
   // 30-day cookie REFERRAL_ATTRIBUTION_WINDOW_DAYS implies; a visitor who
   // clicks a referral link and registers within the same session is
@@ -77,6 +78,7 @@ router.get("/courses/:slug/register", (req, res) => {
     discountInfo, selectedSessionStartDate: sessionStartDate, selectedDeliveryMode,
     examProduct, examFinalPriceCents, examSelected, examOnly,
     couponCode, couponValidation, countries: COUNTRIES,
+    form: loggedInLearner ? { name: loggedInLearner.name, email: loggedInLearner.email } : undefined,
   });
 });
 
@@ -770,17 +772,17 @@ async function finalizeRegistration(registrationId, opts = {}) {
     await store.update("registrations", sibling.id, { status: newStatus, confirmedAt });
   }
 
-  // Only generate an invoice for a genuinely confirmed (webhook-verified)
-  // payment — "invoice_pending" is explicitly not a completed payment (it's
-  // the no-provider-configured fallback), so a "paid" invoice would
-  // misrepresent what actually happened. A real failure to generate the PDF
-  // is logged but never allowed to block the confirmation itself — the
-  // registration is genuinely confirmed regardless of whether the invoice
-  // artifact could be produced.
-  if (!opts.viaFallback) {
-    try { await invoices.createInvoiceForRegistration(updated); }
-    catch (err) { console.error("[registration] invoice generation failed:", err.message); }
-  }
+  // Generated for both paths now -- createInvoiceForRegistration itself
+  // correctly marks this "due" rather than "paid" when registration.status
+  // is invoice_pending (the no-provider/bank-transfer fallback), rather
+  // than this route skipping invoice generation for that path entirely. A
+  // student who paid by bank transfer or corporate invoice still needs a
+  // real invoice document, just one correctly labeled as not yet paid. A
+  // real failure to generate the PDF is logged but never allowed to block
+  // the confirmation itself — the registration is genuinely confirmed
+  // regardless of whether the invoice artifact could be produced.
+  try { await invoices.createInvoiceForRegistration(updated); }
+  catch (err) { console.error("[registration] invoice generation failed:", err.message); }
 
   // Purchase-stage feedback prompt (Section 14/15) — created here, once,
   // at the moment of confirmed purchase, for the purchaser and, for a

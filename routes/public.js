@@ -483,6 +483,7 @@ router.get("/courses/:slug", (req, res) => {
 
   let canReview = false;
   let hasAccessToMaterials = false;
+  let alreadyRegistered = false;
   const materials = store.readAll("materials").filter((m) => m.courseId === course.id);
   if (req.session.learnerId) {
     const learner = store.findOne("learners", (l) => l.id === req.session.learnerId);
@@ -494,13 +495,14 @@ router.get("/courses/:slug", (req, res) => {
     );
     canReview = !!qualifies && !alreadyReviewed;
     hasAccessToMaterials = !!qualifies;
+    alreadyRegistered = !!qualifies;
   }
 
   const mapping = store.findOne("course_standards_mapping", (m) => m.courseId === course.id);
   const certificationBody = mapping ? store.findOne("standards_bodies", (b) => b.id === mapping.standardsBodyId) : null;
   const deliveryOfferings = deliveryModeOfferings(course);
   const inquiryOnlyCourse = course.published && deliveryOfferings.length === 1 && deliveryOfferings[0].isInquiry;
-  res.render("course-detail", { title: `${course.title} — Baseline Skills`, metaDescription: course.summary, course, related, trainer, faqs, reviews, avgRating, reviewCount, ratingDistribution, canReview, materials, hasAccessToMaterials, certificationBody, cardData: courseCardViewModel(course), deliveryOfferings, inquiryOnlyCourse });
+  res.render("course-detail", { title: `${course.title} — Baseline Skills`, metaDescription: course.summary, course, related, trainer, faqs, reviews, avgRating, reviewCount, ratingDistribution, canReview, materials, hasAccessToMaterials, alreadyRegistered, certificationBody, cardData: courseCardViewModel(course), deliveryOfferings, inquiryOnlyCourse });
 });
 
 // Emails a link to the brochure rather than downloading it directly, so we

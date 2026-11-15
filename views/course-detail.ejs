@@ -60,7 +60,9 @@
       <% } %>
     </div>
     <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:18px">
-      <% if (inquiryOnlyCourse) { %>
+      <% if (typeof alreadyRegistered !== 'undefined' && alreadyRegistered) { %>
+        <a href="/account" class="btn btn-outline btn-lg" style="pointer-events:auto"><%= t('course_already_registered') %></a>
+      <% } else if (inquiryOnlyCourse) { %>
         <a href="<%= deliveryOfferings[0].ctaUrl %>" class="btn btn-gold btn-lg"><%= t(deliveryOfferings[0].ctaLabelKey) %></a>
       <% } else if (course.published) { %>
         <a href="/courses/<%= course.slug %>/register" class="btn btn-gold btn-lg"><%= t('course_register_now') %></a>
@@ -346,7 +348,11 @@
         </div>
         <% if(!cardData.pricing.isFromPrice && cardData.pricing.discountPercent > 0){ %><span class="discount-badge"><%= t('schedule_discount', cardData.pricing.discountPercent) %></span><% } %>
         <p class="form-hint" style="margin-top:10px"><%= t('course_per_person') %> &middot; <%= course.currency %></p>
-        <a href="/courses/<%= course.slug %>/register" class="btn btn-gold btn-block" style="margin-top:14px"><%= t('course_register_now') %></a>
+        <% if (typeof alreadyRegistered !== 'undefined' && alreadyRegistered) { %>
+          <a href="/account" class="btn btn-outline btn-block" style="margin-top:14px"><%= t('course_already_registered') %></a>
+        <% } else { %>
+          <a href="/courses/<%= course.slug %>/register" class="btn btn-gold btn-block" style="margin-top:14px"><%= t('course_register_now') %></a>
+        <% } %>
       <% } else { %>
         <p style="color:var(--muted);font-size:.9rem;margin-top:0"><%= t('course_unconfirmed_note') %></p>
         <button type="button" class="btn btn-gold btn-block" onclick="document.getElementById('interest-modal').style.display='flex'"><%= t('schedule_interested') %></button>

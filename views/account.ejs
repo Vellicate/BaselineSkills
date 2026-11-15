@@ -24,7 +24,7 @@
         <tbody>
           <% registrations.forEach(r => { %>
           <tr>
-            <td><%= r.courseTitle %></td><td><%= r.sessionStartDate %></td><td><%= r.status %></td>
+            <td><%= r.courseTitle %></td><td><%= r.sessionStartDate || r.deliveryMode || '—' %></td><td><%= r.status %></td>
             <td><% if (invoicesByRegistration[r.id]) { %><a href="/account/invoices/<%= invoicesByRegistration[r.id].id %>/download"><%= invoicesByRegistration[r.id].invoiceNumber %></a><% } else { %>—<% } %></td>
           </tr>
           <% }) %>
