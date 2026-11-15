@@ -34,10 +34,10 @@
     <p class="lead"><%- t('dash_total_earned', '<strong>' + currencySymbol() + (totalEarnedCents/100).toFixed(2) + '</strong>') %></p>
     <% if (earnings.length > 0) { %>
     <table class="admin-table" style="background:#fff">
-      <thead><tr><th><%= t('dash_th_tier') %></th><th><%= t('dash_th_rate') %></th><th><%= t('dash_th_gross') %></th><th><%= t('dash_th_commission') %></th></tr></thead>
+      <thead><tr><th><%= t('dash_th_date') %></th><th><%= t('dash_th_course') %></th><th><%= t('dash_th_tier') %></th><th><%= t('dash_th_rate') %></th><th><%= t('dash_th_gross') %></th><th><%= t('dash_th_commission') %></th><th><%= t('dash_th_ref') %></th></tr></thead>
       <tbody>
         <% earnings.forEach(e => { %>
-          <tr><td><%= e.tier %></td><td><%= e.ratePercent %>%</td><td><%= currencySymbol() %><%= (e.grossCourseRevenueCents/100).toFixed(2) %></td><td><%= currencySymbol() %><%= (e.commissionCents/100).toFixed(2) %></td></tr>
+          <tr><td><%= e.saleDate ? new Date(e.saleDate).toLocaleDateString() : '—' %></td><td><%= e.courseTitle %></td><td><%= e.tier %></td><td><%= e.ratePercent %>%</td><td><%= currencySymbol() %><%= (e.grossCourseRevenueCents/100).toFixed(2) %></td><td><%= currencySymbol() %><%= (e.commissionCents/100).toFixed(2) %></td><td style="font-size:.78rem;color:var(--muted)"><%= e.registrationRef %></td></tr>
         <% }) %>
       </tbody>
     </table>

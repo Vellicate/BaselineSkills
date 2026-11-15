@@ -89,7 +89,7 @@
               <button type="button" class="btn btn-outline btn-sm module-move-up" aria-label="Move module up">&uarr;</button>
               <button type="button" class="btn btn-outline btn-sm module-move-down" aria-label="Move module down">&darr;</button>
               <button type="button" class="btn btn-outline btn-sm module-edit-btn" data-module="<%= JSON.stringify({ id: mod.id, title: mod.title, description: mod.description }) %>">Edit</button>
-              <form method="POST" action="/trainer/lms/modules/<%= mod.id %>/delete" onsubmit="return confirm('Delete this module and all its lessons?')">
+              <form method="POST" action="/trainer/lms/modules/<%= mod.id %>/delete" class="confirm-delete-form" data-confirm-message="Delete this module and all its lessons?">
                 <button type="submit" class="btn btn-outline btn-sm" style="color:#B91C1C">Delete</button>
               </form>
             </div>
@@ -132,7 +132,7 @@
                       <button type="submit" class="btn btn-outline btn-sm"><%= lesson.downloadAllowed ? 'Disable download' : 'Enable download' %></button>
                     </form>
                   <% } %>
-                  <form method="POST" action="/trainer/lms/lessons/<%= lesson.id %>/delete" onsubmit="return confirm('Delete this lesson?')" style="display:inline">
+                  <form method="POST" action="/trainer/lms/lessons/<%= lesson.id %>/delete" class="confirm-delete-form" data-confirm-message="Delete this lesson?" style="display:inline">
                     <button type="submit" class="btn btn-outline btn-sm" style="color:#B91C1C">Delete</button>
                   </form>
                 </div>
@@ -260,7 +260,45 @@
   </div>
 </div>
 
+<div id="confirm-delete-modal" class="modal-backdrop" aria-hidden="true" onclick="if(event.target===this) closeConfirmDelete()">
+  <div class="modal-card" style="max-width:420px" role="dialog" aria-modal="true" aria-labelledby="confirm-delete-title">
+    <button type="button" onclick="closeConfirmDelete()" aria-label="Close" style="position:absolute;top:16px;right:16px;background:none;border:none;font-size:1.4rem;cursor:pointer">&times;</button>
+    <h3 id="confirm-delete-title">Confirm delete</h3>
+    <p id="confirm-delete-message" style="color:var(--muted)"></p>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px">
+      <button type="button" class="btn btn-outline" onclick="closeConfirmDelete()">Cancel</button>
+      <button type="button" class="btn btn-navy" style="background:#B91C1C;border-color:#B91C1C" onclick="confirmDeleteProceed()">Delete</button>
+    </div>
+  </div>
+</div>
+
 <script>
+// Replaces window.confirm() for every delete form on this page: confirm()
+// is synchronous and blocks the whole page (including any other
+// in-progress interaction) until answered, which is exactly the "froze on
+// a native dialog" complaint this modal avoids -- it's just DOM/CSS, so
+// the rest of the page stays fully interactive while it's open.
+let formPendingDelete = null;
+document.querySelectorAll('.confirm-delete-form').forEach((form) => {
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    formPendingDelete = form;
+    document.getElementById('confirm-delete-message').textContent = form.dataset.confirmMessage || 'Are you sure?';
+    document.getElementById('confirm-delete-modal').classList.add('active');
+    document.getElementById('confirm-delete-modal').setAttribute('aria-hidden', 'false');
+  });
+});
+function closeConfirmDelete() {
+  formPendingDelete = null;
+  document.getElementById('confirm-delete-modal').classList.remove('active');
+  document.getElementById('confirm-delete-modal').setAttribute('aria-hidden', 'true');
+}
+function confirmDeleteProceed() {
+  const form = formPendingDelete;
+  closeConfirmDelete();
+  if (form) form.submit();
+}
+
 function openModuleEditor(mod) {
   document.getElementById('module-title').value = mod.title;
   document.getElementById('module-description').value = mod.description || '';
@@ -382,7 +420,7 @@ document.getElementById('lesson-form').addEventListener('submit', function() {
   }
 });
 document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape') { closeLessonEditor(); closeModuleEditor(); }
+  if (e.key === 'Escape') { closeLessonEditor(); closeModuleEditor(); closeConfirmDelete(); }
 });
 
 // Reordering: move-up/move-down buttons work everywhere (including

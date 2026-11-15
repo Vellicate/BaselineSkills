@@ -810,8 +810,13 @@ router.get("/resources/:slug", (req, res) => {
   if (!resource) return res.status(404).render("404", { title: res.locals.t('title_resource_not_found') });
   // A resource with no body is a legacy/external-link-only entry — send
   // the visitor straight to wherever it actually points rather than
-  // rendering an empty detail page for it.
-  if (!resource.body && resource.url) return res.redirect(resource.url);
+  // rendering an empty detail page for it. Only ever follows this when it
+  // genuinely points outside this app, though -- a relative path pointing
+  // at one of this app's own routes could carry a side effect having
+  // nothing to do with "view this resource" (e.g. /set-language/:lang
+  // changes the visitor's session language, not just where they land).
+  const isSafeExternalUrl = resource.url && /^https?:\/\//i.test(resource.url) && !resource.url.startsWith(`${req.protocol}://${req.get("host")}`);
+  if (!resource.body && isSafeExternalUrl) return res.redirect(resource.url);
   const related = store.readAll("resources").filter((r) => r.id !== resource.id && r.category === resource.category).slice(0, 3);
   res.render("resource-detail", { title: `${resource.title} — Baseline Skills`, metaDescription: resource.excerpt, resource, related });
 });

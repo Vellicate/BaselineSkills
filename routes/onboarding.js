@@ -261,8 +261,9 @@ router.get("/trainer/dashboard", auth.requireInstructor, (req, res) => {
   const registrations = store.readAll("registrations").filter((r) => courses.some((c) => c.id === r.courseId));
   const earnings = registrations
     .filter((r) => r.status === "confirmed" || r.status === "invoice_pending")
-    .map((r) => commissions.calculateCommission(r))
-    .filter((c) => c.recipientType === "instructor" && c.recipientId === instructor.id);
+    .map((r) => ({ ...commissions.calculateCommission(r), saleDate: r.confirmedAt || r.createdAt, courseTitle: r.courseTitle, registrationRef: r.id }))
+    .filter((c) => c.recipientType === "instructor" && c.recipientId === instructor.id)
+    .sort((a, b) => new Date(b.saleDate) - new Date(a.saleDate));
   const totalEarnedCents = earnings.reduce((sum, e) => sum + e.commissionCents, 0);
   const payouts = store.readAll("payouts").filter((p) => p.recipientType === "instructor" && p.recipientId === instructor.id).sort((a, b) => new Date(b.periodEnd) - new Date(a.periodEnd));
   res.render("trainer-dashboard", { title: res.locals.t('dash_trainer_eyebrow') + " — Baseline Skills", noindex: true, instructor, courses, referralCode, earnings, totalEarnedCents, payouts });

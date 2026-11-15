@@ -44,6 +44,14 @@ router.get("/courses/:slug/register", (req, res) => {
   const course = store.findOne("courses", (c) => c.slug === req.params.slug && c.published);
   if (!course) return res.status(404).render("404", { title: res.locals.t('title_course_not_found') });
   const loggedInLearner = req.session.learnerId ? store.findOne("learners", (l) => l.id === req.session.learnerId) : null;
+  if (loggedInLearner && req.query.examOnly !== "true") {
+    const alreadyRegistered = store.findOne("registrations", (r) =>
+      r.courseId === course.id &&
+      (r.learnerId === loggedInLearner.id || r.email.toLowerCase() === loggedInLearner.email.toLowerCase()) &&
+      (r.status === "confirmed" || r.status === "invoice_pending") && r.grantsAccess !== 0
+    );
+    if (alreadyRegistered) return res.redirect("/account?success=" + encodeURIComponent("You're already registered for this course."));
+  }
   // Referral capture — simplified to session-based rather than the full
   // 30-day cookie REFERRAL_ATTRIBUTION_WINDOW_DAYS implies; a visitor who
   // clicks a referral link and registers within the same session is
@@ -178,6 +186,10 @@ router.post("/courses/:slug/register", regRateLimiter, async (req, res) => {
   // error -- the visitor still gets somewhere useful.
   if (["Corporate On-site", "Private Cohort"].includes(resolvedDeliveryMode)) {
     return res.redirect(`/corporate-training?course=${encodeURIComponent(course.slug)}&mode=${encodeURIComponent(resolvedDeliveryMode)}`);
+  }
+
+  if (resolvedSessionStartDate && resolvedSessionStartDate < new Date().toISOString().slice(0, 10)) {
+    return rerender(400, "That session has already ended. Please choose a different session, or contact us if none are currently available.");
   }
 
   // An invalid coupon deliberately does NOT block registration -- it's

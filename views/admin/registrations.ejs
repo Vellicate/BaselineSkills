@@ -13,6 +13,9 @@
     <form method="POST" action="/admin/registrations/backfill-invoices" style="display:inline" onsubmit="return confirm('Generate invoices for any confirmed or invoice-pending registration that doesn\'t have one yet? Safe to run more than once -- only ever fills in what\'s missing.')">
       <button type="submit" class="btn btn-outline btn-sm">Generate missing invoices</button>
     </form>
+    <form method="POST" action="/admin/registrations/regenerate-invoice-pdfs" style="display:inline" onsubmit="return confirm('Re-render every existing invoice PDF using the current template? Use this once after an invoice content fix so older invoices stop showing outdated placeholders.')">
+      <button type="submit" class="btn btn-outline btn-sm">Regenerate invoice PDFs</button>
+    </form>
   </div>
 </div>
 

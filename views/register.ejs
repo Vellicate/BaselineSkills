@@ -10,6 +10,7 @@
 
 <section class="section">
   <div class="container" style="max-width:980px">
+    <% const todayIso = new Date().toISOString().slice(0, 10); %>
     <%
       // Prefill data for a re-rendered form after a validation error.
       // Without this, every dynamically-added participant row (2 and up)
@@ -69,7 +70,7 @@
         <div class="form-field" id="sessionFieldWrap" <%- (typeof examOnly !== 'undefined' && examOnly) ? 'style="display:none"' : '' %>>
           <label><%= t('register_preferred_session') %></label>
           <select name="sessionStartDate" id="sessionStartDateSelect" onchange="changeSession(this.value)" style="width:100%">
-            <% course.sessions.forEach(s => { const soldOut = s.seatsLeft !== null && s.seatsLeft !== undefined && s.seatsLeft <= 0; %><option value="<%= s.startDate %>" <%= s.startDate === selectedSessionStartDate ? 'selected' : '' %>><%= s.startDate %> — <%= s.mode %><%= soldOut ? ' (' + t('register_sold_out') + ')' : '' %></option><% }) %>
+            <% course.sessions.forEach(s => { const soldOut = s.seatsLeft !== null && s.seatsLeft !== undefined && s.seatsLeft <= 0; const ended = s.startDate < todayIso; %><option value="<%= s.startDate %>" <%= s.startDate === selectedSessionStartDate ? 'selected' : '' %> <%= (soldOut || ended) ? 'disabled' : '' %>><%= s.startDate %> — <%= s.mode %><%= ended ? ' (' + t('register_session_ended') + ')' : (soldOut ? ' (' + t('register_sold_out') + ')' : '') %></option><% }) %>
           </select>
           <p class="form-hint" id="sessionNotApplicableNote" style="display:none"><%= t('register_recorded_note') %></p>
         </div>

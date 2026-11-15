@@ -1500,6 +1500,22 @@ router.post("/registrations/:id/regenerate-certificate", (req, res, next) => {
 // generation (skipped for the fallback path, generated here since this
 // is a genuine payment confirmation), and the same confirmation emails a
 // live webhook would have sent, for free.
+router.post("/registrations/regenerate-invoice-pdfs", async (req, res) => {
+  const allInvoices = store.readAll("invoices");
+  let regenerated = 0, failed = 0;
+  for (const invoice of allInvoices) {
+    try {
+      await invoices.regenerateInvoicePdf(invoice);
+      regenerated++;
+    } catch (err) {
+      console.error(`[admin] regenerate invoice PDF failed for ${invoice.id}:`, err.message);
+      failed++;
+    }
+  }
+  const failedNote = failed > 0 ? `,+${failed}+failed+-+see+server+log` : "";
+  res.redirect(`/admin/registrations?success=Regenerated+${regenerated}+invoice+PDFs${failedNote}`);
+});
+
 router.post("/registrations/backfill-invoices", async (req, res) => {
   const qualifying = store.readAll("registrations").filter((r) =>
     r.isPurchaser && (r.status === "confirmed" || r.status === "invoice_pending")
