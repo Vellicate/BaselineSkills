@@ -10,6 +10,9 @@
     <a href="/admin/export/registrations<%= activeCourseId || activeStatus ? '?' + (activeCourseId ? 'courseId=' + activeCourseId : '') + (activeCourseId && activeStatus ? '&' : '') + (activeStatus ? 'status=' + activeStatus : '') : '' %>" class="btn btn-outline btn-sm">
       <span>↓ Export CSV</span>
     </a>
+    <form method="POST" action="/admin/registrations/backfill-invoices" style="display:inline" onsubmit="return confirm('Generate invoices for any confirmed or invoice-pending registration that doesn\'t have one yet? Safe to run more than once -- only ever fills in what\'s missing.')">
+      <button type="submit" class="btn btn-outline btn-sm">Generate missing invoices</button>
+    </form>
   </div>
 </div>
 

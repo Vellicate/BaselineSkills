@@ -12,6 +12,7 @@ const security = require("../lib/security");
 const certificates = require("../lib/certificates");
 const payoutsLib = require("../lib/payouts");
 const discounts = require("../lib/discounts");
+const invoices = require("../lib/invoices");
 const adminCfg = discounts.loadConfig().security;
 const { newId } = require("../lib/id");
 const slugify = require("slugify");
@@ -1499,6 +1500,27 @@ router.post("/registrations/:id/regenerate-certificate", (req, res, next) => {
 // generation (skipped for the fallback path, generated here since this
 // is a genuine payment confirmation), and the same confirmation emails a
 // live webhook would have sent, for free.
+router.post("/registrations/backfill-invoices", async (req, res) => {
+  const qualifying = store.readAll("registrations").filter((r) =>
+    r.isPurchaser && (r.status === "confirmed" || r.status === "invoice_pending")
+  );
+  const existingInvoiceRegIds = new Set(store.readAll("invoices").map((inv) => inv.registrationId));
+  const missing = qualifying.filter((r) => !existingInvoiceRegIds.has(r.id));
+
+  let created = 0, failed = 0;
+  for (const reg of missing) {
+    try {
+      await invoices.createInvoiceForRegistration(reg);
+      created++;
+    } catch (err) {
+      console.error(`[admin] backfill invoice failed for registration ${reg.id}:`, err.message);
+      failed++;
+    }
+  }
+  const failedNote = failed > 0 ? `,+${failed}+failed+-+see+server+log` : "";
+  res.redirect(`/admin/registrations?success=Generated+${created}+missing+invoices${failedNote}`);
+});
+
 router.post("/registrations/:id/mark-paid", (req, res, next) => {
   const reg = store.findOne("registrations", (r) => r.id === req.params.id);
   if (!reg) return res.status(404).send("Registration not found");
